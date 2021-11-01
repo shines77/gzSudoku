@@ -699,7 +699,7 @@ struct Sudoku {
             }
         }
 
-        assert(index == Neighbors);
+        assert(index == kNeighbors);
         return index;
     }
 
@@ -723,7 +723,7 @@ struct Sudoku {
                 for (size_t col = 0; col < kCols; col++) {
                     NeighborCells * list = &neighbor_cells[pos];
                     size_t neighbors = get_neighbor_cells_list(row, col, list);
-                    assert(neighbors == Neighbors);
+                    assert(neighbors == kNeighbors);
                     NeighborCells * ordered_list = &ordered_neighbor_cells[pos];
                     for (size_t cell = 0; cell < kNeighbors; cell++) {
                         ordered_list->cells[cell] = list->cells[cell];

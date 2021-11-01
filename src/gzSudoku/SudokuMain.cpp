@@ -258,8 +258,6 @@ int main(int argc, char * argv[])
 
     Sudoku::initialize();
 
-    v4::Solver solver;
-
     if (1)
     {
         if (filename == nullptr) {

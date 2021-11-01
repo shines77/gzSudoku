@@ -216,6 +216,7 @@ private:
     template <size_t nBoxCountX, size_t nBoxCountY>
     struct NeighborBoxes {
         static const uint32_t kBoxesCount = (uint32_t)((nBoxCountX - 1) + (nBoxCountY - 1) + 1);
+
         uint32_t boxes_count() const { return kBoxesCount; }
 
         int boxes[kBoxesCount];
@@ -225,6 +226,7 @@ private:
     struct HVNeighborBoxes {
         static const uint32_t kHorizontalBoxes = uint32_t(nBoxCountX - 1);
         static const uint32_t kVerticalBoxes = uint32_t(nBoxCountX - 1);
+
         uint32_t h_boxes_count() const { return kHorizontalBoxes; }
         uint32_t v_boxes_count() const { return kVerticalBoxes; }
 
@@ -250,6 +252,7 @@ private:
 
         StaticData() : mask_is_inited(false) {
             if (!Static.mask_is_inited) {
+                Sudoku::initialize();
                 solver_type::init_mask();
                 Static.mask_is_inited = true;
             }
@@ -313,7 +316,8 @@ private:
                 box_num_mask[box].set(cell);
 
                 for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
-                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask = Static.box_cell_neighbors_mask[fill_pos][num];
+                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask
+                        = Static.box_cell_neighbors_mask[fill_pos][num];
                     box_cell_mask[box][cell].set(num);
                 }
 
@@ -340,7 +344,8 @@ private:
                 box_num_mask[box].set(cell);
 
                 for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
-                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask = Static.box_cell_neighbors_mask[fill_pos][num];
+                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask
+                        = Static.box_cell_neighbors_mask[fill_pos][num];
                     box_cell_mask[box][cell].set(num);
                 }
 
@@ -379,7 +384,8 @@ private:
                         box_num_mask[box].set(cell);
 
                         for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
-                            PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask = Static.box_cell_neighbors_mask[fill_pos][num];
+                            PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask
+                                = Static.box_cell_neighbors_mask[fill_pos][num];
                             box_cell_mask[box][cell].set(num);
                         }
 
