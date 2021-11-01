@@ -213,8 +213,6 @@ private:
         uint32_t literal_size;
     };
 
-#pragma pack(pop)
-
     template <size_t nBoxCountX, size_t nBoxCountY>
     struct NeighborBoxes {
         static const uint32_t kBoxesCount = (uint32_t)((nBoxCountX - 1) + (nBoxCountY - 1) + 1);
@@ -237,6 +235,29 @@ private:
     typedef NeighborBoxes<BoxCountX, BoxCountY>     neighbor_boxes_t;
     typedef HVNeighborBoxes<BoxCountX, BoxCountY>   hv_neighbor_boxes_t;
 
+    struct StaticData {
+        alignas(32) PackedBitSet2D<BoardSize, Rows16 * Cols16>     neighbor_cells_mask;
+        alignas(32) PackedBitSet2D<BoardSize, Boxes16 * BoxSize16> neighbor_boxes_mask;
+
+        alignas(32) PackedBitSet3D<Boxes, BoxSize16, Numbers16>    box_cell_neighbors_mask[BoardSize][Numbers];
+        alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>      row_neighbors_mask;
+        alignas(32) PackedBitSet3D<BoardSize, Cols16, Rows16>      col_neighbors_mask;
+        alignas(32) PackedBitSet3D<BoardSize, Boxes16, BoxSize16>  box_num_neighbors_mask;
+
+        bool                                mask_is_inited;
+        std::vector<neighbor_boxes_t>       neighbor_boxes;
+        std::vector<hv_neighbor_boxes_t>    hv_neighbor_boxes;
+
+        StaticData() : mask_is_inited(false) {
+            if (!Static.mask_is_inited) {
+                solver_type::init_mask();
+                Static.mask_is_inited = true;
+            }
+        }
+    };
+
+#pragma pack(pop)
+
     InitState       init_state_;
     State           state_;
     Count           count_;
@@ -244,36 +265,22 @@ private:
 
     alignas(32) literal_count_t literal_info_[TotalLiterals];
 
-    static bool mask_is_inited;
-    static std::vector<neighbor_boxes_t>    neighbor_boxes;
-    static std::vector<hv_neighbor_boxes_t> hv_neighbor_boxes;
-
-    static PackedBitSet2D<BoardSize, Rows16 * Cols16>     neighbor_cells_mask;
-    static PackedBitSet2D<BoardSize, Boxes16 * BoxSize16> neighbor_boxes_mask;
-
-    static PackedBitSet3D<Boxes, BoxSize16, Numbers16>    box_cell_neighbors_mask[BoardSize][Numbers];
-    static PackedBitSet3D<BoardSize, Rows16, Cols16>      row_neighbors_mask;
-    static PackedBitSet3D<BoardSize, Cols16, Rows16>      col_neighbors_mask;
-    static PackedBitSet3D<BoardSize, Boxes16, BoxSize16>  box_num_neighbors_mask;
+    static StaticData Static;
 
 public:
     Solver() : basic_solver_t() {
-        if (!mask_is_inited) {
-            init_mask();
-            mask_is_inited = true;
-        }
     }
     ~Solver() {}
 
 private:
     static size_t make_neighbor_cells_masklist(size_t fill_pos,
                                                size_t row, size_t col) {
-        PackedBitSet<BoardSize16> & cells_mask = neighbor_cells_mask[fill_pos];
-        PackedBitSet<BoardSize16> & boxes_mask = neighbor_boxes_mask[fill_pos];
+        PackedBitSet<BoardSize16> & cells_mask = Static.neighbor_cells_mask[fill_pos];
+        PackedBitSet<BoardSize16> & boxes_mask = Static.neighbor_boxes_mask[fill_pos];
 
-        PackedBitSet2D<Rows16, Cols16> & rows_mask        = row_neighbors_mask[fill_pos];
-        PackedBitSet2D<Cols16, Rows16> & cols_mask        = col_neighbors_mask[fill_pos];
-        PackedBitSet2D<Boxes16, BoxSize16> & box_num_mask = box_num_neighbors_mask[fill_pos];
+        PackedBitSet2D<Rows16, Cols16> & rows_mask        = Static.row_neighbors_mask[fill_pos];
+        PackedBitSet2D<Cols16, Rows16> & cols_mask        = Static.col_neighbors_mask[fill_pos];
+        PackedBitSet2D<Boxes16, BoxSize16> & box_num_mask = Static.box_num_neighbors_mask[fill_pos];
 
         const CellInfo * pCellInfo = Sudoku::cell_info;
         size_t box, cell;
@@ -306,7 +313,7 @@ private:
                 box_num_mask[box].set(cell);
 
                 for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
-                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask = box_cell_neighbors_mask[fill_pos][num];
+                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask = Static.box_cell_neighbors_mask[fill_pos][num];
                     box_cell_mask[box][cell].set(num);
                 }
 
@@ -333,7 +340,7 @@ private:
                 box_num_mask[box].set(cell);
 
                 for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
-                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask = box_cell_neighbors_mask[fill_pos][num];
+                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask = Static.box_cell_neighbors_mask[fill_pos][num];
                     box_cell_mask[box][cell].set(num);
                 }
 
@@ -372,7 +379,7 @@ private:
                         box_num_mask[box].set(cell);
 
                         for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
-                            PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask = box_cell_neighbors_mask[fill_pos][num];
+                            PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask = Static.box_cell_neighbors_mask[fill_pos][num];
                             box_cell_mask[box][cell].set(num);
                         }
 
@@ -399,7 +406,7 @@ private:
     }
 
     static void init_neighbor_boxes() {
-        neighbor_boxes.reserve(Boxes);
+        Static.neighbor_boxes.reserve(Boxes);
         for (size_t box_y = 0; box_y < BoxCellsY; box_y++) {
             size_t box_y_base = box_y * BoxCellsX;
             for (size_t box_x = 0; box_x < BoxCellsX; box_x++) {
@@ -420,22 +427,22 @@ private:
                 assert(index == neighborBoxes.boxes_count());
 
                 std::sort(&neighborBoxes.boxes[1], &neighborBoxes.boxes[neighborBoxes.boxes_count()]);
-                neighbor_boxes.push_back(neighborBoxes);
+                Static.neighbor_boxes.push_back(neighborBoxes);
             }
         }
     }
 
     static void init_mask() {
-        neighbor_cells_mask.reset();
+        Static.neighbor_cells_mask.reset();
 
         for (size_t pos = 0; pos < BoardSize; pos++) {
             for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
-                box_cell_neighbors_mask[pos][num].reset();
+                Static.box_cell_neighbors_mask[pos][num].reset();
             }
         }
-        row_neighbors_mask.reset();
-        col_neighbors_mask.reset();
-        box_num_neighbors_mask.reset();
+        Static.row_neighbors_mask.reset();
+        Static.col_neighbors_mask.reset();
+        Static.box_num_neighbors_mask.reset();
 
         init_neighbor_boxes();
         init_neighbor_cells_mask();
@@ -443,12 +450,12 @@ private:
         // Flip all mask bits
         for (size_t pos = 0; pos < BoardSize; pos++) {
             for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
-                box_cell_neighbors_mask[pos][num].flip();
+                Static.box_cell_neighbors_mask[pos][num].flip();
             }
         }
-        row_neighbors_mask.flip();
-        col_neighbors_mask.flip();
-        box_num_neighbors_mask.flip();
+        Static.row_neighbors_mask.flip();
+        Static.col_neighbors_mask.flip();
+        Static.box_num_neighbors_mask.flip();
     }
 
     inline void initFillNum(InitState & state, size_t pos, size_t row, size_t col,
@@ -492,17 +499,17 @@ private:
     }
 
     inline void initUpdateNeighborCells(InitState & state, size_t fill_pos, size_t box, size_t num) {
-        const neighbor_boxes_t & neighborBoxes = neighbor_boxes[box];
+        const neighbor_boxes_t & neighborBoxes = Static.neighbor_boxes[box];
         const PackedBitSet3D<Boxes, BoxSize16, Numbers16> & neighbors_mask
-            = box_cell_neighbors_mask[fill_pos][num];
+            = Static.box_cell_neighbors_mask[fill_pos][num];
         for (size_t i = 0; i < neighborBoxes.boxes_count(); i++) {
             size_t box_idx = neighborBoxes.boxes[i];
             state.box_cell_nums[box_idx] &= neighbors_mask[box_idx];
         }
 
-        state.num_row_cols[num] &= row_neighbors_mask[fill_pos];
-        state.num_col_rows[num] &= col_neighbors_mask[fill_pos];
-        state.num_box_cells[num] &= box_num_neighbors_mask[fill_pos];
+        state.num_row_cols[num] &= Static.row_neighbors_mask[fill_pos];
+        state.num_col_rows[num] &= Static.col_neighbors_mask[fill_pos];
+        state.num_box_cells[num] &= Static.box_num_neighbors_mask[fill_pos];
     }
 
     inline uint32_t count_all_literal_size(uint32_t & out_min_literal_index) {
@@ -737,28 +744,7 @@ public:
     }
 };
 
-bool Solver::mask_is_inited = false;
-
-std::vector<typename Solver::neighbor_boxes_t>
-Solver::neighbor_boxes;
-
-PackedBitSet2D<Solver::BoardSize, Solver::Rows16 * Solver::Cols16>
-Solver::neighbor_cells_mask;
-
-PackedBitSet2D<Solver::BoardSize, Solver::Boxes16 * Solver::BoxSize16>
-Solver::neighbor_boxes_mask;
-
-PackedBitSet3D<Solver::Boxes, Solver::BoxSize16, Solver::Numbers16>
-Solver::box_cell_neighbors_mask[Solver::BoardSize][Solver::Numbers];
-
-PackedBitSet3D<Solver::BoardSize, Solver::Rows16, Solver::Cols16>
-Solver::row_neighbors_mask;
-
-PackedBitSet3D<Solver::BoardSize, Solver::Cols16, Solver::Rows16>
-Solver::col_neighbors_mask;
-
-PackedBitSet3D<Solver::BoardSize, Solver::Boxes16, Solver::BoxSize16>
-Solver::box_num_neighbors_mask;
+Solver::StaticData Solver::Static;
 
 } // namespace v4
 } // namespace gzSudoku
