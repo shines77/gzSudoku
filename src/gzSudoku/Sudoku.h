@@ -22,7 +22,7 @@
 #include <algorithm>    // For std::sort()
 
 #include "BitSet.h"
-#include "BitMatrix.h"
+#include "BitArray.h"
 
 namespace gzSudoku {
 

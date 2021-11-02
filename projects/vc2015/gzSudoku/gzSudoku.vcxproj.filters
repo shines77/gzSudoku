@@ -13,9 +13,6 @@
     <ClInclude Include="..\..\..\src\gzSudoku\BasicSolver.hpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\gzSudoku\BitMatrix.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\gzSudoku\BitSet.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -47,6 +44,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\gzSudoku\TestCase.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\gzSudoku\BitArray.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

@@ -33,7 +33,7 @@
 #include "BitUtils.h"
 #include "BitSet.h"
 #include "PackedBitSet.h"
-#include "BitMatrix.h"
+#include "BitArray.h"
 #include "BitVec.h"
 
 #define V4_LITERAL_ORDER_MODE   0
@@ -276,6 +276,33 @@ public:
     ~Solver() {}
 
 private:
+    static void init_neighbor_boxes() {
+        Static.neighbor_boxes.reserve(Boxes);
+        for (size_t box_y = 0; box_y < BoxCellsY; box_y++) {
+            size_t box_y_base = box_y * BoxCellsX;
+            for (size_t box_x = 0; box_x < BoxCellsX; box_x++) {
+                uint32_t box = uint32_t(box_y_base + box_x);
+                size_t index = 0;
+                neighbor_boxes_t neighborBoxes;
+                neighborBoxes.boxes[index++] = box;
+                for (size_t box_i = 0; box_i < BoxCellsX; box_i++) {
+                    if (box_i != box_x) {
+                        neighborBoxes.boxes[index++] = uint32_t(box_y * BoxCellsX + box_i);
+                    }
+                }
+                for (size_t box_j = 0; box_j < BoxCellsY; box_j++) {
+                    if (box_j != box_y) {
+                        neighborBoxes.boxes[index++] = uint32_t(box_j * BoxCellsX + box_x);
+                    }
+                }
+                assert(index == neighborBoxes.boxes_count());
+
+                std::sort(&neighborBoxes.boxes[1], &neighborBoxes.boxes[neighborBoxes.boxes_count()]);
+                Static.neighbor_boxes.push_back(neighborBoxes);
+            }
+        }
+    }
+
     static size_t make_neighbor_cells_masklist(size_t fill_pos,
                                                size_t row, size_t col) {
         PackedBitSet<BoardSize16> & cells_mask = Static.neighbor_cells_mask[fill_pos];
@@ -315,7 +342,7 @@ private:
                 cols_mask[x].set(row);
                 box_num_mask[box].set(cell);
 
-                for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
+                for (size_t num = 0; num < Numbers; num++) {
                     PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask
                         = Static.box_cell_neighbors_mask[fill_pos][num];
                     box_cell_mask[box][cell].set(num);
@@ -343,7 +370,7 @@ private:
                 cols_mask[col].set(y);
                 box_num_mask[box].set(cell);
 
-                for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
+                for (size_t num = 0; num < Numbers; num++) {
                     PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask
                         = Static.box_cell_neighbors_mask[fill_pos][num];
                     box_cell_mask[box][cell].set(num);
@@ -383,7 +410,7 @@ private:
                         cols_mask[col].set(row);
                         box_num_mask[box].set(cell);
 
-                        for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
+                        for (size_t num = 0; num < Numbers; num++) {
                             PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask
                                 = Static.box_cell_neighbors_mask[fill_pos][num];
                             box_cell_mask[box][cell].set(num);
@@ -411,38 +438,11 @@ private:
         }
     }
 
-    static void init_neighbor_boxes() {
-        Static.neighbor_boxes.reserve(Boxes);
-        for (size_t box_y = 0; box_y < BoxCellsY; box_y++) {
-            size_t box_y_base = box_y * BoxCellsX;
-            for (size_t box_x = 0; box_x < BoxCellsX; box_x++) {
-                uint32_t box = uint32_t(box_y_base + box_x);
-                size_t index = 0;
-                neighbor_boxes_t neighborBoxes;
-                neighborBoxes.boxes[index++] = box;
-                for (size_t box_i = 0; box_i < BoxCellsX; box_i++) {
-                    if (box_i != box_x) {
-                        neighborBoxes.boxes[index++] = uint32_t(box_y * BoxCellsX + box_i);
-                    }
-                }
-                for (size_t box_j = 0; box_j < BoxCellsY; box_j++) {
-                    if (box_j != box_y) {
-                        neighborBoxes.boxes[index++] = uint32_t(box_j * BoxCellsX + box_x);
-                    }
-                }
-                assert(index == neighborBoxes.boxes_count());
-
-                std::sort(&neighborBoxes.boxes[1], &neighborBoxes.boxes[neighborBoxes.boxes_count()]);
-                Static.neighbor_boxes.push_back(neighborBoxes);
-            }
-        }
-    }
-
     static void init_mask() {
         Static.neighbor_cells_mask.reset();
 
         for (size_t pos = 0; pos < BoardSize; pos++) {
-            for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
+            for (size_t num = 0; num < Numbers; num++) {
                 Static.box_cell_neighbors_mask[pos][num].reset();
             }
         }
@@ -455,7 +455,7 @@ private:
 
         // Flip all mask bits
         for (size_t pos = 0; pos < BoardSize; pos++) {
-            for (size_t num = MinNumber - 1; num < MaxNumber; num++) {
+            for (size_t num = 0; num < Numbers; num++) {
                 Static.box_cell_neighbors_mask[pos][num].flip();
             }
         }
@@ -464,8 +464,8 @@ private:
         Static.box_num_neighbors_mask.flip();
     }
 
-    inline void initFillNum(InitState & state, size_t pos, size_t row, size_t col,
-                            size_t box, size_t cell, size_t num) {
+    inline void fillNum(InitState & state, size_t pos, size_t row, size_t col,
+                        size_t box, size_t cell, size_t num) {
         assert(state.box_cell_nums[box][cell].test(num));
         assert(state.num_row_cols[num][row].test(col));
         assert(state.num_col_rows[num][col].test(row));
@@ -504,7 +504,7 @@ private:
         }
     }
 
-    inline void initUpdateNeighborCells(InitState & state, size_t fill_pos, size_t box, size_t num) {
+    inline void updateNeighborCells(InitState & state, size_t fill_pos, size_t box, size_t num) {
         const neighbor_boxes_t & neighborBoxes = Static.neighbor_boxes[box];
         const PackedBitSet3D<Boxes, BoxSize16, Numbers16> & neighbors_mask
             = Static.box_cell_neighbors_mask[fill_pos][num];
@@ -703,8 +703,8 @@ private:
                     size_t cell = cell_y + cell_x;
                     size_t num = val - '1';
 
-                    this->initFillNum(this->init_state_, pos, row, col, box, cell, num);
-                    this->initUpdateNeighborCells(this->init_state_, pos, box, num);
+                    this->fillNum(this->init_state_, pos, row, col, box, cell, num);
+                    this->updateNeighborCells(this->init_state_, pos, box, num);
                 }
                 pos++;
             }

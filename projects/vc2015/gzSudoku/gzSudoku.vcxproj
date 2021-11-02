@@ -157,7 +157,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\src\gzSudoku\BasicSolver.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\BasicSolver.hpp" />
-    <ClInclude Include="..\..\..\src\gzSudoku\BitMatrix.h" />
+    <ClInclude Include="..\..\..\src\gzSudoku\BitArray.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\BitSet.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\BitUtils.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\BitVec.h" />
