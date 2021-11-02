@@ -822,20 +822,20 @@ struct BitVec16x16 {
 
     template <size_t MaxLength>
     void _minpos8(BitVec16x16 & minpos) const {
-        static const size_t MaxBitsLow = (MaxBits < 16) ? MaxBits : 16;
-        static const size_t MaxBitsHigh = ((MaxBits - MaxBitsLow) < 16) ? (MaxBits - MaxBitsLow) : 16;
+        static const size_t MaxLenLow = (MaxLength < 16) ? MaxLength : 16;
+        static const size_t MaxLenHigh = ((MaxLength - MaxLenLow) < 16) ? (MaxLength - MaxLenLow) : 16;
 
         if (MaxLength <= 8) {
-            this->low._minpos8<MaxBitsLow>(minpos.low);
+            this->low._minpos8<MaxLenLow>(minpos.low);
         }
         else if (MaxLength == 9) {
-            this->low._minpos8<MaxBitsLow>(minpos.low);
+            this->low._minpos8<MaxLenLow>(minpos.low);
             BitVec08x16 minpos128 = _mm_min_epu8(minpos.low.xmm128, this->high.xmm128);
             minpos.setLow(minpos128);
         }
         else {
-            this->low._minpos8<MaxBitsLow>(minpos.low);
-            this->high._minpos8<MaxBitsHigh>(minpos.high);
+            this->low._minpos8<MaxLenLow>(minpos.low);
+            this->high._minpos8<MaxLenHigh>(minpos.high);
             BitVec08x16 minpos128 = _mm_min_epu8(minpos.low.xmm128, minpos.high.xmm128);
             minpos.setLow(minpos128);
         }
@@ -861,23 +861,23 @@ struct BitVec16x16 {
         return min_num;
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     void _minpos16(BitVec16x16 & minpos) const {
-        static const size_t MaxBitsLow = (MaxBits < 8) ? MaxBits : 8;
-        static const size_t MaxBitsHigh = ((MaxBits - MaxBitsLow) < 8) ? (MaxBits - MaxBitsLow) : 8;
+        static const size_t MaxLenLow = (MaxLength < 8) ? MaxBits : 8;
+        static const size_t MaxLenHigh = ((MaxLength - MaxLenLow) < 8) ? (MaxLength - MaxLenLow) : 8;
 
         if (MaxBits <= 8) {
-            this->low._minpos16<MaxBitsLow>(minpos.low);
+            this->low._minpos16<MaxLenLow>(minpos.low);
         }
         else if (MaxBits == 9) {
-            this->low._minpos16<MaxBitsLow>(minpos.low);
+            this->low._minpos16<MaxLenLow>(minpos.low);
 
             BitVec08x16 minpos128 = _mm_min_epu16(minpos.low.xmm128, this->high.xmm128);
             minpos.setLow(minpos128);
         }
         else {
-            this->low._minpos16<MaxBitsLow>(minpos.low);
-            this->high._minpos16<MaxBitsHigh>(minpos.high);
+            this->low._minpos16<MaxLenLow>(minpos.low);
+            this->high._minpos16<MaxLenHigh>(minpos.high);
 
             BitVec08x16 minpos128 = _mm_min_epu16(minpos.low.xmm128, minpos.high.xmm128);
             minpos.setLow(minpos128);
@@ -886,33 +886,33 @@ struct BitVec16x16 {
 
 #if defined(__SSE4_1__)
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     void _minpos16_and_index(BitVec16x16 & minpos, BitVec08x16 & result) const {
-        static const size_t MaxBitsLow = (MaxBits < 8) ? MaxBits : 8;
-        static const size_t MaxBitsHigh = ((MaxBits - MaxBitsLow) < 8) ? (MaxBits - MaxBitsLow) : 8;
+        static const size_t MaxLenLow = (MaxLength < 8) ? MaxLength : 8;
+        static const size_t MaxLenHigh = ((MaxLength - MaxLenLow) < 8) ? (MaxLength - MaxLenLow) : 8;
 
-        if (MaxBits <= 8) {
-            this->low._minpos16<MaxBitsLow>(minpos.low);
+        if (MaxLength <= 8) {
+            this->low._minpos16<MaxLenLow>(minpos.low);
             result = minpos.low;
         }
-        else if (MaxBits == 9) {
-            this->low._minpos16<MaxBitsLow>(minpos.low);
+        else if (MaxLength == 9) {
+            this->low._minpos16<MaxLenLow>(minpos.low);
             result = _mm_min_epu16(minpos.low.xmm128, this->high.xmm128);
         }
         else {
-            this->low._minpos16<MaxBitsLow>(minpos.low);
-            this->high._minpos16<MaxBitsHigh>(minpos.high);
+            this->low._minpos16<MaxLenLow>(minpos.low);
+            this->high._minpos16<MaxLenHigh>(minpos.high);
             result = _mm_min_epu16(minpos.low.xmm128, minpos.high.xmm128);
         }
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     int _minpos16_get_index(BitVec16x16 & minpos, const BitVec08x16 & result) const {
         int min_index;
-        if (MaxBits <= 8) {
+        if (MaxLength <= 8) {
             min_index = _mm_extract_epi16(minpos.low.xmm128, 1);
         }
-        else if (MaxBits == 9) {
+        else if (MaxLength == 9) {
             __m128i equal_result_low = _mm_cmpeq_epi16(result.xmm128, minpos.low.xmm128);
             int equal_mask_low = _mm_movemask_epi8(equal_result_low);
             if ((equal_mask_low & 0x00000003U) != 0) {
@@ -920,7 +920,7 @@ struct BitVec16x16 {
             }
             else {
 #ifndef NDEBUG
-                this->high._minpos16<MaxBits>(minpos.high);
+                this->high._minpos16<MaxLength>(minpos.high);
                 __m128i equal_result_high = _mm_cmpeq_epi16(result.xmm128, minpos.high.xmm128);
                 int equal_mask_high = _mm_movemask_epi8(equal_result_high);
                 assert((equal_mask_high & 0x00000003U) != 0);
