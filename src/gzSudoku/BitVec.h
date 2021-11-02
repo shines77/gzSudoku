@@ -309,7 +309,7 @@ struct BitVec08x16 {
 
     template <size_t MaxBits>
     BitVec08x16 popcount16() const {
-#if defined(AVX512_BITALG) && defined(AVX512VL)
+#if defined(__AVX512VPOPCNTW__) || (defined(__AVX512_BITALG__) && defined(__AVX512VL__))
         return _mm_popcnt_epi16(this->xmm128);
 #elif defined(__SSSE3__)
         if (MaxBits <= 8) {
@@ -322,6 +322,7 @@ struct BitVec08x16 {
             return result;
         }
         else if (MaxBits == 9) {
+            // Note: Ensure that the highest 7 bits must be 0.
             __m128i lookup  = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
             __m128i mask4   = _mm_set1_epi16(0x0F);
             __m128i sum_0_3 = _mm_shuffle_epi8(lookup, _mm_and_si128(this->xmm128, mask4));
@@ -376,36 +377,58 @@ struct BitVec08x16 {
         popcnt16.saveUnaligned(mem_addr);
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     void _minpos8(BitVec08x16 & minpos) const {
 #if defined(__SSE4_1__)
         //
         // See: https://blog.csdn.net/weixin_34378767/article/details/86257834
         //
-        if (MaxBits <= 8) {
+        if (MaxLength <= 8) {
             __m128i zero = _mm_setzero_si128();
             __m128i low64 = _mm_unpacklo_epi8(this->xmm128, zero);
-            __m128i minpos128 = _mm_minpos_epu16(low64);
-            minpos = _mm_packus_epi16(minpos128, _mm_setzero_si128());
+            __m128i minpos_u16 = _mm_minpos_epu16(low64);
+            //minpos = _mm_packus_epi16(minpos_u16, zero);
+            minpos = minpos_u16;
         }
-        else if (MaxBits == 9) {
+        else if (MaxLength == 9) {
+            // Note: Ensure that the highest 7 byets must be maximum value.
             __m128i zero = _mm_setzero_si128();
             __m128i low64  = _mm_unpacklo_epi8(this->xmm128, zero);
+            __m128i minpos_low = _mm_minpos_epu16(low64);
             __m128i high64 = _mm_unpackhi_epi8(this->xmm128, zero);
-            minpos = _mm_min_epu16(_mm_minpos_epu16(low64), high64);
+            high64 = _mm_cvtepu8_epi16(high64);
+            __m128i high_9_index = _mm_setr_epi16(0, 9, 0, 0, 0, 0, 0, 0);
+            high64 = _mm_or_si128(high64, high_9_index);
+            __m128i min_num_all = _mm_min_epu16(minpos_low, high64);
+            __m128i min_in_high_mask = _mm_cmpgt_epi16(min_num_all, high64);
+            __m128i minpos_8_low = _mm_andnot_si128(minpos_low, min_in_high_mask)
+            __m128i minpos_8_high = _mm_and_si128(high64, min_in_high_mask);
+            __m128i minpos_u16 = _mm_and_si128(minpos_8_low, minpos_8_high);
+            //minpos = _mm_packus_epi16(minpos_u16, zero);
+            minpos = minpos_u16;
         }
         else {
             __m128i zero = _mm_setzero_si128();
             __m128i low64  = _mm_unpacklo_epi8(this->xmm128, zero);
             __m128i high64 = _mm_unpackhi_epi8(this->xmm128, zero);
-            minpos = _mm_min_epu16(_mm_minpos_epu16(low64), _mm_minpos_epu16(high64));
+            __m128i minpos_low  = _mm_minpos_epu16(low64);
+            __m128i minpos_high = _mm_minpos_epu16(high64);
+            __m128i high_index_addition = _mm_setr_epi16(0, 8, 0, 0, 0, 0, 0, 0);
+            minpos_high = _mm_add_epi16(minpos_high, high_index_addition);
+            __m128i min_num_all = _mm_min_epu16(minpos_low, minpos_high);
+            __m128i min_in_high_mask = _mm_cmpgt_epi16(min_num_all, minpos_high);
+            __m128i minpos_8_low = _mm_andnot_si128(minpos_low, min_in_high_mask)
+            __m128i minpos_8_high = _mm_and_si128(high64, min_in_high_mask);
+            __m128i minpos_u16 = _mm_and_si128(minpos_8_low, minpos_8_high);
+            //minpos = _mm_packus_epi16(minpos_u16, zero);
+            minpos = minpos_u16;
         }
 #else
         //
         // Horizontal minimum and maximum using SSE
         // See: https://stackoverflow.com/questions/22256525/horizontal-minimum-and-maximum-using-sse
         //
-        if (MaxBits <= 8) {
+        if (MaxLength <= 8) {
             BitVec08x16 numbers = this->xmm128;
             numbers = _mm_min_epu8(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(1, 0, 3, 2)));
             numbers = _mm_min_epu8(numbers, _mm_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
@@ -425,9 +448,9 @@ struct BitVec08x16 {
 #endif
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     int minpos8(BitVec08x16 & minpos) const {
-        this->_minpos8<MaxBits>(minpos);
+        this->_minpos8<MaxLength>(minpos);
 #if defined(__SSE4_1__)
         return _mm_extract_epi16(minpos.xmm128, 0);
 #else
@@ -435,7 +458,7 @@ struct BitVec08x16 {
 #endif
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     void _minpos16(BitVec08x16 & minpos) const {
 #if defined(__SSE4_1__)
         minpos = _mm_minpos_epu16(this->xmm128);
@@ -457,20 +480,16 @@ struct BitVec08x16 {
 #endif
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     uint32_t minpos16(BitVec08x16 & minpos) const {
-        this->_minpos16<MaxBits>(minpos);
-#if defined(__SSE4_1__)
-        return (uint32_t)_mm_extract_epi16(minpos.xmm128, 0);
-#else
-        return (uint32_t)_mm_extract_epi8(minpos.xmm128, 0);
-#endif
+        this->_minpos16<MaxLength>(minpos);
+        return (uint32_t)_mm_cvtsi128_si32(minpos.xmm128, 0);
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     uint32_t minpos16(uint32_t & old_min_num, int & min_index) const {
         BitVec08x16 minpos;
-        uint32_t min_num = this->minpos16<MaxBits>(minpos);
+        uint32_t min_num = this->minpos16<MaxLength>(minpos);
         if (min_num < old_min_num) {
             old_min_num = min_num;
             min_index = this->whichIsEqual16(min_num);
@@ -478,10 +497,10 @@ struct BitVec08x16 {
         return min_num;
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     uint32_t minpos16_and_index(int & min_index) const {
         BitVec08x16 minpos;
-        uint32_t min_num = this->minpos16<MaxBits>(minpos);
+        uint32_t min_num = this->minpos16<MaxLength>(minpos);
         min_index = this->whichIsEqual16(min_num);
         return min_num;
     }
@@ -801,15 +820,15 @@ struct BitVec16x16 {
         popcnt16.saveUnaligned(mem_addr);
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     void _minpos8(BitVec16x16 & minpos) const {
         static const size_t MaxBitsLow = (MaxBits < 16) ? MaxBits : 16;
         static const size_t MaxBitsHigh = ((MaxBits - MaxBitsLow) < 16) ? (MaxBits - MaxBitsLow) : 16;
 
-        if (MaxBits <= 8) {
+        if (MaxLength <= 8) {
             this->low._minpos8<MaxBitsLow>(minpos.low);
         }
-        else if (MaxBits == 9) {
+        else if (MaxLength == 9) {
             this->low._minpos8<MaxBitsLow>(minpos.low);
             BitVec08x16 minpos128 = _mm_min_epu8(minpos.low.xmm128, this->high.xmm128);
             minpos.setLow(minpos128);
@@ -822,9 +841,9 @@ struct BitVec16x16 {
         }
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     uint32_t minpos8(BitVec16x16 & minpos) const {
-        this->_minpos8<MaxBits>(minpos);
+        this->_minpos8<MaxLength>(minpos);
 #if defined(__SSE4_1__)
         uint32_t min_num = (uint32_t)_mm_extract_epi16(minpos.low.xmm128, 0);
 #else
@@ -926,20 +945,20 @@ struct BitVec16x16 {
         return min_index;
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     uint32_t _minpos16_and_index(int & min_index) const {
-        static const size_t MaxBitsLow = (MaxBits < 8) ? MaxBits : 8;
-        static const size_t MaxBitsHigh = ((MaxBits - MaxBitsLow) < 8) ? (MaxBits - MaxBitsLow) : 8;
+        static const size_t MaxLenLow = (MaxLength < 8) ? MaxLength : 8;
+        static const size_t MaxLenHigh = ((MaxLength - MaxLenLow) < 8) ? (MaxLength - MaxLenLow) : 8;
 
         uint32_t min_num;
         BitVec16x16 minpos;
-        if (MaxBits <= 8) {
-            this->low._minpos16<MaxBitsLow>(minpos.low);
+        if (MaxLength <= 8) {
+            this->low._minpos16<MaxLenLow>(minpos.low);
             min_num = (uint32_t)_mm_extract_epi16(minpos.low.xmm128, 0);
             min_index = _mm_extract_epi16(minpos.low.xmm128, 1);
         }
-        else if (MaxBits == 9) {
-            this->low._minpos16<MaxBitsLow>(minpos.low);
+        else if (MaxLength == 9) {
+            this->low._minpos16<MaxLenLow>(minpos.low);
             BitVec08x16 result = _mm_min_epu16(minpos.low.xmm128, this->high.xmm128);
             min_num = (uint32_t)_mm_extract_epi16(result.xmm128, 0);
 
@@ -950,7 +969,7 @@ struct BitVec16x16 {
             }
             else {
 #ifndef NDEBUG
-                this->high._minpos16<MaxBitsHigh>(minpos.high);
+                this->high._minpos16<MaxLenHigh>(minpos.high);
                 __m128i equal_result_high = _mm_cmpeq_epi16(result.xmm128, minpos.high.xmm128);
                 int equal_mask_high = _mm_movemask_epi8(equal_result_high);
                 assert((equal_mask_high & 0x00000003U) != 0);
@@ -960,8 +979,8 @@ struct BitVec16x16 {
             }
         }
         else {
-            this->low._minpos16<MaxBitsLow>(minpos.low);
-            this->high._minpos16<MaxBitsHigh>(minpos.high);
+            this->low._minpos16<MaxLenLow>(minpos.low);
+            this->high._minpos16<MaxLenHigh>(minpos.high);
             BitVec08x16 result = _mm_min_epu16(minpos.low.xmm128, minpos.high.xmm128);
             min_num = (uint32_t)_mm_extract_epi16(result.xmm128, 0);
 
@@ -982,26 +1001,26 @@ struct BitVec16x16 {
 
 #endif // __SSE4_1__
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     uint32_t minpos16(BitVec16x16 & minpos) const {
-        this->_minpos16<MaxBits>(minpos);
+        this->_minpos16<MaxLength>(minpos);
         uint32_t min_num = this->get_min_num(minpos.low);
         return min_num;
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     uint32_t minpos16(uint32_t & old_min_num, int & min_index) const {
         BitVec16x16 minpos;
 #if defined(__SSE4_1__)
         BitVec08x16 result;
-        this->_minpos16_and_index<MaxBits>(minpos, result);
+        this->_minpos16_and_index<MaxLength>(minpos, result);
         uint32_t min_num = this->get_min_num(result);
         if (min_num < old_min_num) {
             old_min_num = min_num;
-            min_index = this->_minpos16_get_index<MaxBits>(minpos, result);
+            min_index = this->_minpos16_get_index<MaxLength>(minpos, result);
         }
 #else
-        uint32_t min_num = this->minpos16<MaxBits>(minpos);
+        uint32_t min_num = this->minpos16<MaxLength>(minpos);
         if (min_num < old_min_num) {
             old_min_num = min_num;
             min_index = this->whichIsEqual16(min_num);
@@ -1010,13 +1029,13 @@ struct BitVec16x16 {
         return min_num;
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     uint32_t minpos16_and_index(int & min_index) const {
         BitVec16x16 minpos;
 #if defined(__SSE4_1__)
-        uint32_t min_num = this->_minpos16_and_index<MaxBits>(min_index);
+        uint32_t min_num = this->_minpos16_and_index<MaxLength>(min_index);
 #else
-        uint32_t min_num = this->minpos16<MaxBits>(minpos);
+        uint32_t min_num = this->minpos16<MaxLength>(minpos);
         min_index = this->whichIsEqual16(min_num);
 #endif
         return min_num;
@@ -1306,7 +1325,7 @@ struct BitVec16x16 {
 
     template <size_t MaxBits>
     BitVec16x16 popcount16() const {
-#if defined(__AVX512BITALG__) && defined(__AVX512VL__)
+#if defined(__AVX512VPOPCNTW__) || (defined(__AVX512_BITALG__) && defined(__AVX512VL__))
         return _mm256_popcnt_epi16(this->ymm256);
 #else
         if (MaxBits <= 8) {
@@ -1320,6 +1339,7 @@ struct BitVec16x16 {
             return result;
         }
         else if (MaxBits == 9) {
+            // Note: Ensure that the highest 7 bits must be 0.
             __m256i lookup  = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
                                                0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
             __m256i mask4   = _mm256_set1_epi16(0x0F);
@@ -1358,17 +1378,17 @@ struct BitVec16x16 {
         popcnt16.saveUnaligned(mem_addr);
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     void _minpos8(BitVec16x16 & minpos) const {
         __m256i numbers = this->ymm256;
-        if (MaxBits <= 8) {
+        if (MaxLength <= 8) {
             numbers = _mm256_min_epu8(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(2, 3, 0, 1)));
             numbers = _mm256_min_epu8(numbers, _mm256_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
 
             // The minimum number of first 8 x int8_t
             minpos = _mm256_min_epu8(numbers, _mm256_srli_epi16(numbers, 8));
         }
-        else if (MaxBits <= 16) {
+        else if (MaxLength <= 16) {
             numbers = _mm256_min_epu8(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(3, 2, 3, 2)));
             numbers = _mm256_min_epu8(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
             numbers = _mm256_min_epu8(numbers, _mm256_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
@@ -1387,9 +1407,9 @@ struct BitVec16x16 {
         }
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     uint32_t minpos8(BitVec16x16 & minpos) const {
-        this->_minpos8<MaxBits>(minpos);
+        this->_minpos8<MaxLength>(minpos);
 #if (!defined(_MSC_VER) || (_MSC_VER >= 2000))
         uint32_t min_num = _mm256_extract_epi16(minpos.ymm256, 0);
 #else
@@ -1400,16 +1420,16 @@ struct BitVec16x16 {
 #endif
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     void _minpos16(BitVec16x16 & minpos) const {
         __m256i numbers = this->ymm256;
-        if (MaxBits <= 4) {
+        if (MaxLength <= 4) {
             numbers = _mm256_min_epu16(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(2, 3, 0, 1)));
 
             // The minimum number of first 4 x int16_t
             minpos = _mm256_min_epu16(numbers, _mm256_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
         }
-        else if (MaxBits <= 8) {
+        else if (MaxLength <= 8) {
             numbers = _mm256_min_epu16(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(1, 0, 3, 2)));
             numbers = _mm256_min_epu16(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
 
@@ -1427,9 +1447,9 @@ struct BitVec16x16 {
         }
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     uint32_t minpos16(BitVec16x16 & minpos) const {
-        this->_minpos16<MaxBits>(minpos);
+        this->_minpos16<MaxLength>(minpos);
 #if (!defined(_MSC_VER) || (_MSC_VER >= 2000))
         uint32_t min_num = (uint32_t)_mm256_extract_epi16(minpos.ymm256, 0);
 #else
@@ -1441,10 +1461,10 @@ struct BitVec16x16 {
         return min_num;
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     uint32_t minpos16(uint32_t & old_min_num, int & min_index) const {
         BitVec16x16 minpos;
-        uint32_t min_num = this->minpos16<MaxBits>(minpos);
+        uint32_t min_num = this->minpos16<MaxLength>(minpos);
         if (min_num < old_min_num) {
             old_min_num = min_num;
             min_index = this->whichIsEqual16(minpos);
@@ -1452,10 +1472,10 @@ struct BitVec16x16 {
         return min_num;
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength>
     uint32_t minpos16_and_index(int & min_index) const {
         BitVec16x16 minpos;
-        uint32_t min_num = this->minpos16<MaxBits>(minpos);
+        uint32_t min_num = this->minpos16<MaxLength>(minpos);
         min_index = this->whichIsEqual16(minpos);
         return min_num;
     }
