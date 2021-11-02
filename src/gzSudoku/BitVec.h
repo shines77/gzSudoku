@@ -72,37 +72,37 @@ union alignas(32) IntVec256 {
 #if defined(__SSE2__) || defined(__SSE3__) || defined(__SSSE3__) || defined(__SSE4A__) || defined(__SSE4a__) \
  || defined(__SSE4_1__) || defined(__SSE4_2__) || defined(__AVX__) || defined(__AVX2__) || defined(__AVX512VL__)
 
-struct BitVec16x08 {
+struct BitVec08x16 {
     __m128i xmm128;
 
-    BitVec16x08() noexcept {}
+    BitVec08x16() noexcept {}
     // non-explicit conversions intended
-    BitVec16x08(const __m128i & m128i) noexcept : xmm128(m128i) {}
-    BitVec16x08(const BitVec16x08 & src) noexcept : xmm128(src.xmm128) {}
+    BitVec08x16(const __m128i & m128i) noexcept : xmm128(m128i) {}
+    BitVec08x16(const BitVec08x16 & src) noexcept : xmm128(src.xmm128) {}
 
-    BitVec16x08(uint8_t c00, uint8_t c01, uint8_t c02, uint8_t c03,
+    BitVec08x16(uint8_t c00, uint8_t c01, uint8_t c02, uint8_t c03,
                 uint8_t c04, uint8_t c05, uint8_t c06, uint8_t c07,
                 uint8_t c08, uint8_t c09, uint8_t c10, uint8_t c11,
                 uint8_t c12, uint8_t c13, uint8_t c14, uint8_t c15) :
             xmm128(_mm_setr_epi8(c00, c01, c02, c03, c04, c05, c06, c07,
                                  c08, c09, c10, c11, c12, c13, c14, c15)) {}
 
-    BitVec16x08(uint16_t w00, uint16_t w01, uint16_t w02, uint16_t w03,
+    BitVec08x16(uint16_t w00, uint16_t w01, uint16_t w02, uint16_t w03,
                 uint16_t w04, uint16_t w05, uint16_t w06, uint16_t w07) :
             xmm128(_mm_setr_epi16(w00, w01, w02, w03, w04, w05, w06, w07)) {}
 
-    BitVec16x08(uint32_t i00, uint32_t i01, uint32_t i02, uint32_t i03) :
+    BitVec08x16(uint32_t i00, uint32_t i01, uint32_t i02, uint32_t i03) :
             xmm128(_mm_setr_epi32(i00, i01, i02, i03)) {}
 
-    BitVec16x08(uint64_t q00, uint64_t q01) :
+    BitVec08x16(uint64_t q00, uint64_t q01) :
             xmm128(_mm_setr_epi64x(q00, q01)) {}
 
-    BitVec16x08 & operator = (const BitVec16x08 & right) {
+    BitVec08x16 & operator = (const BitVec08x16 & right) {
         this->xmm128 = right.xmm128;
         return *this;
     }
 
-    BitVec16x08 & operator = (const __m128i & right) {
+    BitVec08x16 & operator = (const __m128i & right) {
         this->xmm128 = right;
         return *this;
     }
@@ -133,74 +133,74 @@ struct BitVec16x08 {
         _mm_storeu_si128((__m128i *)dest_mem_addr, tmp);
     }
 
-    bool operator == (const BitVec16x08 & other) const {
-        BitVec16x08 tmp(this->xmm128);
+    bool operator == (const BitVec08x16 & other) const {
+        BitVec08x16 tmp(this->xmm128);
         tmp._xor(other);
         return (tmp.isAllZeros());
     }
 
-    bool operator != (const BitVec16x08 & other) const {
-        BitVec16x08 tmp(this->xmm128);
+    bool operator != (const BitVec08x16 & other) const {
+        BitVec08x16 tmp(this->xmm128);
         tmp._xor(other);
         return !(tmp.isAllZeros());
     }
 
     // Logical operation
-    BitVec16x08 & operator & (const BitVec16x08 & vec) {
+    BitVec08x16 & operator & (const BitVec08x16 & vec) {
         this->_and(vec.xmm128);
         return *this;
     }
 
-    BitVec16x08 & operator | (const BitVec16x08 & vec) {
+    BitVec08x16 & operator | (const BitVec08x16 & vec) {
         this->_or(vec.xmm128);
         return *this;
     }
 
-    BitVec16x08 & operator ^ (const BitVec16x08 & vec) {
+    BitVec08x16 & operator ^ (const BitVec08x16 & vec) {
         this->_xor(vec.xmm128);
         return *this;
     }
 
-    BitVec16x08 & operator ~ () {
+    BitVec08x16 & operator ~ () {
         this->_not();
         return *this;
     }
 
-    BitVec16x08 & operator ! () {
+    BitVec08x16 & operator ! () {
         this->_not();
         return *this;
     }
 
     // Logical operation
-    BitVec16x08 & operator &= (const BitVec16x08 & vec) {
+    BitVec08x16 & operator &= (const BitVec08x16 & vec) {
         this->_and(vec.xmm128);
         return *this;
     }
 
-    BitVec16x08 & operator |= (const BitVec16x08 & vec) {
+    BitVec08x16 & operator |= (const BitVec08x16 & vec) {
         this->_or(vec.xmm128);
         return *this;
     }
 
-    BitVec16x08 & operator ^= (const BitVec16x08 & vec) {
+    BitVec08x16 & operator ^= (const BitVec08x16 & vec) {
         this->_xor(vec.xmm128);
         return *this;
     }
 
     // Logical operation
-    void _and(const BitVec16x08 & vec) {
+    void _and(const BitVec08x16 & vec) {
         this->xmm128 = _mm_and_si128(this->xmm128, vec.xmm128);
     }
 
-    void _and_not(const BitVec16x08 & vec) {
+    void _and_not(const BitVec08x16 & vec) {
         this->xmm128 = _mm_andnot_si128(this->xmm128, vec.xmm128);
     }
 
-    void _or(const BitVec16x08 & vec) {
+    void _or(const BitVec08x16 & vec) {
         this->xmm128 = _mm_or_si128(this->xmm128, vec.xmm128);
     }
 
-    void _xor(const BitVec16x08 & vec) {
+    void _xor(const BitVec08x16 & vec) {
         this->xmm128 = _mm_xor_si128(this->xmm128, vec.xmm128);
     }
 
@@ -272,50 +272,77 @@ struct BitVec16x08 {
 #ifdef __SSE4_1__
         return (_mm_test_all_ones(this->xmm128) != 0);
 #else
-        BitVec16x08 ones;
+        BitVec08x16 ones;
         ones.setAllOnes();
-        BitVec16x08 compare_mask = whichIsEqual(ones);
+        BitVec08x16 compare_mask = whichIsEqual(ones);
         return (_mm_movemask_epi8(compare_mask.xmm128) == 0xffff);
 #endif
     }
 
     bool hasAnyZero() const {
-        BitVec16x08 which_is_equal_zero = this->whichIsZeros();
+        BitVec08x16 which_is_equal_zero = this->whichIsZeros();
         return (_mm_movemask_epi8(which_is_equal_zero.xmm128) != 0);
     }
 
     bool hasAnyOne() const {
-        BitVec16x08 which_is_non_zero = this->whichIsNonZero();
+        BitVec08x16 which_is_non_zero = this->whichIsNonZero();
         return (_mm_movemask_epi8(which_is_non_zero.xmm128) != 0);
     }
 
-    BitVec16x08 whichIsEqual(const BitVec16x08 & other) const {
+    BitVec08x16 whichIsEqual(const BitVec08x16 & other) const {
         return _mm_cmpeq_epi16(this->xmm128, other.xmm128);
     }
 
-    BitVec16x08 whichIsZeros() const {
+    BitVec08x16 whichIsZeros() const {
         return _mm_cmpeq_epi16(this->xmm128, _mm_setzero_si128());
     }
 
-    BitVec16x08 whichIsNonZero() const {
-        return _mm_cmpgt_epi16(this->xmm128, _mm_setzero_si128());
+    BitVec08x16 whichIsNonZero() const {
+        __m128i tmp = _mm_cmpgt_epi16(this->xmm128, _mm_setzero_si128());
+        return tmp;
     }
 
-    BitVec16x08 whichIsOnes() const {
+    BitVec08x16 whichIsOnes() const {
         __m128i ones;
         return _mm_cmpeq_epi16(this->xmm128, _mm_andnot_si128(ones, ones));
     }
 
     template <size_t MaxBits>
-    BitVec16x08 popcount16() const {
-#if defined(__SSSE3__)
-        __m128i lookup  = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
-        __m128i mask4   = _mm_set1_epi16(0x0F);
-        __m128i sum_0_3 = _mm_shuffle_epi8(lookup, _mm_and_si128(this->xmm128, mask4));
-        __m128i sum_4_7 = _mm_shuffle_epi8(lookup, _mm_srli_epi16(this->xmm128, 4));
-        __m128i sum_0_7 = _mm_add_epi16(sum_0_3, sum_4_7);
-        __m128i result  = _mm_add_epi16(sum_0_7, _mm_srli_epi16(this->xmm128, 8));
-        return result;
+    BitVec08x16 popcount16() const {
+#if defined(AVX512_BITALG) && defined(AVX512VL)
+        return _mm_popcnt_epi16(this->xmm128);
+#elif defined(__SSSE3__)
+        if (MaxBits <= 8) {
+            __m128i lookup  = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+            __m128i mask4   = _mm_set1_epi16(0x0F);
+            __m128i sum_0_3 = _mm_shuffle_epi8(lookup, _mm_and_si128(this->xmm128, mask4));
+            __m128i sum_4_7 = _mm_shuffle_epi8(lookup, _mm_srli_epi16(this->xmm128, 4));
+            __m128i sum_0_7 = _mm_add_epi16(sum_0_3, sum_4_7);
+            __m128i result  = sum_0_7;
+            return result;
+        }
+        else if (MaxBits == 9) {
+            __m128i lookup  = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+            __m128i mask4   = _mm_set1_epi16(0x0F);
+            __m128i sum_0_3 = _mm_shuffle_epi8(lookup, _mm_and_si128(this->xmm128, mask4));
+            __m128i sum_4_7 = _mm_shuffle_epi8(lookup, _mm_srli_epi16(this->xmm128, 4));
+            __m128i sum_0_7 = _mm_add_epi16(sum_0_3, sum_4_7);
+            __m128i result  = _mm_add_epi16(sum_0_7, _mm_srli_epi16(this->xmm128, 8));
+            return result;
+        }
+        else {
+            __m128i lookup    = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+            __m128i mask4     = _mm_set1_epi16(0x0F);
+            __m128i sum_0_3   = _mm_shuffle_epi8(lookup, _mm_and_si128(this->xmm128, mask4));
+            __m128i sum_4_7   = _mm_shuffle_epi8(lookup, _mm_srli_epi16(this->xmm128, 4));
+            __m128i sum_00_07 = _mm_add_epi16(sum_0_3, sum_4_7);
+            __m128i high8     = _mm_srli_epi16(this->xmm128, 8);
+            __m128i sum_08_11 = _mm_shuffle_epi8(lookup, _mm_and_si128(high8, mask4));
+            __m128i sum_12_15 = _mm_shuffle_epi8(lookup, _mm_srli_epi16(high8, 4));
+            __m128i sum_08_15 = _mm_add_epi16(sum_08_11, sum_12_15);
+            __m128i result    = _mm_add_epi16(sum_00_07, sum_08_15);
+            return result;
+        }
 #else
         // SSE2 version from https://www.hackersdelight.org/hdcodetxt/pop.c.txt
         __m128i mask1 = _mm_set1_epi8(0x77);
@@ -339,18 +366,18 @@ struct BitVec16x08 {
 
     template <size_t MaxBits>
     void popcount16(void * mem_addr) const {
-        BitVec16x08 popcnt16 = this->popcount16<MaxBits>();
+        BitVec08x16 popcnt16 = this->popcount16<MaxBits>();
         popcnt16.saveAligned(mem_addr);
     }
 
     template <size_t MaxBits>
     void popcount16_unaligned(void * mem_addr) const {
-        BitVec16x08 popcnt16 = this->popcount16<MaxBits>();
+        BitVec08x16 popcnt16 = this->popcount16<MaxBits>();
         popcnt16.saveUnaligned(mem_addr);
     }
 
     template <size_t MaxBits>
-    void _minpos8(BitVec16x08 & minpos) const {
+    void _minpos8(BitVec08x16 & minpos) const {
 #if defined(__SSE4_1__)
         //
         // See: https://blog.csdn.net/weixin_34378767/article/details/86257834
@@ -379,27 +406,27 @@ struct BitVec16x08 {
         // See: https://stackoverflow.com/questions/22256525/horizontal-minimum-and-maximum-using-sse
         //
         if (MaxBits <= 8) {
-            BitVec16x08 numbers = this->xmm128;
+            BitVec08x16 numbers = this->xmm128;
             numbers = _mm_min_epu8(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(1, 0, 3, 2)));
             numbers = _mm_min_epu8(numbers, _mm_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
 
-            BitVec16x08 minpos = _mm_min_epu8(numbers, _mm_srli_epi16(numbers, 8));
+            BitVec08x16 minpos = _mm_min_epu8(numbers, _mm_srli_epi16(numbers, 8));
             return minpos;
         }
         else {
-            BitVec16x08 numbers = this->xmm128;
+            BitVec08x16 numbers = this->xmm128;
             numbers = _mm_min_epu8(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(3, 2, 3, 2)));
             numbers = _mm_min_epu8(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
             numbers = _mm_min_epu8(numbers, _mm_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
 
-            BitVec16x08 minpos = _mm_min_epu8(numbers, _mm_srli_epi16(numbers, 8));
+            BitVec08x16 minpos = _mm_min_epu8(numbers, _mm_srli_epi16(numbers, 8));
             return minpos;
         }
 #endif
     }
 
     template <size_t MaxBits>
-    int minpos8(BitVec16x08 & minpos) const {
+    int minpos8(BitVec08x16 & minpos) const {
         this->_minpos8<MaxBits>(minpos);
 #if defined(__SSE4_1__)
         return _mm_extract_epi16(minpos.xmm128, 0);
@@ -409,7 +436,7 @@ struct BitVec16x08 {
     }
 
     template <size_t MaxBits>
-    void _minpos16(BitVec16x08 & minpos) const {
+    void _minpos16(BitVec08x16 & minpos) const {
 #if defined(__SSE4_1__)
         minpos = _mm_minpos_epu16(this->xmm128);
 #else
@@ -431,7 +458,7 @@ struct BitVec16x08 {
     }
 
     template <size_t MaxBits>
-    uint32_t minpos16(BitVec16x08 & minpos) const {
+    uint32_t minpos16(BitVec08x16 & minpos) const {
         this->_minpos16<MaxBits>(minpos);
 #if defined(__SSE4_1__)
         return (uint32_t)_mm_extract_epi16(minpos.xmm128, 0);
@@ -442,7 +469,7 @@ struct BitVec16x08 {
 
     template <size_t MaxBits>
     uint32_t minpos16(uint32_t & old_min_num, int & min_index) const {
-        BitVec16x08 minpos;
+        BitVec08x16 minpos;
         uint32_t min_num = this->minpos16<MaxBits>(minpos);
         if (min_num < old_min_num) {
             old_min_num = min_num;
@@ -453,7 +480,7 @@ struct BitVec16x08 {
 
     template <size_t MaxBits>
     uint32_t minpos16_and_index(int & min_index) const {
-        BitVec16x08 minpos;
+        BitVec08x16 minpos;
         uint32_t min_num = this->minpos16<MaxBits>(minpos);
         min_index = this->whichIsEqual16(min_num);
         return min_num;
@@ -479,15 +506,15 @@ struct BitVec16x08 {
 #if !defined(__AVX2__)
 
 struct BitVec16x16 {
-    BitVec16x08 low;
-    BitVec16x08 high;
+    BitVec08x16 low;
+    BitVec08x16 high;
 
     BitVec16x16() noexcept : low(), high() {}
 
     // non-explicit conversions intended
     BitVec16x16(const BitVec16x16 & src) noexcept = default;
 
-    BitVec16x16(const BitVec16x08 & _low, const BitVec16x08 & _high) noexcept
+    BitVec16x16(const BitVec08x16 & _low, const BitVec08x16 & _high) noexcept
         : low(_low), high(_high) {}
 
     BitVec16x16(uint8_t c00, uint8_t c01, uint8_t c02, uint8_t c03,
@@ -517,23 +544,23 @@ struct BitVec16x16 {
     BitVec16x16(uint64_t q00, uint64_t q01, uint64_t q02, uint64_t q03) :
             low(q00, q01), high(q02, q03) {}
 
-    BitVec16x16 & setLow(const BitVec16x08 & _low) {
+    BitVec16x16 & setLow(const BitVec08x16 & _low) {
         this->low = _low;
         return *this;
     }
 
-    BitVec16x16 & setHigh(const BitVec16x08 & _high) {
+    BitVec16x16 & setHigh(const BitVec08x16 & _high) {
         this->high = _high;
         return *this;
     }
 
-    BitVec16x16 & mergeFrom(const BitVec16x08 & _low, const BitVec16x08 & _high) {
+    BitVec16x16 & mergeFrom(const BitVec08x16 & _low, const BitVec08x16 & _high) {
         this->low = _low;
         this->high = _high;
         return *this;
     }
 
-    void splitTo(BitVec16x08 & _low, BitVec16x08 & _high) const {
+    void splitTo(BitVec08x16 & _low, BitVec08x16 & _high) const {
         _low = this->low;
         _high = this->high;
     }
@@ -579,8 +606,8 @@ struct BitVec16x16 {
         void * dest_mem_addr_low = dest_mem_addr;
         void * dest_mem_addr_high = (void * )((__m128i *)dest_mem_addr + 1);
 
-        BitVec16x08::copyAligned(src_mem_addr_low, dest_mem_addr_low);
-        BitVec16x08::copyAligned(src_mem_addr_high, dest_mem_addr_high);
+        BitVec08x16::copyAligned(src_mem_addr_low, dest_mem_addr_low);
+        BitVec08x16::copyAligned(src_mem_addr_high, dest_mem_addr_high);
 #else
         __m256i tmp = _mm256_load_si256((const __m256i *)src_mem_addr);
         _mm256_store_si256((__m256i *)dest_mem_addr, tmp);
@@ -594,8 +621,8 @@ struct BitVec16x16 {
         void * dest_mem_addr_low = dest_mem_addr;
         void * dest_mem_addr_high = (void * )((__m128i *)dest_mem_addr + 1);
 
-        BitVec16x08::copyUnaligned(src_mem_addr_low, dest_mem_addr_low);
-        BitVec16x08::copyUnaligned(src_mem_addr_high, dest_mem_addr_high);
+        BitVec08x16::copyUnaligned(src_mem_addr_low, dest_mem_addr_low);
+        BitVec08x16::copyUnaligned(src_mem_addr_high, dest_mem_addr_high);
 #else
         __m256i tmp = _mm256_loadu_si256((const __m256i *)src_mem_addr);
         _mm256_storeu_si256((__m256i *)dest_mem_addr, tmp);
@@ -759,7 +786,7 @@ struct BitVec16x16 {
     BitVec16x16 popcount16() const {
         static const size_t MaxBitsLow = (MaxBits < 8) ? MaxBits : 8;
         static const size_t MaxBitsHigh = ((MaxBits - MaxBitsLow) < 8) ? (MaxBits - MaxBitsLow) : 8;
-        return BitVec16x16(this->low.popcount16<MaxBitsLow>(), this->high.popcount16<MaxBitsHigh>());
+        return BitVec16x16(this->low.popcount16<MaxBits>(), this->high.popcount16<MaxBits>());
     }
 
     template <size_t MaxBits>
@@ -784,13 +811,13 @@ struct BitVec16x16 {
         }
         else if (MaxBits == 9) {
             this->low._minpos8<MaxBitsLow>(minpos.low);
-            BitVec16x08 minpos128 = _mm_min_epu8(minpos.low.xmm128, this->high.xmm128);
+            BitVec08x16 minpos128 = _mm_min_epu8(minpos.low.xmm128, this->high.xmm128);
             minpos.setLow(minpos128);
         }
         else {
             this->low._minpos8<MaxBitsLow>(minpos.low);
             this->high._minpos8<MaxBitsHigh>(minpos.high);
-            BitVec16x08 minpos128 = _mm_min_epu8(minpos.low.xmm128, minpos.high.xmm128);
+            BitVec08x16 minpos128 = _mm_min_epu8(minpos.low.xmm128, minpos.high.xmm128);
             minpos.setLow(minpos128);
         }
     }
@@ -806,7 +833,7 @@ struct BitVec16x16 {
         return min_num;
     }
 
-    inline uint32_t get_min_num(const BitVec16x08 & minpos) const {
+    inline uint32_t get_min_num(const BitVec08x16 & minpos) const {
 #if defined(__SSE4_1__)
         uint32_t min_num = (uint32_t)_mm_extract_epi16(minpos.xmm128, 0);
 #else
@@ -826,14 +853,14 @@ struct BitVec16x16 {
         else if (MaxBits == 9) {
             this->low._minpos16<MaxBitsLow>(minpos.low);
 
-            BitVec16x08 minpos128 = _mm_min_epu16(minpos.low.xmm128, this->high.xmm128);
+            BitVec08x16 minpos128 = _mm_min_epu16(minpos.low.xmm128, this->high.xmm128);
             minpos.setLow(minpos128);
         }
         else {
             this->low._minpos16<MaxBitsLow>(minpos.low);
             this->high._minpos16<MaxBitsHigh>(minpos.high);
 
-            BitVec16x08 minpos128 = _mm_min_epu16(minpos.low.xmm128, minpos.high.xmm128);
+            BitVec08x16 minpos128 = _mm_min_epu16(minpos.low.xmm128, minpos.high.xmm128);
             minpos.setLow(minpos128);
         }
     }
@@ -841,7 +868,7 @@ struct BitVec16x16 {
 #if defined(__SSE4_1__)
 
     template <size_t MaxBits>
-    void _minpos16_and_index(BitVec16x16 & minpos, BitVec16x08 & result) const {
+    void _minpos16_and_index(BitVec16x16 & minpos, BitVec08x16 & result) const {
         static const size_t MaxBitsLow = (MaxBits < 8) ? MaxBits : 8;
         static const size_t MaxBitsHigh = ((MaxBits - MaxBitsLow) < 8) ? (MaxBits - MaxBitsLow) : 8;
 
@@ -861,7 +888,7 @@ struct BitVec16x16 {
     }
 
     template <size_t MaxBits>
-    int _minpos16_get_index(BitVec16x16 & minpos, const BitVec16x08 & result) const {
+    int _minpos16_get_index(BitVec16x16 & minpos, const BitVec08x16 & result) const {
         int min_index;
         if (MaxBits <= 8) {
             min_index = _mm_extract_epi16(minpos.low.xmm128, 1);
@@ -913,7 +940,7 @@ struct BitVec16x16 {
         }
         else if (MaxBits == 9) {
             this->low._minpos16<MaxBitsLow>(minpos.low);
-            BitVec16x08 result = _mm_min_epu16(minpos.low.xmm128, this->high.xmm128);
+            BitVec08x16 result = _mm_min_epu16(minpos.low.xmm128, this->high.xmm128);
             min_num = (uint32_t)_mm_extract_epi16(result.xmm128, 0);
 
             __m128i equal_result_low = _mm_cmpeq_epi16(result.xmm128, minpos.low.xmm128);
@@ -935,7 +962,7 @@ struct BitVec16x16 {
         else {
             this->low._minpos16<MaxBitsLow>(minpos.low);
             this->high._minpos16<MaxBitsHigh>(minpos.high);
-            BitVec16x08 result = _mm_min_epu16(minpos.low.xmm128, minpos.high.xmm128);
+            BitVec08x16 result = _mm_min_epu16(minpos.low.xmm128, minpos.high.xmm128);
             min_num = (uint32_t)_mm_extract_epi16(result.xmm128, 0);
 
             __m128i equal_result_low = _mm_cmpeq_epi16(result.xmm128, minpos.low.xmm128);
@@ -966,7 +993,7 @@ struct BitVec16x16 {
     uint32_t minpos16(uint32_t & old_min_num, int & min_index) const {
         BitVec16x16 minpos;
 #if defined(__SSE4_1__)
-        BitVec16x08 result;
+        BitVec08x16 result;
         this->_minpos16_and_index<MaxBits>(minpos, result);
         uint32_t min_num = this->get_min_num(result);
         if (min_num < old_min_num) {
@@ -1025,7 +1052,7 @@ struct BitVec16x16 {
     // non-explicit conversions intended
     BitVec16x16(const BitVec16x16 & src) noexcept = default;
     
-    BitVec16x16(const BitVec16x08 & low, const BitVec16x08 & high) noexcept
+    BitVec16x16(const BitVec08x16 & low, const BitVec08x16 & high) noexcept
         : ymm256(_mm256_set_m128i(high.xmm128, low.xmm128)) {}
 
     BitVec16x16(uint8_t c00, uint8_t c01, uint8_t c02, uint8_t c03,
@@ -1057,21 +1084,21 @@ struct BitVec16x16 {
     BitVec16x16(uint64_t q00, uint64_t q01, uint64_t q02, uint64_t q03) :
             ymm256(_mm256_setr_epi64x(q00, q01, q02, q03)) {}
 
-    BitVec16x16 & mergeFrom(const BitVec16x08 & low, const BitVec16x08 & high) {
+    BitVec16x16 & mergeFrom(const BitVec08x16 & low, const BitVec08x16 & high) {
         this->ymm256 = _mm256_set_m128i(high.xmm128, low.xmm128);
         return *this;
     }
 
-    void castTo(BitVec16x08 & low) const {
+    void castTo(BitVec08x16 & low) const {
         low = _mm256_castsi256_si128(this->ymm256);
     }
 
-    void splitTo(BitVec16x08 & low, BitVec16x08 & high) const {
+    void splitTo(BitVec08x16 & low, BitVec08x16 & high) const {
         low = _mm256_castsi256_si128(this->ymm256);
         high = _mm256_castsi256_si128(_mm256_bsrli_epi128(this->ymm256, 8));
     }
 
-    BitVec16x08 getLow() const {
+    BitVec08x16 getLow() const {
 #if 1
         return _mm256_castsi256_si128(this->ymm256);
 #else
@@ -1079,7 +1106,7 @@ struct BitVec16x16 {
 #endif
     }
 
-    BitVec16x08 getHigh() const {
+    BitVec08x16 getHigh() const {
 #if 1
         return _mm256_castsi256_si128(_mm256_bsrli_epi128(this->ymm256, 8));
 #else
@@ -1367,7 +1394,7 @@ struct BitVec16x16 {
         uint32_t min_num = _mm256_extract_epi16(minpos.ymm256, 0);
 #else
         //return _mm256_cvtsi256_si32(minpos.ymm256) & 0x000000FFUL;
-        BitVec16x08 minpos128;
+        BitVec08x16 minpos128;
         minpos.castTo(minpos128);
         uint32_t min_num = _mm_extract_epi16(minpos128.xmm128, 0);
 #endif
@@ -1407,7 +1434,7 @@ struct BitVec16x16 {
         uint32_t min_num = (uint32_t)_mm256_extract_epi16(minpos.ymm256, 0);
 #else
         //return _mm256_cvtsi256_si32(minpos.ymm256) & 0x000000FFUL;
-        BitVec16x08 minpos128;
+        BitVec08x16 minpos128;
         minpos.castTo(minpos128);
         uint32_t min_num = (uint32_t)_mm_extract_epi16(minpos128.xmm128, 0);
 #endif
