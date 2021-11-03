@@ -313,6 +313,7 @@ struct BitVec08x16 {
         return _mm_popcnt_epi16(this->xmm128);
 #elif defined(__SSSE3__)
         if (MaxBits <= 8) {
+            // Note: Ensure that the highest 8 bits must be 0.
             __m128i lookup  = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
             __m128i mask4   = _mm_set1_epi16(0x0F);
             __m128i sum_0_3 = _mm_shuffle_epi8(lookup, _mm_and_si128(this->xmm128, mask4));
@@ -336,8 +337,8 @@ struct BitVec08x16 {
             __m128i mask4      = _mm_set1_epi16(0x0F0F);
             __m128i sum_00_07  = _mm_shuffle_epi8(lookup, _mm_and_si128(this->xmm128, mask4));
             __m128i even_bytes = _mm_srli_epi16(this->xmm128, 4);
-            __m128i sum_07_15  = _mm_shuffle_epi8(lookup, _mm_and_si128(even_bytes, mask4));
-            __m128i sum_00_15  = _mm_add_epi16(sum_00_07, sum_07_15);
+            __m128i sum_08_15  = _mm_shuffle_epi8(lookup, _mm_and_si128(even_bytes, mask4));
+            __m128i sum_00_15  = _mm_add_epi16(sum_00_07, sum_08_15);
             __m128i mask_8     = _mm_set1_epi16(0xFF);
             __m128i sum_odd_8  = _mm_and_si128(sum_00_15, mask_8);
             __m128i sum_even_8 = _mm_and_si128(_mm_srli_epi16(sum_00_15, 8), mask_8);
@@ -363,18 +364,6 @@ struct BitVec08x16 {
                           _mm_and_si128(_mm_srli_si128(x, 1), mask3));
         return x;
 #endif
-    }
-
-    template <size_t MaxBits>
-    void popcount16(void * mem_addr) const {
-        BitVec08x16 popcnt16 = this->popcount16<MaxBits>();
-        popcnt16.saveAligned(mem_addr);
-    }
-
-    template <size_t MaxBits>
-    void popcount16_unaligned(void * mem_addr) const {
-        BitVec08x16 popcnt16 = this->popcount16<MaxBits>();
-        popcnt16.saveUnaligned(mem_addr);
     }
 
     template <size_t MaxLength>
@@ -805,19 +794,7 @@ struct BitVec16x16 {
     BitVec16x16 popcount16() const {
         static const size_t MaxBitsLow = (MaxBits < 8) ? MaxBits : 8;
         static const size_t MaxBitsHigh = ((MaxBits - MaxBitsLow) < 8) ? (MaxBits - MaxBitsLow) : 8;
-        return BitVec16x16(this->low.popcount16<MaxBits>(), this->high.popcount16<MaxBits>());
-    }
-
-    template <size_t MaxBits>
-    void popcount16(void * mem_addr) const {
-        BitVec16x16 popcnt16 = this->popcount16<MaxBits>();
-        popcnt16.saveAligned(mem_addr);
-    }
-
-    template <size_t MaxBits>
-    void popcount16_unaligned(void * mem_addr) const {
-        BitVec16x16 popcnt16 = this->popcount16<MaxBits>();
-        popcnt16.saveUnaligned(mem_addr);
+        return BitVec16x16(this->low.popcount16<MaxBitsLow>(), this->high.popcount16<MaxBitsHigh>());
     }
 
     template <size_t MaxLength>
@@ -1329,6 +1306,7 @@ struct BitVec16x16 {
         return _mm256_popcnt_epi16(this->ymm256);
 #else
         if (MaxBits <= 8) {
+            // Note: Ensure that the highest 8 bits must be 0.
             __m256i lookup  = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
                                                0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
             __m256i mask4   = _mm256_set1_epi16(0x0F);
@@ -1350,32 +1328,20 @@ struct BitVec16x16 {
             return result;
         }
         else {
-            __m256i lookup    = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
-                                                 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
-            __m256i mask4     = _mm256_set1_epi16(0x0F);
-            __m256i sum_00_03 = _mm256_shuffle_epi8(lookup, _mm256_and_si256(this->ymm256, mask4));
-            __m256i sum_04_07 = _mm256_shuffle_epi8(lookup, _mm256_srli_epi16(this->ymm256, 4));
-            __m256i sum_00_07 = _mm256_add_epi16(sum_00_03, sum_04_07);
-            __m256i high8     = _mm256_srli_epi16(this->ymm256, 8);
-            __m256i sum_08_11 = _mm256_shuffle_epi8(lookup, _mm256_and_si256(high8, mask4));
-            __m256i sum_12_15 = _mm256_shuffle_epi8(lookup, _mm256_srli_epi16(high8, 4));
-            __m256i sum_08_15 = _mm256_add_epi16(sum_08_11, sum_12_15);
-            __m256i result    = _mm256_add_epi16(sum_00_07, sum_08_15);
+            __m256i lookup     = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+                                                  0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+            __m256i mask4      = _mm256_set1_epi16(0x0F0F);
+            __m256i sum_00_07  = _mm256_shuffle_epi8(lookup, _mm256_and_si256(this->ymm256, mask4));
+            __m128i even_bytes = _mm256_srli_epi16(this->ymm256, 4);
+            __m256i sum_08_15  = _mm256_shuffle_epi8(lookup, _mm256_and_si256(even_bytes, mask4));
+            __m256i sum_00_15  = _mm256_add_epi16(sum_00_07, sum_08_15);
+            __m256i mask_8     = _mm256_set1_epi16(0xFF);
+            __m256i sum_odd_8  = _mm256_and_si256(sum_00_15, mask_8);
+            __m256i sum_even_8 = _mm256_and_si256(_mm256_srli_epi16(sum_00_15, 8), mask_8);
+            __m256i result     = _mm256_add_epi16(sum_odd_8, sum_even_8);
             return result;
         }
 #endif // __AVX512__
-    }
-
-    template <size_t MaxBits>
-    void popcount16(void * mem_addr) const {
-        BitVec16x16 popcnt16 = this->popcount16<MaxBits>();
-        popcnt16.saveAligned(mem_addr);
-    }
-
-    template <size_t MaxBits>
-    void popcount16_unaligned(void * mem_addr) const {
-        BitVec16x16 popcnt16 = this->popcount16<MaxBits>();
-        popcnt16.saveUnaligned(mem_addr);
     }
 
     template <size_t MaxLength>
