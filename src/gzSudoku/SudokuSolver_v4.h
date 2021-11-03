@@ -596,7 +596,8 @@ private:
     inline uint32_t count_all_literal_size_no_illegal(uint32_t & out_min_literal_index) {
         BitVec16x16 disable_mask;
         BitVec16x16 numbits_mask;
-        numbits_mask.fill_u16(kAllNumberBits);
+        //numbits_mask.fill_u16(kAllNumberBits);
+        numbits_mask.fill_u16(0xFFFF);
 
         // Position (Box-Cell) literal
         uint32_t min_cell_size = 255;

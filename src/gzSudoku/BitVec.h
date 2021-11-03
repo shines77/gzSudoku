@@ -332,16 +332,16 @@ struct BitVec08x16 {
             return result;
         }
         else {
-            __m128i lookup    = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
-            __m128i mask4     = _mm_set1_epi16(0x0F);
-            __m128i sum_0_3   = _mm_shuffle_epi8(lookup, _mm_and_si128(this->xmm128, mask4));
-            __m128i sum_4_7   = _mm_shuffle_epi8(lookup, _mm_srli_epi16(this->xmm128, 4));
-            __m128i sum_00_07 = _mm_add_epi16(sum_0_3, sum_4_7);
-            __m128i high8     = _mm_srli_epi16(this->xmm128, 8);
-            __m128i sum_08_11 = _mm_shuffle_epi8(lookup, _mm_and_si128(high8, mask4));
-            __m128i sum_12_15 = _mm_shuffle_epi8(lookup, _mm_srli_epi16(high8, 4));
-            __m128i sum_08_15 = _mm_add_epi16(sum_08_11, sum_12_15);
-            __m128i result    = _mm_add_epi16(sum_00_07, sum_08_15);
+            __m128i lookup     = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+            __m128i mask4      = _mm_set1_epi16(0x0F0F);
+            __m128i sum_00_07  = _mm_shuffle_epi8(lookup, _mm_and_si128(this->xmm128, mask4));
+            __m128i even_bytes = _mm_srli_epi16(this->xmm128, 4);
+            __m128i sum_07_15  = _mm_shuffle_epi8(lookup, _mm_and_si128(even_bytes, mask4));
+            __m128i sum_00_15  = _mm_add_epi16(sum_00_07, sum_07_15);
+            __m128i mask_8     = _mm_set1_epi16(0xFF);
+            __m128i sum_odd_8  = _mm_and_si128(sum_00_15, mask_8);
+            __m128i sum_even_8 = _mm_and_si128(_mm_srli_epi16(sum_00_15, 8), mask_8);
+            __m128i result     = _mm_add_epi16(sum_odd_8, sum_even_8);
             return result;
         }
 #else
