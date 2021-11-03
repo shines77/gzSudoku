@@ -792,9 +792,7 @@ struct BitVec16x16 {
 
     template <size_t MaxBits>
     BitVec16x16 popcount16() const {
-        static const size_t MaxBitsLow = (MaxBits < 8) ? MaxBits : 8;
-        static const size_t MaxBitsHigh = ((MaxBits - MaxBitsLow) < 8) ? (MaxBits - MaxBitsLow) : 8;
-        return BitVec16x16(this->low.popcount16<MaxBitsLow>(), this->high.popcount16<MaxBitsHigh>());
+        return BitVec16x16(this->low.popcount16<MaxBits>(), this->high.popcount16<MaxBits>());
     }
 
     template <size_t MaxLength>

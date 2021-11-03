@@ -615,7 +615,7 @@ private:
 
             BitVec16x16 popcnt16 = box_bits.popcount16<Numbers>();
 #if V4_SAVE_COUNT_SIZE
-            popcnt16.saveAligned(&this->count_.sizes.box_cells[box * BoxSize16]);
+            popcnt16.saveAligned(&this->count_.sizes.box_cells[box][0]);
 #endif
             int min_index = -1;
             uint32_t min_size = popcnt16.minpos16<Numbers>(min_cell_size, min_index);
@@ -651,7 +651,7 @@ private:
 
             BitVec16x16 popcnt16 = num_row_bits.popcount16<Cols>();
 #if V4_SAVE_COUNT_SIZE
-            popcnt16.saveAligned(&this->count_.sizes.num_rows[num * Rows16]);
+            popcnt16.saveAligned(&this->count_.sizes.num_rows[num][0]);
 #endif
             int min_index = -1;
             uint32_t min_size = popcnt16.minpos16<Cols>(min_row_size, min_index);
@@ -687,7 +687,7 @@ private:
 
             BitVec16x16 popcnt16 = num_col_bits.popcount16<Rows>();
 #if V4_SAVE_COUNT_SIZE
-            popcnt16.saveAligned(&this->count_.sizes.num_cols[num * Cols16]);
+            popcnt16.saveAligned(&this->count_.sizes.num_cols[num][0]);
 #endif
             int min_index = -1;
             uint32_t min_size = popcnt16.minpos16<Rows>(min_col_size, min_index);
@@ -723,7 +723,7 @@ private:
 
             BitVec16x16 popcnt16 = num_box_bits.popcount16<BoxSize>();
 #if V4_SAVE_COUNT_SIZE
-            popcnt16.saveAligned(&this->count_.sizes.num_boxes[num * Boxes16]);
+            popcnt16.saveAligned(&this->count_.sizes.num_boxes[num][0]);
 #endif
             int min_index = -1;
             uint32_t min_size = popcnt16.minpos16<BoxSize>(min_box_size, min_index);
