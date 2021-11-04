@@ -63,7 +63,7 @@ static const size_t kEnableV4Solution =   1;
 // Index: [0 - 4]
 #define TEST_CASE_INDEX         4
 
-void make_sudoku_board(typename Board & board, size_t index)
+void make_sudoku_board(Board & board, size_t index)
 {
     for (size_t row = 0; row < Sudoku::kRows; row++) {
         size_t row_base = row * 9;
@@ -90,7 +90,7 @@ void make_sudoku_board(typename Board & board, size_t index)
     }
 }
 
-size_t read_sudoku_board(typename Board & board, char line[256])
+size_t read_sudoku_board(Board & board, char line[256])
 {
     char * pline = line;
     // Skip the white spaces
