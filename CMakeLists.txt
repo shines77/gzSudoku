@@ -48,7 +48,7 @@ include_directories(include)
 include_directories(src)
 
 set(SOURCE_FILES
-    src/gzSudoku/gzSudokuMain.cpp
+    src/gzSudoku/SudokuMain.cpp
     )
 
 add_custom_target(release
