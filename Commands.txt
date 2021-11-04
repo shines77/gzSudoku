@@ -1,7 +1,7 @@
 
 Windows:
 
-.\j=gzSudoku.exe ..\..\..\data\puzzles02_17_clue
+gzSudoku.exe ..\..\..\data\puzzles02_17_clue
 
 Linux:
 
