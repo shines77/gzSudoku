@@ -25,6 +25,8 @@
 
 //#undef __SSE4_1__
 #undef __AVX2__
+#undef __AVX512VL__
+#undef __AVX512F__
 
 // For SSE2, SSE3, SSSE3, SSE 4.1, AVX, AVX2
 #if defined(_MSC_VER)
@@ -580,7 +582,7 @@ struct BitVec08x16 {
             high64 = _mm_or_si128(high64, high_9_index);
             __m128i min_num_all = _mm_min_epu16(minpos_low, high64);
             __m128i min_in_high_mask = _mm_cmpgt_epi16(min_num_all, high64);
-            __m128i minpos_8_low = _mm_andnot_si128(minpos_low, min_in_high_mask)
+            __m128i minpos_8_low = _mm_andnot_si128(minpos_low, min_in_high_mask);
             __m128i minpos_8_high = _mm_and_si128(high64, min_in_high_mask);
             __m128i minpos_u16 = _mm_and_si128(minpos_8_low, minpos_8_high);
             //minpos = _mm_packus_epi16(minpos_u16, zero);
@@ -596,7 +598,7 @@ struct BitVec08x16 {
             minpos_high = _mm_add_epi16(minpos_high, high_index_addition);
             __m128i min_num_all = _mm_min_epu16(minpos_low, minpos_high);
             __m128i min_in_high_mask = _mm_cmpgt_epi16(min_num_all, minpos_high);
-            __m128i minpos_8_low = _mm_andnot_si128(minpos_low, min_in_high_mask)
+            __m128i minpos_8_low = _mm_andnot_si128(minpos_low, min_in_high_mask);
             __m128i minpos_8_high = _mm_and_si128(high64, min_in_high_mask);
             __m128i minpos_u16 = _mm_and_si128(minpos_8_low, minpos_8_high);
             //minpos = _mm_packus_epi16(minpos_u16, zero);
@@ -1065,7 +1067,7 @@ struct BitVec16x16 {
 
     template <size_t MaxLength>
     void min_i16(BitVec16x16 & min_num) const {
-        static const size_t MaxLenLow = (MaxLength < 8) ? MaxBits : 8;
+        static const size_t MaxLenLow = (MaxLength < 8) ? MaxLength : 8;
         static const size_t MaxLenHigh = ((MaxLength - MaxLenLow) < 8) ? (MaxLength - MaxLenLow) : 8;
 
         if (MaxBits <= 8) {
@@ -1088,7 +1090,7 @@ struct BitVec16x16 {
 
     template <size_t MaxLength>
     void min_u16(BitVec16x16 & min_num) const {
-        static const size_t MaxLenLow = (MaxLength < 8) ? MaxBits : 8;
+        static const size_t MaxLenLow = (MaxLength < 8) ? MaxLength : 8;
         static const size_t MaxLenHigh = ((MaxLength - MaxLenLow) < 8) ? (MaxLength - MaxLenLow) : 8;
 
         if (MaxBits <= 8) {
@@ -1369,7 +1371,7 @@ struct BitVec16x16 {
 
 #endif // >= SSE2 && !__AVX2__
 
-#if defined(__AVX2__) || defined(__AVX512VL__)
+#if defined(__AVX2__) || defined(__AVX512VL__) || defined(__AVX512F__)
 
 struct BitVec16x16 {
     __m256i ymm256;
@@ -1928,7 +1930,7 @@ struct BitVec16x16 {
     }
 };
 
-#endif // !__AVX2__
+#endif // __AVX2__
 
 } // namespace gzSudoku
 
