@@ -1070,10 +1070,10 @@ struct BitVec16x16 {
         static const size_t MaxLenLow = (MaxLength < 8) ? MaxLength : 8;
         static const size_t MaxLenHigh = ((MaxLength - MaxLenLow) < 8) ? (MaxLength - MaxLenLow) : 8;
 
-        if (MaxBits <= 8) {
+        if (MaxLength <= 8) {
             this->low.min_i16<MaxLenLow>(min_num.low);
         }
-        else if (MaxBits == 9) {
+        else if (MaxLength == 9) {
             this->low.min_i16<MaxLenLow>(min_num.low);
 
             BitVec08x16 minnum_16 = _mm_min_epi16(min_num.low.xmm128, this->high.xmm128);
@@ -1093,10 +1093,10 @@ struct BitVec16x16 {
         static const size_t MaxLenLow = (MaxLength < 8) ? MaxLength : 8;
         static const size_t MaxLenHigh = ((MaxLength - MaxLenLow) < 8) ? (MaxLength - MaxLenLow) : 8;
 
-        if (MaxBits <= 8) {
+        if (MaxLength <= 8) {
             this->low.min_u16<MaxLenLow>(min_num.low);
         }
-        else if (MaxBits == 9) {
+        else if (MaxLength == 9) {
             this->low.min_u16<MaxLenLow>(min_num.low);
 
             BitVec08x16 minnum_16 = _mm_min_epu16(min_num.low.xmm128, this->high.xmm128);
@@ -1263,7 +1263,7 @@ struct BitVec16x16 {
             this->high.minpos16<MaxLenHigh>(minpos.high);
 
             BitVec08x16 min_result = _mm_min_epu16(minpos.low.xmm128, minpos.high.xmm128);
-            min_num = (uint32_t)_mm_extract_epi16(result.xmm128, 0);
+            min_num = (uint32_t)_mm_extract_epi16(min_result.xmm128, 0);
 
             __m128i equal_result_low = _mm_cmpeq_epi16(min_result.xmm128, minpos.low.xmm128);
             int equal_mask_low = _mm_movemask_epi8(equal_result_low);
