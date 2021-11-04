@@ -158,7 +158,7 @@ template <typename SudokuSolver>
 void run_sudoku_test(const char * filename, const char * name)
 {
     typedef typename SudokuSolver::basic_solver_t   BasicSolverTy;
-    typedef typename SudokuSolver::solver_type      SolverTy;
+    //typedef typename SudokuSolver::solver_type      SolverTy;
 
     //printf("------------------------------------------\n\n");
     printf("gzSudoku: %s::Solver\n\n", name);

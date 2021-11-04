@@ -5,4 +5,4 @@ Windows:
 
 Linux:
 
-gzSudoku ./data/puzzles02_17_clue
+./gzSudoku ./data/puzzles02_17_clue
