@@ -523,19 +523,19 @@ struct BitVec08x16 {
 
     template <size_t MaxLength>
     void min_i16(BitVec08x16 & min_num) const {
-        __m128i numbers = this->m128;
+        __m128i nums = this->m128;
         if (MaxLength <= 4) {
-            numbers = _mm_min_epi16(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(2, 3, 0, 1)));
+            nums = _mm_min_epi16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
 
             // The minimum number of first 4 x int16_t
-            min_num = _mm_min_epi16(numbers, _mm_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            min_num = _mm_min_epi16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
         }
         else {
-            numbers = _mm_min_epi16(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(1, 0, 3, 2)));
-            numbers = _mm_min_epi16(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm_min_epi16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 0, 3, 2)));
+            nums = _mm_min_epi16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
 
             // The minimum number of total 8 x int16_t
-            min_num = _mm_min_epi16(numbers, _mm_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            min_num = _mm_min_epi16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
         }
     }
 
@@ -544,19 +544,19 @@ struct BitVec08x16 {
 #if defined(__SSE4_1__)
         min_num = _mm_minpos_epu16(this->m128);
 #else
-        __m128i numbers = this->m128;
+        __m128i nums = this->m128;
         if (MaxLength <= 4) {
-            numbers = _mm_min_epu16(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(2, 3, 0, 1)));
+            nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
 
             // The minimum number of first 4 x int16_t
-            min_num = _mm_min_epu16(numbers, _mm_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            min_num = _mm_min_epu16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
         }
         else {
-            numbers = _mm_min_epu16(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(1, 0, 3, 2)));
-            numbers = _mm_min_epu16(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 0, 3, 2)));
+            nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
 
             // The minimum number of total 8 x int16_t
-            min_num = _mm_min_epu16(numbers, _mm_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            min_num = _mm_min_epu16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
         }
 #endif
     }   
@@ -628,20 +628,20 @@ struct BitVec08x16 {
         // See: https://stackoverflow.com/questions/22256525/horizontal-minimum-and-maximum-using-sse
         //
         if (MaxLength <= 8) {
-            BitVec08x16 numbers = this->m128;
-            numbers = _mm_min_epu8(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(1, 0, 3, 2)));
-            numbers = _mm_min_epu8(numbers, _mm_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            BitVec08x16 nums = this->m128;
+            nums = _mm_min_epu8(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 0, 3, 2)));
+            nums = _mm_min_epu8(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
 
-            BitVec08x16 minnum_u8 = _mm_min_epu8(numbers, _mm_srli_epi16(numbers, 8));
+            BitVec08x16 minnum_u8 = _mm_min_epu8(nums, _mm_srli_epi16(nums, 8));
             minpos = minnum_u8;
         }
         else {
-            BitVec08x16 numbers = this->m128;
-            numbers = _mm_min_epu8(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(3, 2, 3, 2)));
-            numbers = _mm_min_epu8(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
-            numbers = _mm_min_epu8(numbers, _mm_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            BitVec08x16 nums = this->m128;
+            nums = _mm_min_epu8(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(3, 2, 3, 2)));
+            nums = _mm_min_epu8(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm_min_epu8(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
 
-            BitVec08x16 minnum_u8 = _mm_min_epu8(numbers, _mm_srli_epi16(numbers, 8));
+            BitVec08x16 minnum_u8 = _mm_min_epu8(nums, _mm_srli_epi16(nums, 8));
             minpos = minnum_u8;
         }
 #endif // __SSE4_1__
@@ -656,12 +656,14 @@ struct BitVec08x16 {
     }
 
     static uint32_t minpos16_get_num(const BitVec08x16 & minpos) {
-        uint32_t min_num = (uint32_t)_mm_extract_epi16(minpos.m128, 0);
+        // _mm_cvtsi128_si32(m128i) is faster than _mm_extract_epi16(m128i, index)
+        uint32_t min_num = (uint32_t)SSE::_mm_cvtsi128_si32_low(minpos.m128);
         return min_num;
     }
 
     static uint32_t minpos16_get_index(const BitVec08x16 & minpos) {
-        uint32_t index = (uint32_t)_mm_extract_epi16(minpos.m128, 1);
+        // _mm_cvtsi128_si32(m128i) is faster than _mm_extract_epi16(m128i, index)
+        uint32_t index = (uint32_t)SSE::_mm_cvtsi128_si32_high(minpos.m128);
         return index;
     }
 
@@ -671,26 +673,26 @@ struct BitVec08x16 {
         minpos = _mm_minpos_epu16(this->m128);
 #else
         __m128i minnum_u16;
-        __m128i numbers = this->m128;
+        __m128i nums = this->m128;
         if (MaxBits <= 4) {
-            numbers = _mm_min_epu16(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(2, 3, 0, 1)));
+            nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
 
             // The minimum number of first 4 x int16_t
-            minnum_u16 = _mm_min_epu16(numbers, _mm_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            minnum_u16 = _mm_min_epu16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
         }
         else {
-            numbers = _mm_min_epu16(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(1, 0, 3, 2)));
-            numbers = _mm_min_epu16(numbers, _mm_shuffle_epi32(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 0, 3, 2)));
+            nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
 
             // The minimum number of total 8 x int16_t
-            minnum_u16 = _mm_min_epu16(numbers, _mm_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            minnum_u16 = _mm_min_epu16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
         }
 
         // TODO: Mixed the min_num (16bit) and index (3bit) to minpos info (32bit).
 
         // Get the index of minimum number
-        uint32_t min_num = _mm_extract_epi16(minnum_u16, 0);
-        uint32_t min_index = (uint32_t)this->indexOfIsEqual16(minnum_u16);
+        uint32_t min_num = SSE::_mm_cvtsi128_si32_low(minnum_u16);
+        uint32_t min_index = (uint32_t)this->indexOfIsEqual16(min_num);
 
         uint32_t min_and_index = min_num | (min_index << 16);
         minpos = _mm_cvtsi32_si128(min_and_index);
@@ -1832,30 +1834,30 @@ struct BitVec16x16 {
 
     template <size_t MaxLength>
     void minpos8(BitVec16x16 & minpos) const {
-        __m256i numbers = this->m256;
+        __m256i nums = this->m256;
         if (MaxLength <= 8) {
-            numbers = _mm256_min_epu8(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(2, 3, 0, 1)));
-            numbers = _mm256_min_epu8(numbers, _mm256_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm256_min_epu8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
+            nums = _mm256_min_epu8(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
 
             // The minimum number of first 8 x int8_t
-            minpos = _mm256_min_epu8(numbers, _mm256_srli_epi16(numbers, 8));
+            minpos = _mm256_min_epu8(nums, _mm256_srli_epi16(nums, 8));
         }
         else if (MaxLength <= 16) {
-            numbers = _mm256_min_epu8(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(3, 2, 3, 2)));
-            numbers = _mm256_min_epu8(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
-            numbers = _mm256_min_epu8(numbers, _mm256_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm256_min_epu8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(3, 2, 3, 2)));
+            nums = _mm256_min_epu8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm256_min_epu8(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
 
             // The minimum number of first 16 x int8_t
-            minpos = _mm256_min_epu8(numbers, _mm256_srli_epi16(numbers, 8));
+            minpos = _mm256_min_epu8(nums, _mm256_srli_epi16(nums, 8));
         }
         else {
-            numbers = _mm256_min_epu8(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(3, 2, 3, 2)));
-            numbers = _mm256_min_epu8(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
-            numbers = _mm256_min_epu8(numbers, _mm256_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
-            numbers = _mm256_min_epu8(numbers, _mm256_srli_epi16(numbers, 8));
+            nums = _mm256_min_epu8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(3, 2, 3, 2)));
+            nums = _mm256_min_epu8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm256_min_epu8(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm256_min_epu8(nums, _mm256_srli_epi16(nums, 8));
 
             // The minimum number of total 32 x int8_t
-            minpos = _mm256_min_epu8(numbers, _mm256_srli_si256(numbers, 16));
+            minpos = _mm256_min_epu8(nums, _mm256_srli_si256(nums, 16));
         }
     }
 
@@ -1879,30 +1881,30 @@ struct BitVec16x16 {
 
     template <size_t MaxLength>
     void minpos16(BitVec16x16 & minpos) const {
-        __m256i numbers = this->m256;
+        __m256i nums = this->m256;
         if (MaxLength <= 4) {
-            numbers = _mm256_min_epu16(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(2, 3, 0, 1)));
+            nums = _mm256_min_epu16(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
 
             // The minimum number of first 4 x int16_t
-            __m256i minpos_u16 = _mm256_min_epu16(numbers, _mm256_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            __m256i minpos_u16 = _mm256_min_epu16(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
             minpos = minpos_u16;
         }
         else if (MaxLength <= 8) {
-            numbers = _mm256_min_epu16(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(1, 0, 3, 2)));
-            numbers = _mm256_min_epu16(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm256_min_epu16(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(1, 0, 3, 2)));
+            nums = _mm256_min_epu16(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
 
             // The minimum number of first 8 x int16_t
-            __m256i minpos_u16 = _mm256_min_epu16(numbers, _mm256_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            __m256i minpos_u16 = _mm256_min_epu16(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
             minpos = minpos_u16;
         }
         else {
-            numbers = _mm256_min_epu16(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(3, 2, 3, 2)));
-            numbers = _mm256_min_epu16(numbers, _mm256_shuffle_epi32(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
-            numbers = _mm256_min_epu16(numbers, _mm256_shufflelo_epi16(numbers, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm256_min_epu16(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(3, 2, 3, 2)));
+            nums = _mm256_min_epu16(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm256_min_epu16(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
 
             // The minimum number of total 16 x int16_t
-            __m256i numbers_high = _mm256_permute4x64_epi64(numbers, _MM_SHUFFLE(1, 0, 3, 2));
-            __m256i minpos_u16 = _mm256_min_epu16(numbers, numbers_high);
+            __m256i nums_high = _mm256_permute4x64_epi64(nums, _MM_SHUFFLE(1, 0, 3, 2));
+            __m256i minpos_u16 = _mm256_min_epu16(nums, nums_high);
             minpos = minpos_u16;
         }
     }
