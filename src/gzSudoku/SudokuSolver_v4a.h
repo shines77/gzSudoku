@@ -37,7 +37,7 @@
 #include "BitVec.h"
 
 #define V4A_LITERAL_ORDER_MODE   0
-#define V4A_SAVE_COUNT_SIZE      0
+#define V4A_SAVE_COUNT_SIZE      1
 
 namespace gzSudoku {
 namespace v4a {
@@ -582,7 +582,7 @@ private:
     }
 
     inline void updateNeighborCells(InitState & state, size_t fill_pos, size_t box, size_t num) {
-        BitVec16x16 cells16, mask16;
+        BitVec16x16_AVX cells16, mask16;
         void * pCells16, * pMask16;
         const neighbor_boxes_t & neighborBoxes = Static.neighbor_boxes[box];
         const PackedBitSet3D<Boxes, BoxSize16, Numbers16> & neighbors_mask
@@ -633,9 +633,9 @@ private:
         uint32_t min_cell_size = 255;
         uint32_t min_cell_index = uint32_t(-1);
         for (size_t box = 0; box < Boxes; box++) {
-            void * bitset = (void * )&this->init_state_.box_cell_nums[box];
+            void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
             BitVec16x16 box_bits;
-            box_bits.loadAligned(bitset);
+            box_bits.loadAligned(pCells16);
 
             disable_mask = box_bits.whichIsZeros();
             disable_mask._and(numbits_mask);
@@ -668,9 +668,9 @@ private:
         uint32_t min_row_size = 255;
         uint32_t min_row_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * bitset = (void * )&this->init_state_.num_row_cols[num];
+            void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
             BitVec16x16 num_row_bits;
-            num_row_bits.loadAligned(bitset);
+            num_row_bits.loadAligned(pCells16);
 
             disable_mask = num_row_bits.whichIsZeros();
             disable_mask._and(num_rows_mask);
@@ -703,9 +703,9 @@ private:
         uint32_t min_col_size = 255;
         uint32_t min_col_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * bitset = (void * )&this->init_state_.num_col_rows[num];
+            void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
             BitVec16x16 num_col_bits;
-            num_col_bits.loadAligned(bitset);
+            num_col_bits.loadAligned(pCells16);
 
             disable_mask = num_col_bits.whichIsZeros();
             disable_mask._and(num_cols_mask);
@@ -738,9 +738,9 @@ private:
         uint32_t min_box_size = 255;
         uint32_t min_box_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * bitset = (void * )&this->init_state_.num_box_cells[num];
+            void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
             BitVec16x16 num_box_bits;
-            num_box_bits.loadAligned(bitset);
+            num_box_bits.loadAligned(pCells16);
 
             disable_mask = num_box_bits.whichIsZeros();
             disable_mask._and(num_box_mask);
