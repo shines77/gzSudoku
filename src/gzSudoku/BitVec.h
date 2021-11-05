@@ -44,11 +44,16 @@
 #else
 #include <x86intrin.h>
 #define _mm_setr_epi64x(high, low) \
-            _mm_setr_epi64(_mm_cvtsi64_m64(high), _mm_cvtsi64_m64(low))
+        _mm_setr_epi64(_mm_cvtsi64_m64(high), _mm_cvtsi64_m64(low))
+
 #define _mm256_test_all_zeros(mask, val) \
-            _mm256_testz_si256((mask), (val))
+        _mm256_testz_si256((mask), (val))
+
 #define _mm256_test_all_ones(val) \
-            _mm256_testc_si256((val), _mm256_cmpeq_epi32((val), (val)))
+        _mm256_testc_si256((val), _mm256_cmpeq_epi32((val), (val)))
+
+#define _mm256_test_mix_ones_zeros(mask, val) \
+        _mm256_testnzc_si256((mask), (val))
 #endif // _MSC_VER
 
 //
@@ -1156,7 +1161,7 @@ struct BitVec16x16 {
     uint32_t min_u16() const {
         BitVec16x16 min_num;
         this->min_u16<MaxLength>(min_num);
-        return (uint32_t)_mm_cvtsi128_si32_low(min_num.low.m128);
+        return (uint32_t)SSE::_mm_cvtsi128_si32_low(min_num.low.m128);
     }
 
     template <size_t MaxLength>
