@@ -1,6 +1,6 @@
 
-#ifndef GZ_SUDOKU_SOLVER_V4_H
-#define GZ_SUDOKU_SOLVER_V4_H
+#ifndef GZ_SUDOKU_SOLVER_V4A_H
+#define GZ_SUDOKU_SOLVER_V4A_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -36,11 +36,11 @@
 #include "BitArray.h"
 #include "BitVec.h"
 
-#define V4_LITERAL_ORDER_MODE   0
-#define V4_SAVE_COUNT_SIZE      1
+#define V4A_LITERAL_ORDER_MODE   0
+#define V4A_SAVE_COUNT_SIZE      0
 
 namespace gzSudoku {
-namespace v4 {
+namespace v4a {
 
 static const size_t kSearchMode = SearchMode::OneAnswer;
 
@@ -98,7 +98,7 @@ public:
     static const size_t TotalLiterals =
         TotalCellLiterals + TotalRowLiterals + TotalColLiterals + TotalBoxLiterals;
 
-#if (V4_LITERAL_ORDER_MODE == 0)
+#if (V4A_LITERAL_ORDER_MODE == 0)
     static const size_t LiteralFirst     = 0;
     static const size_t CellLiteralFirst = LiteralFirst;
     static const size_t RowLiteralFirst  = CellLiteralFirst + TotalCellLiterals;
@@ -122,7 +122,7 @@ public:
     static const size_t BoxLiteralLast   = RowLiteralFirst;
     static const size_t RowLiteralLast   = ColLiteralFirst;
     static const size_t ColLiteralLast   = LiteralLast;
-#endif // (V4_LITERAL_ORDER_MODE == 0)
+#endif // (V4A_LITERAL_ORDER_MODE == 0)
 
     static const size_t kAllRowBits = Sudoku::kAllRowBits;
     static const size_t kAllColBits = Sudoku::kAllColBits;
@@ -138,7 +138,7 @@ public:
     static const uint32_t kLiteralCntThreshold2 = 0;
 
 private:
-#if (V4_LITERAL_ORDER_MODE == 0)
+#if (V4A_LITERAL_ORDER_MODE == 0)
     enum LiteralType {
         BoxCellNums,
         NumRowCols,
@@ -154,7 +154,7 @@ private:
         NumColRows,
         MaxLiteralType
     };
-#endif // (V4_LITERAL_ORDER_MODE == 0)
+#endif // (V4A_LITERAL_ORDER_MODE == 0)
 
 private:
 
@@ -462,7 +462,7 @@ private:
     }
 
     static void init_mask() {
-        printf("v4::StaticData::init_mask()\n");
+        printf("v4a::StaticData::init_mask()\n");
 
         Static.neighbor_cells_mask.reset();
 
@@ -582,31 +582,58 @@ private:
     }
 
     inline void updateNeighborCells(InitState & state, size_t fill_pos, size_t box, size_t num) {
+        BitVec16x16 cells16, mask16;
+        void * pCells16, * pMask16;
         const neighbor_boxes_t & neighborBoxes = Static.neighbor_boxes[box];
         const PackedBitSet3D<Boxes, BoxSize16, Numbers16> & neighbors_mask
             = Static.box_cell_neighbors_mask[fill_pos][num];
         for (size_t i = 0; i < neighborBoxes.boxes_count(); i++) {
             size_t box_idx = neighborBoxes.boxes[i];
-            state.box_cell_nums[box_idx] &= neighbors_mask[box_idx];
+            //state.box_cell_nums[box_idx] &= neighbors_mask[box_idx];
+            pCells16 = (void *)&state.box_cell_nums[box_idx];
+            pMask16 = (void *)&neighbors_mask[box_idx];
+            cells16.loadAligned(pCells16);
+            mask16.loadAligned(pMask16);
+            cells16 &= mask16;
+            cells16.saveAligned(pCells16);
         }
 
-        state.num_row_cols[num] &= Static.row_neighbors_mask[fill_pos];
-        state.num_col_rows[num] &= Static.col_neighbors_mask[fill_pos];
-        state.num_box_cells[num] &= Static.box_num_neighbors_mask[fill_pos];
+        //state.num_row_cols[num] &= Static.row_neighbors_mask[fill_pos];
+        //state.num_col_rows[num] &= Static.col_neighbors_mask[fill_pos];
+        //state.num_box_cells[num] &= Static.box_num_neighbors_mask[fill_pos];
+
+        pCells16 = (void *)&state.num_row_cols[num];
+        pMask16 = (void *)&Static.row_neighbors_mask[fill_pos];
+        cells16.loadAligned(pCells16);
+        mask16.loadAligned(pMask16);
+        cells16 &= mask16;
+        cells16.saveAligned(pCells16);
+
+        pCells16 = (void *)&state.num_col_rows[num];
+        pMask16 = (void *)&Static.col_neighbors_mask[fill_pos];
+        cells16.loadAligned(pCells16);
+        mask16.loadAligned(pMask16);
+        cells16 &= mask16;
+        cells16.saveAligned(pCells16);
+
+        pCells16 = (void *)&state.num_box_cells[num];
+        pMask16 = (void *)&Static.box_num_neighbors_mask[fill_pos];
+        cells16.loadAligned(pCells16);
+        mask16.loadAligned(pMask16);
+        cells16 &= mask16;
+        cells16.saveAligned(pCells16);
     }
 
     inline uint32_t count_all_literal_size_no_illegal(uint32_t & out_min_literal_index) {
         BitVec16x16 disable_mask;
         BitVec16x16 numbits_mask;
         numbits_mask.fill_u16(kAllNumberBits);
-        //numbits_mask.fill_u16(0xFFFF);
 
         // Position (Box-Cell) literal
         uint32_t min_cell_size = 255;
         uint32_t min_cell_index = uint32_t(-1);
         for (size_t box = 0; box < Boxes; box++) {
-            const PackedBitSet2D<BoxSize16, Numbers16> * bitset;
-            bitset = &this->init_state_.box_cell_nums[box];
+            void * bitset = (void * )&this->init_state_.box_cell_nums[box];
             BitVec16x16 box_bits;
             box_bits.loadAligned(bitset);
 
@@ -616,7 +643,7 @@ private:
             box_bits._or(disable_mask);
 
             BitVec16x16 popcnt16 = box_bits.popcount16<Numbers>();
-#if V4_SAVE_COUNT_SIZE
+#if V4A_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.box_cells[box][0]);
 #endif
             int min_index = -1;
@@ -641,8 +668,7 @@ private:
         uint32_t min_row_size = 255;
         uint32_t min_row_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            const PackedBitSet2D<Rows16, Cols16> * bitset;
-            bitset = &this->init_state_.num_row_cols[num];
+            void * bitset = (void * )&this->init_state_.num_row_cols[num];
             BitVec16x16 num_row_bits;
             num_row_bits.loadAligned(bitset);
 
@@ -652,7 +678,7 @@ private:
             num_row_bits._or(disable_mask);
 
             BitVec16x16 popcnt16 = num_row_bits.popcount16<Cols>();
-#if V4_SAVE_COUNT_SIZE
+#if V4A_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.num_rows[num][0]);
 #endif
             int min_index = -1;
@@ -677,8 +703,7 @@ private:
         uint32_t min_col_size = 255;
         uint32_t min_col_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            const PackedBitSet2D<Cols16, Rows16> * bitset;
-            bitset = &this->init_state_.num_col_rows[num];
+            void * bitset = (void * )&this->init_state_.num_col_rows[num];
             BitVec16x16 num_col_bits;
             num_col_bits.loadAligned(bitset);
 
@@ -688,7 +713,7 @@ private:
             num_col_bits._or(disable_mask);
 
             BitVec16x16 popcnt16 = num_col_bits.popcount16<Rows>();
-#if V4_SAVE_COUNT_SIZE
+#if V4A_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.num_cols[num][0]);
 #endif
             int min_index = -1;
@@ -713,8 +738,7 @@ private:
         uint32_t min_box_size = 255;
         uint32_t min_box_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            const PackedBitSet2D<Boxes16, BoxSize16> * bitset;
-            bitset = &this->init_state_.num_box_cells[num];
+            void * bitset = (void * )&this->init_state_.num_box_cells[num];
             BitVec16x16 num_box_bits;
             num_box_bits.loadAligned(bitset);
 
@@ -724,145 +748,8 @@ private:
             num_box_bits._or(disable_mask);
 
             BitVec16x16 popcnt16 = num_box_bits.popcount16<BoxSize>();
-#if V4_SAVE_COUNT_SIZE
+#if V4A_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.num_boxes[num][0]);
-#endif
-            int min_index = -1;
-            uint32_t min_size = popcnt16.minpos16<BoxSize>(min_box_size, min_index);
-            this->count_.counts.num_boxes[num] = (uint8_t)min_size;
-            if (likely(min_index != -1)) {
-                size_t box_index = num * Boxes16 + min_index;
-                this->count_.indexs.num_boxes[num] = (uint8_t)box_index;
-                min_box_index = (uint32_t)box_index;
-            }
-            else {
-                this->count_.indexs.num_boxes[num] = (uint8_t)min_index;
-            }
-        }
-        this->count_.total.min_literal_size[3] = (uint16_t)min_box_size;
-        this->count_.total.min_literal_index[3] = (uint16_t)min_box_index;
-
-        int min_literal_type;
-
-        BitVec16x16 min_literal;
-        min_literal.loadAligned(&this->count_.total.min_literal_size[0]);
-        uint32_t min_literal_size = min_literal.minpos16<4>(min_literal_type);
-        uint32_t min_literal_index = min_literal_type * uint32_t(BoardSize16) +
-                                     this->count_.total.min_literal_index[min_literal_type];
-
-        out_min_literal_index = min_literal_index;
-        return min_literal_size;
-    }
-
-    inline uint32_t count_all_literal_size(uint32_t & out_min_literal_index) {
-        BitVec16x16 disable_mask;
-        BitVec16x16 filter_mask;
-        BitVec16x16 numbits_mask;
-        filter_mask.fill_u16(kDisableNumberMask);
-        numbits_mask.fill_u16(kAllNumberBits);
-
-        // Position (Box-Cell) literal
-        uint32_t min_cell_size = 255;
-        uint32_t min_cell_index = uint32_t(-1);
-        for (size_t box = 0; box < Boxes; box++) {
-            const PackedBitSet2D<BoxSize16, Numbers16> * bitset;
-            bitset = &this->init_state_.box_cell_nums[box];
-            BitVec16x16 box_bits;
-            box_bits.loadAligned(bitset);
-
-            disable_mask = box_bits.whichIsEqual(filter_mask);
-            disable_mask._and(numbits_mask);
-
-            box_bits._and(numbits_mask);
-            box_bits._or(disable_mask);
-
-            BitVec16x16 popcnt16 = box_bits.popcount16<Numbers>();
-#if V4_SAVE_COUNT_SIZE
-            popcnt16.saveAligned(&this->count_.sizes.box_cells[box * BoxSize16]);
-#endif
-            int min_index = -1;
-            uint32_t min_size = popcnt16.minpos16<Numbers>(min_cell_size, min_index);
-            this->count_.counts.box_cells[box] = (uint8_t)min_size;
-            if (likely(min_index != -1)) {
-                size_t cell_index = box * BoxSize16 + min_index;
-                this->count_.indexs.box_cells[box] = (uint8_t)cell_index;
-                min_cell_index = (uint32_t)cell_index;
-            }
-            else {
-                this->count_.indexs.box_cells[box] = (uint8_t)min_index;
-            }
-        }
-        this->count_.total.min_literal_size[0] = (uint16_t)min_cell_size;
-        this->count_.total.min_literal_index[0] = (uint16_t)min_cell_index;
-
-        // Row literal
-        uint32_t min_row_size = 255;
-        uint32_t min_row_index = uint32_t(-1);
-        for (size_t num = 0; num < Numbers; num++) {
-            const PackedBitSet2D<Rows16, Cols16> * bitset;
-            bitset = &this->init_state_.num_row_cols[num];
-            BitVec16x16 num_row_bits;
-            num_row_bits.loadAligned(bitset);
-
-            BitVec16x16 popcnt16 = num_row_bits.popcount16<Cols>();
-#if V4_SAVE_COUNT_SIZE
-            popcnt16.saveAligned(&this->count_.sizes.num_rows[num * Rows16]);
-#endif
-            int min_index = -1;
-            uint32_t min_size = popcnt16.minpos16<Cols>(min_row_size, min_index);
-            this->count_.counts.num_rows[num] = (uint8_t)min_size;
-            if (likely(min_index != -1)) {
-                size_t row_index = num * Rows16 + min_index;
-                this->count_.indexs.num_rows[num] = (uint8_t)row_index;
-                min_row_index = (uint32_t)row_index;
-            }
-            else {
-                this->count_.indexs.num_rows[num] = (uint8_t)min_index;
-            }
-        }
-        this->count_.total.min_literal_size[1] = (uint16_t)min_row_size;
-        this->count_.total.min_literal_index[1] = (uint16_t)min_row_index;
-
-        // Col literal
-        uint32_t min_col_size = 255;
-        uint32_t min_col_index = uint32_t(-1);
-        for (size_t num = 0; num < Numbers; num++) {
-            const PackedBitSet2D<Cols16, Rows16> * bitset;
-            bitset = &this->init_state_.num_col_rows[num];
-            BitVec16x16 num_col_bits;
-            num_col_bits.loadAligned(bitset);
-
-            BitVec16x16 popcnt16 = num_col_bits.popcount16<Rows>();
-#if V4_SAVE_COUNT_SIZE
-            popcnt16.saveAligned(&this->count_.sizes.num_cols[num * Cols16]);
-#endif
-            int min_index = -1;
-            uint32_t min_size = popcnt16.minpos16<Rows>(min_col_size, min_index);
-            this->count_.counts.num_cols[num] = (uint8_t)min_size;
-            if (likely(min_index != -1)) {
-                size_t col_index = num * Cols16 + min_index;
-                this->count_.indexs.num_cols[num] = (uint8_t)col_index;
-                min_col_index = (uint32_t)col_index;
-            }
-            else {
-                this->count_.indexs.num_cols[num] = (uint8_t)min_index;
-            }
-        }
-        this->count_.total.min_literal_size[2] = (uint16_t)min_col_size;
-        this->count_.total.min_literal_index[2] = (uint16_t)min_col_index;
-
-        // Box-Cell literal
-        uint32_t min_box_size = 255;
-        uint32_t min_box_index = uint32_t(-1);
-        for (size_t num = 0; num < Numbers; num++) {
-            const PackedBitSet2D<Boxes16, BoxSize16> * bitset;
-            bitset = &this->init_state_.num_box_cells[num];
-            BitVec16x16 num_box_bits;
-            num_box_bits.loadAligned(bitset);
-
-            BitVec16x16 popcnt16 = num_box_bits.popcount16<BoxSize>();
-#if V4_SAVE_COUNT_SIZE
-            popcnt16.saveAligned(&this->count_.sizes.num_boxes[num * Boxes16]);
 #endif
             int min_index = -1;
             uint32_t min_size = popcnt16.minpos16<BoxSize>(min_box_size, min_index);
@@ -996,7 +883,7 @@ public:
 
 Solver::StaticData Solver::Static;
 
-} // namespace v4
+} // namespace v4a
 } // namespace gzSudoku
 
-#endif // GZ_SUDOKU_SOLVER_V4_H
+#endif // GZ_SUDOKU_SOLVER_V4A_H

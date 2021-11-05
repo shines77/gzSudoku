@@ -504,6 +504,7 @@ struct Sudoku {
 
     static void initialize() {
         if (!is_inited) {
+            printf("Sudoku::initialize()\n");
             neighbors_mask_tbl.reset();
             make_cell_info();
             make_boxes_info();

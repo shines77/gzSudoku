@@ -49,6 +49,9 @@
     <ClInclude Include="..\..\..\src\gzSudoku\BitArray.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\gzSudoku\SudokuSolver_v4a.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\gzSudoku\SudokuMain.cpp">

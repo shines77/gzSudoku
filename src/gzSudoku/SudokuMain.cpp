@@ -45,6 +45,7 @@
 
 #include "BasicSolver.hpp"
 #include "SudokuSolver_v4.h"
+#include "SudokuSolver_v4a.h"
 
 #include "CPUWarmUp.h"
 #include "StopWatch.h"
@@ -149,6 +150,11 @@ void run_a_testcase(size_t index)
         printf("gzSudoku: v4::Solution - dfs\n\n");
 
         run_solver_testcase<v4::Solver>(index);
+
+        printf("------------------------------------------\n\n");
+        printf("gzSudoku: v4a::Solution - dfs\n\n");
+
+        run_solver_testcase<v4a::Solver>(index);
     }
 
     printf("------------------------------------------\n\n");
@@ -269,6 +275,7 @@ int main(int argc, char * argv[])
     {
         if (filename != nullptr) {
             run_sudoku_test<v4::Solver>(filename, "dfs::v4");
+            run_sudoku_test<v4a::Solver>(filename, "dfs::v4a");
         }
     }
 
