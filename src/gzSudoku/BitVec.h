@@ -116,6 +116,20 @@ static uint32_t _mm_cvtsi128_si32_high(__m128i m128)
 
 }; // SSE Wrapper
 
+struct AVX512 {
+
+#if !(defined(__AVX512__) && defined(__AVX512_FP16__))
+
+static uint32_t _mm_cvtsi128_si16(__m128i m128)
+{
+    uint32_t low32 = _mm_cvtsi128_si32(m128);   // SSE2
+    return (low32 & 0xFFFFUL);
+}
+
+#endif
+
+}; // AVX512 Wrapper
+
 #if defined(__SSE2__) || defined(__SSE3__) || defined(__SSSE3__) || defined(__SSE4A__) || defined(__SSE4a__) \
  || defined(__SSE4_1__) || defined(__SSE4_2__)
 
@@ -461,9 +475,75 @@ struct BitVec08x16 {
         return this->firstIndexOfOnes16(is_equal_mask);
     }
 
-    int indexOfIsEqual16(const BitVec08x16 & num_mask) const {
+    int indexOfIsEqual16_NonZeros(uint32_t num) const {
+        BitVec08x16 is_equal_mask = this->whichIsEqual16(num);
+        return this->firstIndexOfOnes16_NonZeros(is_equal_mask);
+    }
+
+    int indexOfIsEqual16_NoRepeat(const BitVec08x16 & num_mask_no_repeat) const {
+        BitVec08x16 num_mask;
+#if defined(__AVX2__)
+        num_mask = _mm_broadcastw_epi16(num_mask_no_repeat.m128);
+#elif defined(__SSSE3__)
+        __m128i lookup_mask = _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
+        num_mask = _mm_shuffle_epi8(num_mask_no_repeat.m128, lookup_mask);
+#else
+        // SSE2
+        __m128i lookup_mask = _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
+        num_mask = _mm_shufflelo_epi16(num_mask_no_repeat.m128, _MM_SHUFFLE(0, 0, 0, 0));
+        num_mask = _mm_shuffle_epi32(num_mask.m128, _MM_SHUFFLE(0, 0, 0, 0));
+#endif
         BitVec08x16 is_equal_mask = this->whichIsEqual(num_mask);
         return this->firstIndexOfOnes16(is_equal_mask);
+    }
+
+    int indexOfIsEqual16_NonZeros_NoRepeat(const BitVec08x16 & num_mask_no_repeat) const {
+        BitVec08x16 num_mask;
+#if defined(__AVX2__)
+        num_mask = _mm_broadcastw_epi16(num_mask_no_repeat.m128);
+#elif defined(__SSSE3__)
+        __m128i lookup_mask = _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
+        num_mask = _mm_shuffle_epi8(num_mask_no_repeat.m128, lookup_mask);
+#else
+        // SSE2
+        __m128i lookup_mask = _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
+        num_mask = _mm_shufflelo_epi16(num_mask_no_repeat.m128, _MM_SHUFFLE(0, 0, 0, 0));
+        num_mask = _mm_shuffle_epi32(num_mask.m128, _MM_SHUFFLE(0, 0, 0, 0));
+#endif
+        BitVec08x16 is_equal_mask = this->whichIsEqual(num_mask);
+        return this->firstIndexOfOnes16_NonZeros(is_equal_mask);
+    }
+
+    int indexOfIsEqual16(const BitVec08x16 & num_mask_repeat) const {
+        BitVec08x16 is_equal_mask = this->whichIsEqual(num_mask_repeat);
+        return this->firstIndexOfOnes16(is_equal_mask);
+    }
+
+    int indexOfIsEqual16_NonZeros(const BitVec08x16 & num_mask_repeat) const {
+        BitVec08x16 is_equal_mask = this->whichIsEqual(num_mask_repeat);
+        return this->firstIndexOfOnes16_NonZeros(is_equal_mask);
+    }
+
+    int firstIndexOfOnes16_NonZeros(const BitVec08x16 & compare_mask) const {
+ #if 0 && (defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+        || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__))
+        // Under x64 mode, we maybe can use this version,
+        // but it's not sure faster than the below version.
+        BitVec08x16 zeros;
+        zeros.setAllZeros();
+       __m128i mask64 = _mm_packus_epi16(compare_mask.m128, zeros.m128);
+        uint64_t compare_mask_64 = (uint64_t)_mm_cvtsi128_si64(mask64);
+        assert(compare_mask_64 != 0);
+        uint32_t first_offset = BitUtils::bsf(compare_mask_64);
+        int first_index = (int)(first_offset >> 3U);
+        return first_index;
+#else
+        int compare_mask_16 = _mm_movemask_epi8(compare_mask.m128);
+        assert(compare_mask_16 != 0);
+        uint32_t first_offset = BitUtils::bsf(compare_mask_16);
+        int first_index = (int)(first_offset >> 1U);
+        return first_index;
+#endif
     }
 
     int firstIndexOfOnes16(const BitVec08x16 & compare_mask) const {
@@ -476,7 +556,7 @@ struct BitVec08x16 {
         else return -1;
     }
 
-    template <size_t MaxBits>
+    template <size_t MaxLength, size_t MaxBits>
     BitVec08x16 popcount16() const {
 #if defined(__AVX512VPOPCNTW__) || (defined(__AVX512_BITALG__) && defined(__AVX512VL__))
         return _mm_popcnt_epi16(this->m128);
@@ -536,62 +616,7 @@ struct BitVec08x16 {
     }
 
     template <size_t MaxLength>
-    void min_i16(BitVec08x16 & min_num) const {
-        __m128i nums = this->m128;
-        if (MaxLength <= 4) {
-            nums = _mm_min_epi16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
-
-            // The minimum number of first 4 x int16_t
-            min_num = _mm_min_epi16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
-        }
-        else {
-            nums = _mm_min_epi16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 0, 3, 2)));
-            nums = _mm_min_epi16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
-
-            // The minimum number of total 8 x int16_t
-            min_num = _mm_min_epi16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
-        }
-    }
-
-    template <size_t MaxLength>
-    void min_u16(BitVec08x16 & min_num) const {
-#if defined(__SSE4_1__)
-        min_num = _mm_minpos_epu16(this->m128);
-#else
-        __m128i nums = this->m128;
-        if (MaxLength <= 4) {
-            nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
-
-            // The minimum number of first 4 x int16_t
-            min_num = _mm_min_epu16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
-        }
-        else {
-            nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 0, 3, 2)));
-            nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
-
-            // The minimum number of total 8 x int16_t
-            min_num = _mm_min_epu16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
-        }
-#endif
-    }   
-
-    template <size_t MaxLength>
-    uint32_t min_i16() const {
-        BitVec08x16 min_num;
-        this->min_i16<MaxLength>(min_num);
-        // _mm_cvtsi128_si32(m128i) is faster than _mm_extract_epi16(m128i, index)
-        return (uint32_t)SSE::_mm_cvtsi128_si32_low(min_num.m128);
-    }
-
-    template <size_t MaxLength>
-    uint32_t min_u16() const {
-        BitVec08x16 min_num;
-        this->min_u16<MaxLength>(min_num);
-        return (uint32_t)SSE::_mm_cvtsi128_si32_low(min_num.m128);
-    }
-
-    template <size_t MaxLength>
-    void minpos8(BitVec08x16 & minpos) const {
+    void min_u8(BitVec08x16 & minpos) const {
 #if defined(__SSE4_1__)
         //
         // See: https://blog.csdn.net/weixin_34378767/article/details/86257834
@@ -662,11 +687,79 @@ struct BitVec08x16 {
     }
 
     template <size_t MaxLength>
-    int minpos8() const {
+    uint32_t min_u8() const {
+        BitVec08x16 min_nums;
+        this->min_u8<MaxLength>(min_nums);
+        uint32_t min_num = (uint32_t)SSE::_mm_cvtsi128_si32_low(min_nums.m128);
+        return min_num;
+    }
+
+    template <size_t MaxLength>
+    void minpos8(BitVec08x16 & minpos) const {
+        this->min_u8<MaxLength>(minpos);
+    }
+
+    template <size_t MaxLength>
+    uint32_t minpos8() const {
         BitVec08x16 minpos;
         this->minpos8<MaxLength>(minpos);
         uint32_t min_and_pos = (uint32_t)_mm_cvtsi128_si32(minpos.m128);
         return min_and_pos;
+    }
+
+    template <size_t MaxLength>
+    void min_i16(BitVec08x16 & min_num) const {
+        __m128i nums = this->m128;
+        if (MaxLength <= 4) {
+            nums = _mm_min_epi16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
+
+            // The minimum number of first 4 x int16_t
+            min_num = _mm_min_epi16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+        }
+        else {
+            nums = _mm_min_epi16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 0, 3, 2)));
+            nums = _mm_min_epi16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+
+            // The minimum number of total 8 x int16_t
+            min_num = _mm_min_epi16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+        }
+    }
+
+    template <size_t MaxLength>
+    void min_u16(BitVec08x16 & min_num) const {
+#if defined(__SSE4_1__)
+        min_num = _mm_minpos_epu16(this->m128);
+#else
+        __m128i nums = this->m128;
+        if (MaxLength <= 4) {
+            nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
+
+            // The minimum number of first 4 x int16_t
+            min_num = _mm_min_epu16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+        }
+        else {
+            nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 0, 3, 2)));
+            nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+
+            // The minimum number of total 8 x int16_t
+            min_num = _mm_min_epu16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+        }
+#endif
+    }   
+
+    template <size_t MaxLength>
+    uint32_t min_i16() const {
+        BitVec08x16 min_nums;
+        this->min_i16<MaxLength>(min_nums);
+        // _mm_cvtsi128_si32(m128i) is faster than _mm_extract_epi16(m128i, index)
+        return (uint32_t)SSE::_mm_cvtsi128_si32_low(min_nums.m128);
+    }
+
+    template <size_t MaxLength>
+    uint32_t min_u16() const {
+        BitVec08x16 min_nums;
+        this->min_u16<MaxLength>(min_nums);
+        return (uint32_t)SSE::_mm_cvtsi128_si32_low(min_nums.m128);
     }
 
     static uint32_t minpos16_get_num(const BitVec08x16 & minpos) {
@@ -1098,9 +1191,23 @@ struct BitVec16x16 {
         return -1;
     }
 
-    template <size_t MaxBits>
+    int indexOfIsEqual16_NonZeros(uint32_t num) const {
+        __m128i num_mask = _mm_set1_epi16((int16_t)num);
+        int index_low = this->low.indexOfIsEqual16(num_mask);
+        if (index_low != -1) {
+            return index_low;
+        }
+        else {
+            int index_high = this->high.indexOfIsEqual16_NonZeros(num_mask);
+            return (8 + index_high);
+        }
+    }
+
+    template <size_t MaxLength, size_t MaxBits>
     BitVec16x16 popcount16() const {
-        return BitVec16x16(this->low.popcount16<MaxBits>(), this->high.popcount16<MaxBits>());
+        static const size_t MaxLenLow = (MaxLength < 8) ? MaxLength : 8;
+        static const size_t MaxLenHigh = ((MaxLength - MaxLenLow) < 8) ? (MaxLength - MaxLenLow) : 8;
+        return BitVec16x16(this->low.popcount16<MaxLenLow, MaxBits>(), this->high.popcount16<MaxLenHigh, MaxBits>());
     }
 
     template <size_t MaxLength>
@@ -1785,6 +1892,11 @@ struct BitVec16x16_AVX {
         return this->firstIndexOfOnes16(is_equal_mask);
     }
 
+    int indexOfIsEqual16_NonZeros(uint32_t num) const {
+        BitVec16x16_AVX is_equal_mask = this->whichIsEqual16(num);
+        return this->firstIndexOfOnes16_NonZeros(is_equal_mask);
+    }
+
     int indexOfIsEqual16(const BitVec16x16_AVX & num_mask) const {
 #if 0
         // If the num_mask is not a repeat mask,
@@ -1794,6 +1906,17 @@ struct BitVec16x16_AVX {
 #endif
         BitVec16x16_AVX is_equal_mask = this->whichIsEqual(num_mask);
         return this->firstIndexOfOnes16(is_equal_mask);
+    }
+
+    int indexOfIsEqual16_NonZeros(const BitVec16x16_AVX & num_mask) const {
+#if 0
+        // If the num_mask is not a repeat mask,
+        // you wanna repeat the first 16bit integer only,
+        // use this code.
+        num_mask = _mm256_broadcastw_epi16(_mm256_castsi256_si128(num_mask.m256));
+#endif
+        BitVec16x16_AVX is_equal_mask = this->whichIsEqual(num_mask);
+        return this->firstIndexOfOnes16_NonZeros(is_equal_mask);
     }
 
     int firstIndexOfOnes16(const BitVec16x16_AVX & compare_mask) const {
@@ -1806,7 +1929,15 @@ struct BitVec16x16_AVX {
         else return -1;
     }
 
-    template <size_t MaxBits>
+    int firstIndexOfOnes16_NonZeros(const BitVec16x16_AVX & compare_mask) const {
+        int compare_mask_32 = _mm256_movemask_epi8(compare_mask.m256);
+        assert(compare_mask_32 != 0);
+        uint32_t first_offset = BitUtils::bsf(compare_mask_32);
+        int first_index = (int)(first_offset >> 1U);
+        return first_index;
+    }
+
+    template <size_t MaxLength, size_t MaxBits>
     BitVec16x16_AVX popcount16() const {
 #if defined(__AVX512VPOPCNTW__) || (defined(__AVX512_BITALG__) && defined(__AVX512VL__))
         return _mm256_popcnt_epi16(this->m256);
@@ -1851,22 +1982,71 @@ struct BitVec16x16_AVX {
     }
 
     template <size_t MaxLength>
-    void minpos8(BitVec16x16_AVX & minpos) const {
+    void min_i8(BitVec16x16_AVX & minpos) const {
+        __m256i nums = this->m256;
+        if (MaxLength <= 8) {
+            nums = _mm256_min_epi8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
+            nums = _mm256_min_epi8(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+
+            // The minimum number of first 8 x int8_t
+            minpos = _mm256_min_epi8(nums, _mm256_srli_epi16(nums, 8));
+        }
+        else if (MaxLength <= 16) {
+            nums = _mm256_min_epi8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(3, 2, 3, 2)));
+            nums = _mm256_min_epi8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm256_min_epi8(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+
+            // The minimum number of first 16 x int8_t
+            minpos = _mm256_min_epi8(nums, _mm256_srli_epi16(nums, 8));
+        }
+        else {
+            nums = _mm256_min_epi8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(3, 2, 3, 2)));
+            nums = _mm256_min_epi8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm256_min_epi8(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm256_min_epi8(nums, _mm256_srli_epi16(nums, 8));
+
+            // The minimum number of total 32 x int8_t
+            minpos = _mm256_min_epi8(nums, _mm256_srli_si256(nums, 16));
+        }
+    }
+
+    template <size_t MaxLength>
+    uint32_t min_i8(BitVec16x16_AVX & min_nums) const {
+        this->min_i8<MaxLength>(min_nums);
+#if (!defined(_MSC_VER) || (_MSC_VER >= 2000))
+        // AVX: _mm256_extract_epi32(), AVX2: _mm256_extract_epi16()
+        // AVX: _mm256_cvtsi256_si32()
+        uint32_t min_num = _mm256_extract_epi32(min_nums.m256, 0);
+        return min_num;
+#else
+  #if 1
+        return (uint32_t)(_mm256_cvtsi256_si32(min_nums.m256) & 0x000000FFUL);
+  #else
+        BitVec08x16 min_nums_128;
+        min_nums.castTo(min_nums_128);
+        uint32_t min_num = SSE::_mm_cvtsi128_si32_low(min_nums_128.m128);
+        return min_num;
+  #endif
+#endif
+    }
+
+    template <size_t MaxLength>
+    void min_u8(BitVec16x16_AVX & min_num) const {
         __m256i nums = this->m256;
         if (MaxLength <= 8) {
             nums = _mm256_min_epu8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
             nums = _mm256_min_epu8(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
 
-            // The minimum number of first 8 x int8_t
-            minpos = _mm256_min_epu8(nums, _mm256_srli_epi16(nums, 8));
+            // The minimum number of first 8 x uint8_t
+            min_num = _mm256_min_epu8(nums, _mm256_srli_epi16(nums, 8));
         }
         else if (MaxLength <= 16) {
             nums = _mm256_min_epu8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(3, 2, 3, 2)));
             nums = _mm256_min_epu8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
             nums = _mm256_min_epu8(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
 
-            // The minimum number of first 16 x int8_t
-            minpos = _mm256_min_epu8(nums, _mm256_srli_epi16(nums, 8));
+            // The minimum number of first 16 x uint8_t
+            min_num = _mm256_min_epu8(nums, _mm256_srli_epi16(nums, 8));
         }
         else {
             nums = _mm256_min_epu8(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(3, 2, 3, 2)));
@@ -1874,25 +2054,27 @@ struct BitVec16x16_AVX {
             nums = _mm256_min_epu8(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
             nums = _mm256_min_epu8(nums, _mm256_srli_epi16(nums, 8));
 
-            // The minimum number of total 32 x int8_t
-            minpos = _mm256_min_epu8(nums, _mm256_srli_si256(nums, 16));
+            // The minimum number of total 32 x uint8_t
+            min_num = _mm256_min_epu8(nums, _mm256_srli_si256(nums, 16));
         }
     }
 
     template <size_t MaxLength>
-    uint32_t minpos8(BitVec16x16_AVX & minpos) const {
-        this->minpos8<MaxLength>(minpos);
+    uint32_t min_u8(BitVec16x16_AVX & min_nums) const {
+        this->min_u8<MaxLength>(min_nums);
 #if (!defined(_MSC_VER) || (_MSC_VER >= 2000))
         // AVX: _mm256_extract_epi32(), AVX2: _mm256_extract_epi16()
         // AVX: _mm256_cvtsi256_si32()
-        uint32_t min_num = _mm256_extract_epi32(minpos.m256, 0);
+        uint32_t min_num = _mm256_extract_epi32(min_nums.m256, 0);
+        return min_num;
 #else
   #if 1
-        return (uint32_t)(_mm256_cvtsi256_si32(minpos.m256) & 0x000000FFUL);
+        return (uint32_t)(_mm256_cvtsi256_si32(min_nums.m256) & 0x000000FFUL);
   #else
-        BitVec08x16 minpos128;
-        minpos.castTo(minpos128);
-        uint32_t min_num = _mm_cvtsi128_si32(minpos128.m128, 0);
+        BitVec08x16 min_nums_128;
+        min_nums.castTo(min_nums_128);
+        uint32_t min_num = SSE::_mm_cvtsi128_si32_low(min_nums_128.m128);
+        return min_num;
   #endif
 #endif
     }

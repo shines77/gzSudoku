@@ -625,8 +625,8 @@ private:
     }
 
     inline uint32_t count_all_literal_size_no_illegal(uint32_t & out_min_literal_index) {
-        BitVec16x16 disable_mask;
-        BitVec16x16 numbits_mask;
+        BitVec16x16_AVX disable_mask;
+        BitVec16x16_AVX numbits_mask;
         numbits_mask.fill_u16(kAllNumberBits);
 
         // Position (Box-Cell) literal
@@ -634,7 +634,7 @@ private:
         uint32_t min_cell_index = uint32_t(-1);
         for (size_t box = 0; box < Boxes; box++) {
             void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
-            BitVec16x16 box_bits;
+            BitVec16x16_AVX box_bits;
             box_bits.loadAligned(pCells16);
 
             disable_mask = box_bits.whichIsZeros();
@@ -642,7 +642,7 @@ private:
 
             box_bits._or(disable_mask);
 
-            BitVec16x16 popcnt16 = box_bits.popcount16<Numbers>();
+            BitVec16x16_AVX popcnt16 = box_bits.popcount16<BoxSize, Numbers>();
 #if V4A_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.box_cells[box][0]);
 #endif
@@ -661,7 +661,7 @@ private:
         this->count_.total.min_literal_size[0] = (uint16_t)min_cell_size;
         this->count_.total.min_literal_index[0] = (uint16_t)min_cell_index;
 
-        BitVec16x16 num_rows_mask;
+        BitVec16x16_AVX num_rows_mask;
         num_rows_mask.fill_u16(kAllColBits);
 
         // Row literal
@@ -669,7 +669,7 @@ private:
         uint32_t min_row_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
             void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
-            BitVec16x16 num_row_bits;
+            BitVec16x16_AVX num_row_bits;
             num_row_bits.loadAligned(pCells16);
 
             disable_mask = num_row_bits.whichIsZeros();
@@ -677,7 +677,7 @@ private:
 
             num_row_bits._or(disable_mask);
 
-            BitVec16x16 popcnt16 = num_row_bits.popcount16<Cols>();
+            BitVec16x16_AVX popcnt16 = num_row_bits.popcount16<Rows, Cols>();
 #if V4A_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.num_rows[num][0]);
 #endif
@@ -696,7 +696,7 @@ private:
         this->count_.total.min_literal_size[1] = (uint16_t)min_row_size;
         this->count_.total.min_literal_index[1] = (uint16_t)min_row_index;
 
-        BitVec16x16 num_cols_mask;
+        BitVec16x16_AVX num_cols_mask;
         num_cols_mask.fill_u16(kAllRowBits);
 
         // Col literal
@@ -704,7 +704,7 @@ private:
         uint32_t min_col_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
             void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
-            BitVec16x16 num_col_bits;
+            BitVec16x16_AVX num_col_bits;
             num_col_bits.loadAligned(pCells16);
 
             disable_mask = num_col_bits.whichIsZeros();
@@ -712,7 +712,7 @@ private:
 
             num_col_bits._or(disable_mask);
 
-            BitVec16x16 popcnt16 = num_col_bits.popcount16<Rows>();
+            BitVec16x16_AVX popcnt16 = num_col_bits.popcount16<Cols, Rows>();
 #if V4A_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.num_cols[num][0]);
 #endif
@@ -731,7 +731,7 @@ private:
         this->count_.total.min_literal_size[2] = (uint16_t)min_col_size;
         this->count_.total.min_literal_index[2] = (uint16_t)min_col_index;
 
-        BitVec16x16 num_box_mask;
+        BitVec16x16_AVX num_box_mask;
         num_box_mask.fill_u16(kAllBoxCellBits);
 
         // Box-Cell literal
@@ -739,7 +739,7 @@ private:
         uint32_t min_box_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
             void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
-            BitVec16x16 num_box_bits;
+            BitVec16x16_AVX num_box_bits;
             num_box_bits.loadAligned(pCells16);
 
             disable_mask = num_box_bits.whichIsZeros();
@@ -747,7 +747,7 @@ private:
 
             num_box_bits._or(disable_mask);
 
-            BitVec16x16 popcnt16 = num_box_bits.popcount16<BoxSize>();
+            BitVec16x16_AVX popcnt16 = num_box_bits.popcount16<Boxes, BoxSize>();
 #if V4A_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.num_boxes[num][0]);
 #endif
@@ -768,7 +768,7 @@ private:
 
         int min_literal_type;
 
-        BitVec16x16 min_literal;
+        BitVec16x16_AVX min_literal;
         min_literal.loadAligned(&this->count_.total.min_literal_size[0]);
         uint32_t min_literal_size = min_literal.minpos16<4>(min_literal_type);
         uint32_t min_literal_index = min_literal_type * uint32_t(BoardSize16) +

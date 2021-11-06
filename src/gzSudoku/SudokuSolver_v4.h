@@ -615,7 +615,7 @@ private:
 
             box_bits._or(disable_mask);
 
-            BitVec16x16 popcnt16 = box_bits.popcount16<Numbers>();
+            BitVec16x16 popcnt16 = box_bits.popcount16<BoxSize, Numbers>();
 #if V4_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.box_cells[box][0]);
 #endif
@@ -651,7 +651,7 @@ private:
 
             num_row_bits._or(disable_mask);
 
-            BitVec16x16 popcnt16 = num_row_bits.popcount16<Cols>();
+            BitVec16x16 popcnt16 = num_row_bits.popcount16<Rows, Cols>();
 #if V4_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.num_rows[num][0]);
 #endif
@@ -687,7 +687,7 @@ private:
 
             num_col_bits._or(disable_mask);
 
-            BitVec16x16 popcnt16 = num_col_bits.popcount16<Rows>();
+            BitVec16x16 popcnt16 = num_col_bits.popcount16<Cols, Rows>();
 #if V4_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.num_cols[num][0]);
 #endif
@@ -723,7 +723,7 @@ private:
 
             num_box_bits._or(disable_mask);
 
-            BitVec16x16 popcnt16 = num_box_bits.popcount16<BoxSize>();
+            BitVec16x16 popcnt16 = num_box_bits.popcount16<Boxes, BoxSize>();
 #if V4_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.num_boxes[num][0]);
 #endif
@@ -776,7 +776,7 @@ private:
             box_bits._and(numbits_mask);
             box_bits._or(disable_mask);
 
-            BitVec16x16 popcnt16 = box_bits.popcount16<Numbers>();
+            BitVec16x16 popcnt16 = box_bits.popcount16<BoxSize, Numbers>();
 #if V4_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.box_cells[box * BoxSize16]);
 #endif
@@ -804,7 +804,7 @@ private:
             BitVec16x16 num_row_bits;
             num_row_bits.loadAligned(bitset);
 
-            BitVec16x16 popcnt16 = num_row_bits.popcount16<Cols>();
+            BitVec16x16 popcnt16 = num_row_bits.popcount16<Rows, Cols>();
 #if V4_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.num_rows[num * Rows16]);
 #endif
@@ -832,7 +832,7 @@ private:
             BitVec16x16 num_col_bits;
             num_col_bits.loadAligned(bitset);
 
-            BitVec16x16 popcnt16 = num_col_bits.popcount16<Rows>();
+            BitVec16x16 popcnt16 = num_col_bits.popcount16<Cols, Rows>();
 #if V4_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.num_cols[num * Cols16]);
 #endif
@@ -860,7 +860,7 @@ private:
             BitVec16x16 num_box_bits;
             num_box_bits.loadAligned(bitset);
 
-            BitVec16x16 popcnt16 = num_box_bits.popcount16<BoxSize>();
+            BitVec16x16 popcnt16 = num_box_bits.popcount16<Boxes, BoxSize>();
 #if V4_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.num_boxes[num * Boxes16]);
 #endif
