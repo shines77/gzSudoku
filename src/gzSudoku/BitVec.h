@@ -146,7 +146,7 @@ struct BitVec08x16 {
                 uint8_t c08, uint8_t c09, uint8_t c10, uint8_t c11,
                 uint8_t c12, uint8_t c13, uint8_t c14, uint8_t c15) :
             m128(_mm_setr_epi8(c00, c01, c02, c03, c04, c05, c06, c07,
-                                 c08, c09, c10, c11, c12, c13, c14, c15)) {}
+                               c08, c09, c10, c11, c12, c13, c14, c15)) {}
 
     BitVec08x16(uint16_t w00, uint16_t w01, uint16_t w02, uint16_t w03,
                 uint16_t w04, uint16_t w05, uint16_t w06, uint16_t w07) :
@@ -748,11 +748,11 @@ struct BitVec08x16 {
     }   
 
     template <size_t MaxLength>
-    uint32_t min_i16() const {
+    int32_t min_i16() const {
         BitVec08x16 min_nums;
         this->min_i16<MaxLength>(min_nums);
         // _mm_cvtsi128_si32(m128i) is faster than _mm_extract_epi16(m128i, index)
-        return (uint32_t)SSE::_mm_cvtsi128_si32_low(min_nums.m128);
+        return (int32_t)SSE::_mm_cvtsi128_si32_low(min_nums.m128);
     }
 
     template <size_t MaxLength>
@@ -1257,11 +1257,11 @@ struct BitVec16x16 {
     }
 
     template <size_t MaxLength>
-    uint32_t min_i16() const {
+    int32_t min_i16() const {
         BitVec16x16 min_num;
         this->min_i16<MaxLength>(min_num);
         // _mm_cvtsi128_si32(m128i) faster than _mm_extract_epi16(m128i, index)
-        return (uint32_t)SSE::_mm_cvtsi128_si32_low(min_num.low.m128);
+        return (int32_t)SSE::_mm_cvtsi128_si32_low(min_num.low.m128);
     }
 
     template <size_t MaxLength>
@@ -1572,12 +1572,24 @@ struct BitVec16x16_AVX {
         low = _mm256_castsi256_si128(this->m256);
     }
 
+    void castTo(BitVec16x16 & xmm) const {
+        // __m128i _mm256_extracti128_si256(__m256i a, const int imm8);
+        xmm.low = _mm256_castsi256_si128(this->m256);
+#ifdef __AVX2__
+        xmm.high = _mm256_castsi256_si128(_mm256_bsrli_epi128(this->m256, 8));
+        //xmm.high = _mm256_extracti128_si256(this->m256, 1);
+#else
+        xmm.high = _mm256_extractf128_si256(this->m256, 1);
+#endif
+    }
+
     void splitTo(BitVec08x16 & low, BitVec08x16 & high) const {
         low = _mm256_castsi256_si128(this->m256);
 #ifdef __AVX2__
-        high = _mm256_extracti128_si256(this->m256, 1);
-#else
         high = _mm256_castsi256_si128(_mm256_bsrli_epi128(this->m256, 8));
+        //high = _mm256_extracti128_si256(this->m256, 1);
+#else
+        high = _mm256_extractf128_si256(this->m256, 1);
 #endif
     }
 
@@ -2011,21 +2023,24 @@ struct BitVec16x16_AVX {
     }
 
     template <size_t MaxLength>
-    uint32_t min_i8(BitVec16x16_AVX & min_nums) const {
+    int8_t min_i8(BitVec16x16_AVX & min_nums) const {
         this->min_i8<MaxLength>(min_nums);
-#if (!defined(_MSC_VER) || (_MSC_VER >= 2000))
-        // AVX: _mm256_extract_epi32(), AVX2: _mm256_extract_epi16()
-        // AVX: _mm256_cvtsi256_si32()
-        uint32_t min_num = _mm256_extract_epi32(min_nums.m256, 0);
-        return min_num;
-#else
-  #if 1
-        return (uint32_t)(_mm256_cvtsi256_si32(min_nums.m256) & 0x000000FFUL);
-  #else
+#if defined(_MSC_VER) && (_MSC_VER < 2000)
         BitVec08x16 min_nums_128;
         min_nums.castTo(min_nums_128);
         uint32_t min_num = SSE::_mm_cvtsi128_si32_low(min_nums_128.m128);
-        return min_num;
+        return (int8_t)(min_num & 0xFFUL);
+#else
+  #if 1
+        uint32_t min_num = (uint32_t)_mm256_cvtsi256_si32(min_nums.m256);
+        return (int8_t)(min_num & 0xFFUL);
+  #else
+        // AVX:  _mm256_extract_epi32() [Instruction: Sequence],
+        // AVX2: _mm256_extract_epi16() [Instruction: Sequence]
+        // AVX2: _mm256_extract_epi8()  [Instruction: Sequence]
+        // AVX:  _mm256_cvtsi256_si32() [Instruction: vmovd r32, xmm]
+        int min_num = _mm256_extract_epi8(min_nums.m256, 0);
+        return (int8_t)min_num;
   #endif
 #endif
     }
@@ -2060,21 +2075,24 @@ struct BitVec16x16_AVX {
     }
 
     template <size_t MaxLength>
-    uint32_t min_u8(BitVec16x16_AVX & min_nums) const {
+    uint8_t min_u8(BitVec16x16_AVX & min_nums) const {
         this->min_u8<MaxLength>(min_nums);
-#if (!defined(_MSC_VER) || (_MSC_VER >= 2000))
-        // AVX: _mm256_extract_epi32(), AVX2: _mm256_extract_epi16()
-        // AVX: _mm256_cvtsi256_si32()
-        uint32_t min_num = _mm256_extract_epi32(min_nums.m256, 0);
-        return min_num;
-#else
-  #if 1
-        return (uint32_t)(_mm256_cvtsi256_si32(min_nums.m256) & 0x000000FFUL);
-  #else
+#if defined(_MSC_VER) && (_MSC_VER < 2000)
         BitVec08x16 min_nums_128;
         min_nums.castTo(min_nums_128);
         uint32_t min_num = SSE::_mm_cvtsi128_si32_low(min_nums_128.m128);
-        return min_num;
+        return (uint8_t)(min_num & 0xFFUL);
+#else
+  #if 1
+        uint32_t min_num = (uint32_t)_mm256_cvtsi256_si32(min_nums.m256);
+        return (uint8_t)(min_num & 0xFFUL);
+  #else
+        // AVX:  _mm256_extract_epi32() [Instruction: Sequence],
+        // AVX2: _mm256_extract_epi16() [Instruction: Sequence]
+        // AVX2: _mm256_extract_epi8()  [Instruction: Sequence]
+        // AVX:  _mm256_cvtsi256_si32() [Instruction: vmovd r32, xmm]
+        int min_num = _mm256_extract_epi8(min_nums.m256, 0);
+        return (uint8_t)min_num;
   #endif
 #endif
     }
