@@ -63,6 +63,27 @@
 #define _mm_setr_epi64x(high, low) \
         _mm_setr_epi64(_mm_cvtsi64_m64(high), _mm_cvtsi64_m64(low))
 
+#if !defined(_mm256_set_m128)
+
+#define _mm256_set_m128(hi, lo) \
+        _mm256_insertf128_ps(_mm256_castps128_ps256(lo), (hi), 0x1)
+
+#define _mm256_set_m128d(hi, lo) \
+        _mm256_insertf128_pd(_mm256_castpd128_pd256(lo), (hi), 0x1)
+
+#define _mm256_set_m128i(hi, lo) \
+        _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 0x1)
+
+#endif // !_mm256_set_m128
+
+#if !defined(_mm256_setr_m128)
+
+#define _mm256_setr_m128(lo, hi)    _mm256_set_m128((hi), (lo))
+#define _mm256_setr_m128d(lo, hi)   _mm256_set_m128d((hi), (lo))
+#define _mm256_setr_m128i(lo, hi)   _mm256_set_m128i((hi), (lo))
+
+#endif // !_mm256_setr_m128
+
 #define _mm256_test_all_zeros(mask, val) \
         _mm256_testz_si256((mask), (val))
 
@@ -1542,13 +1563,13 @@ struct BitVec16x16_AVX {
     BitVec16x16_AVX() noexcept {}
     BitVec16x16_AVX(__m256i m256i) noexcept : m256(m256i) {}
     BitVec16x16_AVX(__m128i low, __m128i high) noexcept
-        : m256(_mm256_setr_m128i(high, low)) {}
+        : m256(_mm256_setr_m128i(low, high)) {}
 
     // non-explicit conversions intended
     BitVec16x16_AVX(const BitVec16x16_AVX & src) noexcept : m256(src.m256) {}
     
     BitVec16x16_AVX(const BitVec08x16 & low, const BitVec08x16 & high) noexcept
-        : m256(_mm256_set_m128i(high.m128, low.m128)) {}
+        : m256(_mm256_setr_m128i(low.m128, high.m128)) {}
 
     BitVec16x16_AVX(uint8_t c00, uint8_t c01, uint8_t c02, uint8_t c03,
                 uint8_t c04, uint8_t c05, uint8_t c06, uint8_t c07,
@@ -1580,7 +1601,7 @@ struct BitVec16x16_AVX {
             m256(_mm256_setr_epi64x(q00, q01, q02, q03)) {}
 
     BitVec16x16_AVX & mergeFrom(const BitVec08x16 & low, const BitVec08x16 & high) {
-        this->m256 = _mm256_set_m128i(high.m128, low.m128);
+        this->m256 = _mm256_setr_m128i(low.m128, high.m128);
         return *this;
     }
 
