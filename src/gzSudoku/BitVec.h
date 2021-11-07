@@ -45,6 +45,7 @@
 #else
 #include <x86intrin.h>
 #include "msvc_x86intrin.h"
+#include <avxintrin.h>
 
 #define _mm_setr_epi64x(high, low) \
         _mm_setr_epi64(_mm_cvtsi64_m64(high), _mm_cvtsi64_m64(low))
