@@ -19,6 +19,8 @@
 #include <initializer_list>
 #include <type_traits>
 
+#include "BitUtils.h"
+
 #define __MMX__
 #define __SSE__
 #define __SSE2__
@@ -45,6 +47,18 @@
 #else
 #include <x86intrin.h>
 #include "msvc_x86intrin.h"
+#include <avxintrin.h>
+
+#define _mm_cvtss_i32 _mm_cvtss_si32
+#define _mm_cvtsd_i32 _mm_cvtsd_si32
+#define _mm_cvti32_sd _mm_cvtsi32_sd
+#define _mm_cvti32_ss _mm_cvtsi32_ss
+#ifdef __x86_64__
+#define _mm_cvtss_i64 _mm_cvtss_si64
+#define _mm_cvtsd_i64 _mm_cvtsd_si64
+#define _mm_cvti64_sd _mm_cvtsi64_sd
+#define _mm_cvti64_ss _mm_cvtsi64_ss
+#endif
 
 #define _mm_setr_epi64x(high, low) \
         _mm_setr_epi64(_mm_cvtsi64_m64(high), _mm_cvtsi64_m64(low))
@@ -2028,7 +2042,7 @@ struct BitVec16x16_AVX {
     template <size_t MaxLength>
     int8_t min_i8(BitVec16x16_AVX & min_nums) const {
         this->min_i8<MaxLength>(min_nums);
-#if defined(_MSC_VER) && (_MSC_VER < 2000)
+#if 1 || (defined(_MSC_VER) && (_MSC_VER < 2000))
         BitVec08x16 min_nums_128;
         min_nums.castTo(min_nums_128);
         uint32_t min_num = SSE::_mm_cvtsi128_si32_low(min_nums_128.m128);
@@ -2080,7 +2094,7 @@ struct BitVec16x16_AVX {
     template <size_t MaxLength>
     uint8_t min_u8(BitVec16x16_AVX & min_nums) const {
         this->min_u8<MaxLength>(min_nums);
-#if defined(_MSC_VER) && (_MSC_VER < 2000)
+#if 1 || (defined(_MSC_VER) && (_MSC_VER < 2000))
         BitVec08x16 min_nums_128;
         min_nums.castTo(min_nums_128);
         uint32_t min_num = SSE::_mm_cvtsi128_si32_low(min_nums_128.m128);
