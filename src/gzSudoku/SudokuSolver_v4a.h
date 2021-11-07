@@ -631,16 +631,18 @@ private:
 
         BitVec08x16 first_u16_mask(0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000);
         BitVec08x16 min_index_plus(0x70, 0x60, 0x50, 0x40, 0x30, 0x20, 0x10, 0);
+        BitVec08x16 minpos;
 
-        BitVec16x16 min_nums_16;
-        BitVec16x16 min_indexs_16;
+        BitVec08x16 min_nums_8;
+        BitVec08x16 min_indexs_8;
 
-        min_nums_16.low.setAllZeros();
-        min_indexs_16.low.setAllZeros();
+        min_nums_8.setAllZeros();
+        min_indexs_8.setAllZeros();
 
         // Position (Box-Cell) literal
-        uint32_t min_cell_size = 255;
-        uint32_t min_cell_index = uint32_t(-1);
+        uint32_t min_and_index;
+        uint32_t min_cell_size;
+        uint32_t min_cell_index;
         size_t box;
         for (box = 0; box < Boxes - 1; box += 2) {
             void * pCells16_1 = (void * )&this->init_state_.box_cell_nums[box];
@@ -670,27 +672,35 @@ private:
             popcnt16_1.minpos16<Numbers>(minpos_1);
             popcnt16_2.minpos16<Numbers>(minpos_2);
 
-            min_nums_16.low = _mm_slli_si128(min_nums_16.low.m128, 2);
-            min_indexs_16.low = _mm_slli_si128(min_indexs_16.low.m128, 2);
+            min_nums_8 = _mm_slli_si128(min_nums_8.m128, 2);
+            min_indexs_8 = _mm_slli_si128(min_indexs_8.m128, 2);
 
             BitVec08x16 min_num = minpos_1 & first_u16_mask;
             BitVec08x16 min_index = _mm_srli_epi32(minpos_1.m128, 16);
 
-            min_nums_16.low |= min_num;
-            min_indexs_16.low |= min_index;
+            min_nums_8 |= min_num;
+            min_indexs_8 |= min_index;
 
-            min_nums_16.low = _mm_slli_si128(min_nums_16.low.m128, 2);
-            min_indexs_16.low = _mm_slli_si128(min_indexs_16.low.m128, 2);
+            min_nums_8 = _mm_slli_si128(min_nums_8.m128, 2);
+            min_indexs_8 = _mm_slli_si128(min_indexs_8.m128, 2);
 
             min_num = minpos_2 & first_u16_mask;
             min_index = _mm_srli_epi32(minpos_2.m128, 16);
 
-            min_nums_16.low |= min_num;
-            min_indexs_16.low |= min_index;
+            min_nums_8 |= min_num;
+            min_indexs_8 |= min_index;
         }
 
-        min_indexs_16.low = _mm_add_epi16(min_indexs_16.low.m128, min_index_plus.m128);
+        min_indexs_8 = _mm_add_epi16(min_indexs_8.m128, min_index_plus.m128);
+        
+        min_nums_8.minpos16<Numbers>(minpos);
+        min_and_index = _mm_cvtsi128_si32(minpos.m128);
+        min_cell_size = min_and_index & 0xFFFFUL;
+        min_cell_index = min_and_index >> 16U;
+        min_cell_index = min_indexs_8.extract(min_cell_index);
 
+        uint32_t min_cell_size_9;
+        uint32_t min_cell_index_9;
         // box = 8
         {
             void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
@@ -707,15 +717,18 @@ private:
 #if V4A_SAVE_COUNT_SIZE
             popcnt16.saveAligned(&this->count_.sizes.box_cells[box][0]);
 #endif
-            BitVec08x16 minpos;
             popcnt16.minpos16<Numbers>(minpos);
 
-            BitVec08x16 min_num = minpos & first_u16_mask;
-            BitVec08x16 min_index = _mm_srli_epi32(minpos.m128, 16);
+            min_and_index = _mm_cvtsi128_si32(minpos.m128);
+            min_cell_size_9 = min_and_index & 0xFFFFUL;
+            min_cell_index_9 = min_and_index >> 16U;
 
-            min_nums_16.high = min_num;
-            min_indexs_16.high = min_index;
+            if (min_cell_size_9 < min_cell_size) {
+                min_cell_size = min_cell_size_9;
+                min_cell_index = 8 * BoxSize16 + min_cell_index_9;
+            }
         }
+
         this->count_.total.min_literal_size[0] = (uint16_t)min_cell_size;
         this->count_.total.min_literal_index[0] = (uint16_t)min_cell_index;
 

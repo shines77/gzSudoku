@@ -64,7 +64,7 @@
 #define _mm_setr_epi64x(high, low) \
         _mm_setr_epi64(_mm_cvtsi64_m64(high), _mm_cvtsi64_m64(low))
 
-#if !defined(_mm256_set_m128)
+#if !defined(_mm256_set_m128i)
 
 #define _mm256_set_m128(hi, lo) \
         _mm256_insertf128_ps(_mm256_castps128_ps256(lo), (hi), 0x1)
@@ -75,15 +75,15 @@
 #define _mm256_set_m128i(hi, lo) \
         _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 0x1)
 
-#endif // !_mm256_set_m128
+#endif // !_mm256_set_m128i
 
-#if !defined(_mm256_setr_m128)
+#if !defined(_mm256_setr_m128i)
 
 #define _mm256_setr_m128(lo, hi)    _mm256_set_m128((hi), (lo))
 #define _mm256_setr_m128d(lo, hi)   _mm256_set_m128d((hi), (lo))
 #define _mm256_setr_m128i(lo, hi)   _mm256_set_m128i((hi), (lo))
 
-#endif // !_mm256_setr_m128
+#endif // !_mm256_setr_m128i
 
 #define _mm256_test_all_zeros(mask, val) \
         _mm256_testz_si256((mask), (val))
@@ -593,6 +593,40 @@ struct BitVec08x16 {
             return first_index;
         }
         else return -1;
+    }
+
+    inline uint16_t extract(int index) const {
+        #define CASE(x) case x: return (uint16_t)_mm_extract_epi16(this->m128, x);
+        switch (index) {
+            CASE(0)
+            CASE(1)
+            CASE(2)
+            CASE(3)
+            CASE(4)
+            CASE(5)
+            CASE(6)
+            CASE(7)
+            default:
+                return uint16_t(-1);
+        }
+        #undef CASE
+    }
+
+    inline void insert(int index, uint16_t value) {
+        #define CASE(x) case x: this->m128 = _mm_insert_epi16(this->m128, value, x); break;
+        switch (index) {
+            CASE(0)
+            CASE(1)
+            CASE(2)
+            CASE(3)
+            CASE(4)
+            CASE(5)
+            CASE(6)
+            CASE(7)
+            default:
+                break;
+        }
+        #undef CASE
     }
 
     template <size_t MaxLength, size_t MaxBits>
@@ -1240,6 +1274,60 @@ struct BitVec16x16 {
             int index_high = this->high.indexOfIsEqual16_NonZeros(num_mask);
             return (8 + index_high);
         }
+    }
+
+    inline uint16_t extract(int index) const {
+        #define CASE_LOW(x)  case x: return (uint16_t)_mm_extract_epi16(this->low.m128, x);
+        #define CASE_HIGH(x) case x: return (uint16_t)_mm_extract_epi16(this->high.m128, (x - 8));
+        switch (index) {
+            CASE_LOW(0)
+            CASE_LOW(1)
+            CASE_LOW(2)
+            CASE_LOW(3)
+            CASE_LOW(4)
+            CASE_LOW(5)
+            CASE_LOW(6)
+            CASE_LOW(7)
+            CASE_HIGH(8)
+            CASE_HIGH(9)
+            CASE_HIGH(10)
+            CASE_HIGH(11)
+            CASE_HIGH(12)
+            CASE_HIGH(13)
+            CASE_HIGH(14)
+            CASE_HIGH(15)
+            default:
+                return uint16_t(-1);
+        }
+        #undef CASE_LOW
+        #undef CASE_HIGH
+    }
+
+    inline void insert(int index, uint16_t value) {
+        #define CASE_LOW(x)  case x: this->low.m128  = _mm_insert_epi16(this->low.m128, value, x); break;
+        #define CASE_HIGH(x) case x: this->high.m128 = _mm_insert_epi16(this->high.m128, value, (x - 8)); break;
+        switch (index) {
+            CASE_LOW(0)
+            CASE_LOW(1)
+            CASE_LOW(2)
+            CASE_LOW(3)
+            CASE_LOW(4)
+            CASE_LOW(5)
+            CASE_LOW(6)
+            CASE_LOW(7)
+            CASE_HIGH(8)
+            CASE_HIGH(9)
+            CASE_HIGH(10)
+            CASE_HIGH(11)
+            CASE_HIGH(12)
+            CASE_HIGH(13)
+            CASE_HIGH(14)
+            CASE_HIGH(15)
+            default:
+                break;
+        }
+        #undef CASE_LOW
+        #undef CASE_HIGH
     }
 
     template <size_t MaxLength, size_t MaxBits>
@@ -1986,6 +2074,125 @@ struct BitVec16x16_AVX {
         uint32_t first_offset = BitUtils::bsf(compare_mask_32);
         int first_index = (int)(first_offset >> 1U);
         return first_index;
+    }
+
+    inline uint16_t extract(int index) const {
+#if !defined(_mm256_extract_epi16)
+        #define CASE_LOW(x) case x: \
+            low = _mm256_castsi256_si128(this->m256); \
+            return (uint16_t)_mm_extract_epi16(low, x);
+        #define CASE_HIGH(x) case x: \
+            low = _mm256_castsi256_si128(_mm256_bsrli_epi128(this->m256, 8)); \
+            return (uint16_t)_mm_extract_epi16(low, (x - 8));
+        __m128i low;
+        switch (index) {
+            CASE_LOW(0)
+            CASE_LOW(1)
+            CASE_LOW(2)
+            CASE_LOW(3)
+            CASE_LOW(4)
+            CASE_LOW(5)
+            CASE_LOW(6)
+            CASE_LOW(7)
+            CASE_HIGH(8)
+            CASE_HIGH(9)
+            CASE_HIGH(10)
+            CASE_HIGH(11)
+            CASE_HIGH(12)
+            CASE_HIGH(13)
+            CASE_HIGH(14)
+            CASE_HIGH(15)
+            default:
+                return uint16_t(-1);
+        }
+        #undef CASE_LOW
+        #undef CASE_HIGH
+#else
+        #define CASE(x) case x: return (uint16_t)_mm256_extract_epi16(this->m256, x);
+        switch (index) {
+            CASE(0)
+            CASE(1)
+            CASE(2)
+            CASE(3)
+            CASE(4)
+            CASE(5)
+            CASE(6)
+            CASE(7)
+            CASE(8)
+            CASE(9)
+            CASE(10)
+            CASE(11)
+            CASE(12)
+            CASE(13)
+            CASE(14)
+            CASE(15)
+            default:
+                return uint16_t(-1);
+        }
+        #undef CASE
+#endif // !_mm256_extract_epi16
+    }
+
+    inline void insert(int index, uint16_t value) {
+#if !defined(_mm256_insert_epi16)
+        #define CASE_LOW(x) case x: \
+            low = _mm256_castsi256_si128(this->m256); \
+            _mm_insert_epi16(low, (int)value, x); \
+            break;
+        #define CASE_HIGH(x) case x: \
+            copy = _mm256_bsrli_epi128(this->m256, 8); \
+            high = _mm256_castsi256_si128(copy); \
+            _mm_insert_epi16(high, value, (x - 8)); \
+            _mm256_inserti128_si256(this->m256, high, 1); \
+            break;
+        __m128i low, high;
+        __m256i copy;
+        switch (index) {
+            CASE_LOW(0)
+            CASE_LOW(1)
+            CASE_LOW(2)
+            CASE_LOW(3)
+            CASE_LOW(4)
+            CASE_LOW(5)
+            CASE_LOW(6)
+            CASE_LOW(7)
+            CASE_HIGH(8)
+            CASE_HIGH(9)
+            CASE_HIGH(10)
+            CASE_HIGH(11)
+            CASE_HIGH(12)
+            CASE_HIGH(13)
+            CASE_HIGH(14)
+            CASE_HIGH(15)
+            default:
+                break;
+        }
+        #undef CASE_LOW
+        #undef CASE_HIGH
+#else
+        #define CASE(x) case x: this->m256 = _mm256_insert_epi16(this->m256, value, x); break;
+        switch (index) {
+            CASE(0)
+            CASE(1)
+            CASE(2)
+            CASE(3)
+            CASE(4)
+            CASE(5)
+            CASE(6)
+            CASE(7)
+            CASE(8)
+            CASE(9)
+            CASE(10)
+            CASE(11)
+            CASE(12)
+            CASE(13)
+            CASE(14)
+            CASE(15)
+            default:
+                break;
+        }
+        #undef CASE
+#endif // !_mm256_insert_epi16
     }
 
     template <size_t MaxLength, size_t MaxBits>
