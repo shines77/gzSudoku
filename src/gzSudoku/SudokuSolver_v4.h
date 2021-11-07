@@ -261,17 +261,15 @@ private:
     typedef HVNeighborBoxes<BoxCountX, BoxCountY>   hv_neighbor_boxes_t;
 
     struct StaticData {
-        alignas(32) PackedBitSet2D<BoardSize, Rows16 * Cols16>     neighbor_cells_mask;
-        alignas(32) PackedBitSet2D<BoardSize, Boxes16 * BoxSize16> neighbor_boxes_mask;
+        alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>      num_row_mask;
+        alignas(32) PackedBitSet3D<BoardSize, Cols16, Rows16>      num_col_mask;
+        alignas(32) PackedBitSet3D<BoardSize, Boxes16, BoxSize16>  num_box_mask;
 
-        alignas(32) PackedBitSet3D<Boxes, BoxSize16, Numbers16>    box_cell_neighbors_mask[BoardSize][Numbers];
-        alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>      row_neighbors_mask;
-        alignas(32) PackedBitSet3D<BoardSize, Cols16, Rows16>      col_neighbors_mask;
-        alignas(32) PackedBitSet3D<BoardSize, Boxes16, BoxSize16>  box_num_neighbors_mask;
+        alignas(32) PackedBitSet3D<Boxes, BoxSize16, Numbers16>    flip_mask[BoardSize][Numbers];
 
-        bool                                mask_is_inited;
-        std::vector<neighbor_boxes_t>       neighbor_boxes;
-        std::vector<hv_neighbor_boxes_t>    hv_neighbor_boxes;
+        bool                    mask_is_inited;
+        neighbor_boxes_t        neighbor_boxes[Boxes];
+        hv_neighbor_boxes_t     hv_neighbor_boxes[Boxes];
 
         StaticData() : mask_is_inited(false) {
             if (!Static.mask_is_inited) {
@@ -300,7 +298,6 @@ public:
 
 private:
     static void init_neighbor_boxes() {
-        Static.neighbor_boxes.reserve(Boxes);
         for (size_t box_y = 0; box_y < BoxCellsY; box_y++) {
             size_t box_y_base = box_y * BoxCellsX;
             for (size_t box_x = 0; box_x < BoxCellsX; box_x++) {
@@ -321,88 +318,68 @@ private:
                 assert(index == neighborBoxes.boxes_count());
 
                 std::sort(&neighborBoxes.boxes[1], &neighborBoxes.boxes[neighborBoxes.boxes_count()]);
-                Static.neighbor_boxes.push_back(neighborBoxes);
+                Static.neighbor_boxes[box] = neighborBoxes;
             }
         }
     }
 
-    static size_t make_neighbor_cells_masklist(size_t fill_pos,
-                                               size_t row, size_t col) {
-        PackedBitSet<BoardSize16> & cells_mask = Static.neighbor_cells_mask[fill_pos];
-        PackedBitSet<BoardSize16> & boxes_mask = Static.neighbor_boxes_mask[fill_pos];
-
-        PackedBitSet2D<Rows16, Cols16> & rows_mask        = Static.row_neighbors_mask[fill_pos];
-        PackedBitSet2D<Cols16, Rows16> & cols_mask        = Static.col_neighbors_mask[fill_pos];
-        PackedBitSet2D<Boxes16, BoxSize16> & box_num_mask = Static.box_num_neighbors_mask[fill_pos];
+    static size_t make_flip_mask(size_t fill_pos, size_t row, size_t col) {
+        PackedBitSet2D<Rows16, Cols16> & rows_mask      = Static.num_row_mask[fill_pos];
+        PackedBitSet2D<Cols16, Rows16> & cols_mask      = Static.num_col_mask[fill_pos];
+        PackedBitSet2D<Boxes16, BoxSize16> & boxes_mask = Static.num_box_mask[fill_pos];
 
         const CellInfo * pCellInfo = Sudoku::cell_info;
         size_t box, cell;
 
-        rows_mask[row].set(col);
-        cols_mask[col].set(row);
-
-        const CellInfo & cellInfo2 = pCellInfo[fill_pos];
-        box = cellInfo2.box;
-        cell = cellInfo2.cell;
-        box_num_mask[box].set(cell);
-
         size_t index = 0;
+
+        // Horizontal scanning the board
         size_t pos_y = row * Cols;
         for (size_t x = 0; x < Cols; x++) {
+            size_t pos = pos_y + x;
+
+            box = pCellInfo[pos].box;
+            cell = pCellInfo[pos].cell;
+
+            rows_mask[row].set(x);
+            cols_mask[x].set(row);
+            boxes_mask[box].set(cell);
+
             if (x != col) {
-                size_t pos = pos_y + x;
-                size_t pos16 = row * Cols16 + x;
-                cells_mask.set(pos16);
-
-                const CellInfo & cellInfo = pCellInfo[pos];
-                box = cellInfo.box;
-                cell = cellInfo.cell;
-
-                size_t box_pos16 = box * BoxSize16 + cell;
-                boxes_mask.set(box_pos16);
-
-                rows_mask[row].set(x);
-                cols_mask[x].set(row);
-                box_num_mask[box].set(cell);
-
                 for (size_t num = 0; num < Numbers; num++) {
-                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask
-                        = Static.box_cell_neighbors_mask[fill_pos][num];
-                    box_cell_mask[box][cell].set(num);
+                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & flip_mask
+                        = Static.flip_mask[fill_pos][num];
+                    flip_mask[box][cell].set(num);
                 }
 
                 index++;
             }
         }
 
+        // Vertical scanning the board
         size_t pos_x = col;
         for (size_t y = 0; y < Rows; y++) {
             if (y != row) {
                 size_t pos = y * Cols + pos_x;
-                size_t pos16 = y * Cols16 + pos_x;
-                cells_mask.set(pos16);
 
-                const CellInfo & cellInfo = pCellInfo[pos];
-                box = cellInfo.box;
-                cell = cellInfo.cell;
-
-                size_t box_pos16 = box * BoxSize16 + cell;
-                boxes_mask.set(box_pos16);
+                box = pCellInfo[pos].box;
+                cell = pCellInfo[pos].cell;
 
                 rows_mask[y].set(col);
                 cols_mask[col].set(y);
-                box_num_mask[box].set(cell);
+                boxes_mask[box].set(cell);
 
                 for (size_t num = 0; num < Numbers; num++) {
-                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask
-                        = Static.box_cell_neighbors_mask[fill_pos][num];
-                    box_cell_mask[box][cell].set(num);
+                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & flip_mask
+                        = Static.flip_mask[fill_pos][num];
+                    flip_mask[box][cell].set(num);
                 }
 
                 index++;
             }
         }
 
+        // Scanning the current box
         size_t box_x = col / BoxCellsX;
         size_t box_y = row / BoxCellsY;
         size_t box_base = (box_y * BoxCellsY) * Cols + box_x * BoxCellsX;
@@ -417,26 +394,19 @@ private:
                 for (size_t x = 0; x < BoxCellsX; x++) {
                     if (x != cell_x) {
                         assert(pos != fill_pos);
-                        const CellInfo & cellInfo = pCellInfo[pos];
-                        box = cellInfo.box;
-                        cell = cellInfo.cell;
-                        row = cellInfo.row;
-                        col = cellInfo.col;
-
-                        size_t pos16 = row * Cols16 + col;
-                        cells_mask.set(pos16);
-
-                        size_t box_pos16 = box * BoxSize16 + cell;
-                        boxes_mask.set(box_pos16);
+                        box = pCellInfo[pos].box;
+                        cell = pCellInfo[pos].cell;
+                        row = pCellInfo[pos].row;
+                        col = pCellInfo[pos].col;
 
                         rows_mask[row].set(col);
                         cols_mask[col].set(row);
-                        box_num_mask[box].set(cell);
+                        boxes_mask[box].set(cell);
 
                         for (size_t num = 0; num < Numbers; num++) {
-                            PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_cell_mask
-                                = Static.box_cell_neighbors_mask[fill_pos][num];
-                            box_cell_mask[box][cell].set(num);
+                            PackedBitSet3D<Boxes, BoxSize16, Numbers16> & flip_mask
+                                = Static.flip_mask[fill_pos][num];
+                            flip_mask[box][cell].set(num);
                         }
 
                         index++;
@@ -447,46 +417,54 @@ private:
             }
         }
 
+        box = pCellInfo[fill_pos].box;
+        cell = pCellInfo[fill_pos].cell;
+
+        // Current fill pos, set all number bits
+        for (size_t num = 0; num < Numbers; num++) {
+            PackedBitSet3D<Boxes, BoxSize16, Numbers16> & flip_mask = Static.flip_mask[fill_pos][num];
+            flip_mask[box][cell].fill(kAllNumberBits);
+        }
+
         assert(index == Neighbors);
         return index;
     }
 
-    static void init_neighbor_cells_mask() {
+    static void init_flip_mask() {
+        for (size_t pos = 0; pos < BoardSize; pos++) {
+            for (size_t num = 0; num < Numbers; num++) {
+                Static.flip_mask[pos][num].reset();
+            }
+        }
+        Static.num_row_mask.reset();
+        Static.num_col_mask.reset();
+        Static.num_box_mask.reset();
+
         size_t fill_pos = 0;
         for (size_t row = 0; row < Rows; row++) {
             for (size_t col = 0; col < Cols; col++) {
-                make_neighbor_cells_masklist(fill_pos, row, col);
+                make_flip_mask(fill_pos, row, col);
                 fill_pos++;
             }
         }
+
+        // Flip all the mask bits
+        for (size_t pos = 0; pos < BoardSize; pos++) {
+            for (size_t num = 0; num < Numbers; num++) {
+                Static.flip_mask[pos][num].flip();
+            }
+        }
+
+        Static.num_row_mask.flip();
+        Static.num_col_mask.flip();
+        Static.num_box_mask.flip();
     }
 
     static void init_mask() {
         printf("v4::StaticData::init_mask()\n");
 
-        Static.neighbor_cells_mask.reset();
-
-        for (size_t pos = 0; pos < BoardSize; pos++) {
-            for (size_t num = 0; num < Numbers; num++) {
-                Static.box_cell_neighbors_mask[pos][num].reset();
-            }
-        }
-        Static.row_neighbors_mask.reset();
-        Static.col_neighbors_mask.reset();
-        Static.box_num_neighbors_mask.reset();
-
         init_neighbor_boxes();
-        init_neighbor_cells_mask();
-
-        // Flip all mask bits
-        for (size_t pos = 0; pos < BoardSize; pos++) {
-            for (size_t num = 0; num < Numbers; num++) {
-                Static.box_cell_neighbors_mask[pos][num].flip();
-            }
-        }
-        Static.row_neighbors_mask.flip();
-        Static.col_neighbors_mask.flip();
-        Static.box_num_neighbors_mask.flip();
+        init_flip_mask();
     }
 
     static const uint16_t kEnableLiteral16 = 0x0000;
@@ -551,12 +529,12 @@ private:
         PackedBitSet<Numbers16> cell_num_bits = state.box_cell_nums[box][cell];
         state.box_cell_nums[box][cell].reset();
 
+        /*
         size_t box_pos = box * BoxSize16 + cell;
         size_t row_idx = num * Rows16 + row;
         size_t col_idx = num * Cols16 + col;
         size_t box_idx = num * Boxes16 + box;
 
-        /*
         disable_cell_literal(box_pos);
         disable_row_literal(row_idx);
         disable_col_literal(col_idx);
@@ -583,16 +561,16 @@ private:
 
     inline void updateNeighborCells(InitState & state, size_t fill_pos, size_t box, size_t num) {
         const neighbor_boxes_t & neighborBoxes = Static.neighbor_boxes[box];
-        const PackedBitSet3D<Boxes, BoxSize16, Numbers16> & neighbors_mask
-            = Static.box_cell_neighbors_mask[fill_pos][num];
+        const PackedBitSet3D<Boxes, BoxSize16, Numbers16> & flip_mask
+            = Static.flip_mask[fill_pos][num];
         for (size_t i = 0; i < neighborBoxes.boxes_count(); i++) {
             size_t box_idx = neighborBoxes.boxes[i];
-            state.box_cell_nums[box_idx] &= neighbors_mask[box_idx];
+            state.box_cell_nums[box_idx] &= flip_mask[box_idx];
         }
 
-        state.num_row_cols[num] &= Static.row_neighbors_mask[fill_pos];
-        state.num_col_rows[num] &= Static.col_neighbors_mask[fill_pos];
-        state.num_box_cells[num] &= Static.box_num_neighbors_mask[fill_pos];
+        state.num_row_cols[num] &= Static.num_row_mask[fill_pos];
+        state.num_col_rows[num] &= Static.num_col_mask[fill_pos];
+        state.num_box_cells[num] &= Static.num_box_mask[fill_pos];
     }
 
     inline uint32_t count_all_literal_size_no_illegal(uint32_t & out_min_literal_index) {
