@@ -36,8 +36,9 @@
 
 //#undef __SSE4_1__
 //#undef __AVX2__
-//#undef __AVX512VL__
-//#undef __AVX512F__
+
+#undef __AVX512VL__
+#undef __AVX512F__
 
 // For SSE2, SSE3, SSSE3, SSE 4.1, AVX, AVX2
 #if defined(_MSC_VER)
