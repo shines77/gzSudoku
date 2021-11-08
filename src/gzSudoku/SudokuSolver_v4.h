@@ -232,8 +232,9 @@ private:
     };
 
     struct LiteralInfo {
-        uint32_t literal_index;
         uint32_t literal_size;
+        uint16_t literal_type;
+        uint16_t literal_index;        
     };
 
     template <size_t nBoxCountX, size_t nBoxCountY>
@@ -573,7 +574,7 @@ private:
         state.num_box_cells[num] &= Static.num_box_mask[fill_pos];
     }
 
-    inline uint32_t count_all_literal_size_no_illegal(uint32_t & out_min_literal_index) {
+    LiteralInfo count_literal_size_init() {
         BitVec16x16 disable_mask;
         BitVec16x16 numbits_mask;
         numbits_mask.fill_u16(kAllNumberBits);
@@ -720,19 +721,20 @@ private:
         this->count_.total.min_literal_size[3] = (uint16_t)min_box_size;
         this->count_.total.min_literal_index[3] = (uint16_t)min_box_index;
 
-        int min_literal_type;
-
-        BitVec16x16 min_literal;
+        BitVec08x16 min_literal;
         min_literal.loadAligned(&this->count_.total.min_literal_size[0]);
+        int min_literal_type;
         uint32_t min_literal_size = min_literal.minpos16<4>(min_literal_type);
-        uint32_t min_literal_index = min_literal_type * uint32_t(BoardSize16) +
-                                     this->count_.total.min_literal_index[min_literal_type];
+        uint32_t min_literal_index = this->count_.total.min_literal_index[min_literal_type];
 
-        out_min_literal_index = min_literal_index;
-        return min_literal_size;
+        LiteralInfo literalInfo;
+        literalInfo.literal_size = min_literal_size;
+        literalInfo.literal_type = (uint16_t)min_literal_type;
+        literalInfo.literal_index = (uint16_t)min_literal_index;
+        return literalInfo;
     }
 
-    inline uint32_t count_all_literal_size(uint32_t & out_min_literal_index) {
+    LiteralInfo count_all_literal_size() {
         BitVec16x16 disable_mask;
         BitVec16x16 filter_mask;
         BitVec16x16 numbits_mask;
@@ -857,16 +859,17 @@ private:
         this->count_.total.min_literal_size[3] = (uint16_t)min_box_size;
         this->count_.total.min_literal_index[3] = (uint16_t)min_box_index;
 
-        int min_literal_type;
-
-        BitVec16x16 min_literal;
+        BitVec08x16 min_literal;
         min_literal.loadAligned(&this->count_.total.min_literal_size[0]);
+        int min_literal_type;
         uint32_t min_literal_size = min_literal.minpos16<4>(min_literal_type);
-        uint32_t min_literal_index = min_literal_type * uint32_t(BoardSize16) +
-                                     this->count_.total.min_literal_index[min_literal_type];
+        uint32_t min_literal_index = this->count_.total.min_literal_index[min_literal_type];
 
-        out_min_literal_index = min_literal_index;
-        return min_literal_size;
+        LiteralInfo literalInfo;
+        literalInfo.literal_size = min_literal_size;
+        literalInfo.literal_type = (uint16_t)min_literal_type;
+        literalInfo.literal_index = (uint16_t)min_literal_index;
+        return literalInfo;
     }
 
     void init_board(Board & board) {
@@ -933,14 +936,13 @@ private:
         }
         assert(pos == BoardSize);
 
-        uint32_t min_literal_index;
-        uint32_t min_literal_size = this->count_all_literal_size_no_illegal(min_literal_index);
-        this->min_info_.literal_size = min_literal_size;
-        this->min_info_.literal_index = min_literal_index;
+        LiteralInfo literalInfo;
+        literalInfo = this->count_literal_size_init();
+        this->min_info_ = literalInfo;
     }
 
 public:
-    bool solve(Board & board, size_t empties, uint32_t min_literal_size, uint32_t min_literal_index) {
+    bool search(Board & board, size_t empties, const LiteralInfo & literalInfo) {
         if (empties == 0) {
             if (kSearchMode > SearchMode::OneAnswer) {
                 this->answers_.push_back(board);
@@ -959,9 +961,7 @@ public:
 
     bool solve(Board & board) {
         this->init_board(board);
-        bool success = this->solve(board, this->empties_,
-                                   this->min_info_.literal_size,
-                                   this->min_info_.literal_index);
+        bool success = this->search(board, this->empties_, this->min_info_);
         return success;
     }
 
