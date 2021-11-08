@@ -750,12 +750,12 @@ private:
             box_bits_2.loadAligned(pCells16_2);
 
             BitVec16x16_AVX disable_mask1 = box_bits_1.whichIsZeros();
-            disable_mask1.and(numbits_mask);
-            box_bits_1.or(disable_mask1);
+            disable_mask1._and(numbits_mask);
+            box_bits_1._or(disable_mask1);
 
             BitVec16x16_AVX disable_mask2 = box_bits_2.whichIsZeros();
-            disable_mask2.and(numbits_mask);
-            box_bits_2.or(disable_mask2);
+            disable_mask2._and(numbits_mask);
+            box_bits_2._or(disable_mask2);
 
             BitVec16x16 box_bits_sse_1, box_bits_sse_2;
             box_bits_1.castTo(box_bits_sse_1);
@@ -810,8 +810,8 @@ private:
             box_bits.loadAligned(pCells16);
 
             disable_mask = box_bits.whichIsZeros();
-            disable_mask.and(numbits_mask);
-            box_bits.or(disable_mask);
+            disable_mask._and(numbits_mask);
+            box_bits._or(disable_mask);
 
             BitVec16x16 box_bits_sse;
             box_bits.castTo(box_bits_sse);
@@ -848,9 +848,9 @@ private:
             num_row_bits.loadAligned(pCells16);
 
             disable_mask = num_row_bits.whichIsZeros();
-            disable_mask.and(num_rows_mask);
+            disable_mask._and(num_rows_mask);
 
-            num_row_bits.or(disable_mask);
+            num_row_bits._or(disable_mask);
 
             BitVec16x16_AVX popcnt16 = num_row_bits.popcount16<Rows, Cols>();
 #if V4A_SAVE_COUNT_SIZE
@@ -887,9 +887,9 @@ private:
             num_col_bits.loadAligned(pCells16);
 
             disable_mask = num_col_bits.whichIsZeros();
-            disable_mask.and(num_cols_mask);
+            disable_mask._and(num_cols_mask);
 
-            num_col_bits.or(disable_mask);
+            num_col_bits._or(disable_mask);
 
             BitVec16x16_AVX popcnt16 = num_col_bits.popcount16<Cols, Rows>();
 #if V4A_SAVE_COUNT_SIZE
@@ -926,9 +926,9 @@ private:
             num_box_bits.loadAligned(pCells16);
 
             disable_mask = num_box_bits.whichIsZeros();
-            disable_mask.and(num_box_mask);
+            disable_mask._and(num_box_mask);
 
-            num_box_bits.or(disable_mask);
+            num_box_bits._or(disable_mask);
 
             BitVec16x16_AVX popcnt16 = num_box_bits.popcount16<Boxes, BoxSize>();
 #if V4A_SAVE_COUNT_SIZE
@@ -985,9 +985,9 @@ private:
             box_bits.loadAligned(pCells16);
 
             disable_mask = box_bits.whichIsZeros();
-            disable_mask.and(numbits_mask);
+            disable_mask._and(numbits_mask);
 
-            box_bits.or(disable_mask);
+            box_bits._or(disable_mask);
 
             BitVec16x16_AVX popcnt16 = box_bits.popcount16<BoxSize, Numbers>();
 #if V4A_SAVE_COUNT_SIZE
@@ -1020,9 +1020,9 @@ private:
             num_row_bits.loadAligned(pCells16);
 
             disable_mask = num_row_bits.whichIsZeros();
-            disable_mask.and(num_rows_mask);
+            disable_mask._and(num_rows_mask);
 
-            num_row_bits.or(disable_mask);
+            num_row_bits._or(disable_mask);
 
             BitVec16x16_AVX popcnt16 = num_row_bits.popcount16<Rows, Cols>();
 #if V4A_SAVE_COUNT_SIZE
@@ -1055,9 +1055,9 @@ private:
             num_col_bits.loadAligned(pCells16);
 
             disable_mask = num_col_bits.whichIsZeros();
-            disable_mask.and(num_cols_mask);
+            disable_mask._and(num_cols_mask);
 
-            num_col_bits.or(disable_mask);
+            num_col_bits._or(disable_mask);
 
             BitVec16x16_AVX popcnt16 = num_col_bits.popcount16<Cols, Rows>();
 #if V4A_SAVE_COUNT_SIZE
@@ -1090,9 +1090,9 @@ private:
             num_box_bits.loadAligned(pCells16);
 
             disable_mask = num_box_bits.whichIsZeros();
-            disable_mask.and(num_box_mask);
+            disable_mask._and(num_box_mask);
 
-            num_box_bits.or(disable_mask);
+            num_box_bits._or(disable_mask);
 
             BitVec16x16_AVX popcnt16 = num_box_bits.popcount16<Boxes, BoxSize>();
 #if V4A_SAVE_COUNT_SIZE

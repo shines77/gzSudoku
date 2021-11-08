@@ -266,52 +266,52 @@ struct BitVec08x16 {
     // Logical operation
     inline BitVec08x16 operator & (const BitVec08x16 & vec) {
         BitVec08x16 tmp(this->m128);
-        tmp.and(vec);
+        tmp._and(vec);
         return tmp;
     }
 
     inline BitVec08x16 operator | (const BitVec08x16 & vec) {
         BitVec08x16 tmp(this->m128);
-        tmp.or(vec);
+        tmp._or(vec);
         return tmp;
     }
 
     inline BitVec08x16 operator ^ (const BitVec08x16 & vec) {
         BitVec08x16 tmp(this->m128);
-        tmp.xor(vec);
+        tmp._xor(vec);
         return tmp;
     }
 
     inline BitVec08x16 operator ~ () {
         BitVec08x16 tmp(this->m128);
-        tmp.not();
+        tmp._not();
         return tmp;
     }
 
     inline BitVec08x16 operator ! () {
         BitVec08x16 tmp(this->m128);
-        tmp.not();
+        tmp._not();
         return tmp;
     }
 
     // Logical operation
     inline BitVec08x16 & operator &= (const BitVec08x16 & vec) {
-        this->and(vec);
+        this->_and(vec);
         return *this;
     }
 
     inline BitVec08x16 & operator |= (const BitVec08x16 & vec) {
-        this->or(vec);
+        this->_or(vec);
         return *this;
     }
 
     inline BitVec08x16 & operator ^= (const BitVec08x16 & vec) {
-        this->xor(vec);
+        this->_xor(vec);
         return *this;
     }
 
     // Logical operation
-    inline BitVec08x16 & and(const BitVec08x16 & vec) {
+    inline BitVec08x16 & _and(const BitVec08x16 & vec) {
         this->m128 = _mm_and_si128(this->m128, vec.m128);
         return *this;
     }
@@ -321,18 +321,18 @@ struct BitVec08x16 {
         return *this;
     }
 
-    inline BitVec08x16 & or(const BitVec08x16 & vec) {
+    inline BitVec08x16 & _or(const BitVec08x16 & vec) {
         this->m128 = _mm_or_si128(this->m128, vec.m128);
         return *this;
     }
 
-    inline BitVec08x16 & xor(const BitVec08x16 & vec) {
+    inline BitVec08x16 & _xor(const BitVec08x16 & vec) {
         this->m128 = _mm_xor_si128(this->m128, vec.m128);
         return *this;
     }
 
     // Logical operation
-    inline BitVec08x16 & and(__m128i value) {
+    inline BitVec08x16 & _and(__m128i value) {
         this->m128 = _mm_and_si128(this->m128, value);
         return *this;
     }
@@ -342,18 +342,18 @@ struct BitVec08x16 {
         return *this;
     }
 
-    inline BitVec08x16 & or(__m128i value) {
+    inline BitVec08x16 & _or(__m128i value) {
         this->m128 = _mm_or_si128(this->m128, value);
         return *this;
     }
 
-    inline BitVec08x16 & xor(__m128i value) {
+    inline BitVec08x16 & _xor(__m128i value) {
         this->m128 = _mm_xor_si128(this->m128, value);
         return *this;
     }
 
     // Logical not: !
-    inline BitVec08x16 & not() {
+    inline BitVec08x16 & _not() {
         BitVec08x16 ones;
         ones.setAllOnes();
         this->m128 = _mm_andnot_si128(this->m128, ones.m128);
@@ -1051,54 +1051,54 @@ struct BitVec16x16 {
     // Logical operation
     inline BitVec16x16 operator & (const BitVec16x16 & vec) {
         BitVec16x16 tmp(this->low, this->high);
-        tmp.and(vec);
+        tmp._and(vec);
         return tmp;
     }
 
     inline BitVec16x16 operator | (const BitVec16x16 & vec) {
         BitVec16x16 tmp(this->low, this->high);
-        tmp.or(vec);
+        tmp._or(vec);
         return tmp;
     }
 
     inline BitVec16x16 operator ^ (const BitVec16x16 & vec) {
         BitVec16x16 tmp(this->low, this->high);
-        tmp.xor(vec);
+        tmp._xor(vec);
         return tmp;
     }
 
     inline BitVec16x16 operator ~ () {
         BitVec16x16 tmp(this->low, this->high);
-        tmp.not();
+        tmp._not();
         return tmp;
     }
 
     inline BitVec16x16 operator ! () {
         BitVec16x16 tmp(this->low, this->high);
-        tmp.not();
+        tmp._not();
         return tmp;
     }
 
     // Logical operation
     inline BitVec16x16 & operator &= (const BitVec16x16 & vec) {
-        this->and(vec);
+        this->_and(vec);
         return *this;
     }
 
     inline BitVec16x16 & operator |= (const BitVec16x16 & vec) {
-        this->or(vec);
+        this->_or(vec);
         return *this;
     }
 
     inline BitVec16x16 & operator ^= (const BitVec16x16 & vec) {
-        this->xor(vec);
+        this->_xor(vec);
         return *this;
     }
 
     // Logical operation
-    inline BitVec16x16 & and(const BitVec16x16 & vec) {
-        this->low.and(vec.low);
-        this->high.and(vec.high);
+    inline BitVec16x16 & _and(const BitVec16x16 & vec) {
+        this->low._and(vec.low);
+        this->high._and(vec.high);
         return *this;
     }
 
@@ -1108,22 +1108,22 @@ struct BitVec16x16 {
         return *this;
     }
 
-    inline BitVec16x16 & or(const BitVec16x16 & vec) {
-        this->low.or(vec.low);
-        this->high.or(vec.high);
+    inline BitVec16x16 & _or(const BitVec16x16 & vec) {
+        this->low._or(vec.low);
+        this->high._or(vec.high);
         return *this;
     }
 
-    inline BitVec16x16 & xor(const BitVec16x16 & vec) {
-        this->low.xor(vec.low);
-        this->high.xor(vec.high);
+    inline BitVec16x16 & _xor(const BitVec16x16 & vec) {
+        this->low._xor(vec.low);
+        this->high._xor(vec.high);
         return *this;
     }
 
     // Logical not: !
-    inline BitVec16x16 & not() {
-        this->low.not();
-        this->high.not();
+    inline BitVec16x16 & _not() {
+        this->low._not();
+        this->high._not();
         return *this;
     }
 
@@ -1834,22 +1834,22 @@ struct BitVec16x16_AVX {
 
     // Logical operation
     inline BitVec16x16_AVX & operator &= (const BitVec16x16_AVX & vec) {
-        this->and(vec);
+        this->_and(vec);
         return *this;
     }
 
     inline BitVec16x16_AVX & operator |= (const BitVec16x16_AVX & vec) {
-        this->or(vec);
+        this->_or(vec);
         return *this;
     }
 
     inline BitVec16x16_AVX & operator ^= (const BitVec16x16_AVX & vec) {
-        this->xor(vec);
+        this->_xor(vec);
         return *this;
     }
 
     // Logical operation
-    inline BitVec16x16_AVX & and(const BitVec16x16_AVX & vec) {
+    inline BitVec16x16_AVX & _and(const BitVec16x16_AVX & vec) {
         this->m256 = _mm256_and_si256(this->m256, vec.m256);
         return *this;
     }
@@ -1859,18 +1859,18 @@ struct BitVec16x16_AVX {
         return *this;
     }
 
-    inline BitVec16x16_AVX & or(const BitVec16x16_AVX & vec) {
+    inline BitVec16x16_AVX & _or(const BitVec16x16_AVX & vec) {
         this->m256 = _mm256_or_si256(this->m256, vec.m256);
         return *this;
     }
 
-    inline BitVec16x16_AVX & xor(const BitVec16x16_AVX & vec) {
+    inline BitVec16x16_AVX & _xor(const BitVec16x16_AVX & vec) {
         this->m256 = _mm256_xor_si256(this->m256, vec.m256);
         return *this;
     }
 
     // Logical not: !
-    inline BitVec16x16_AVX & not() {
+    inline BitVec16x16_AVX & _not() {
         BitVec16x16_AVX ones;
         ones.setAllOnes();
         this->m256 = _mm256_andnot_si256(this->m256, ones.m256);
