@@ -237,6 +237,8 @@ private:
         uint16_t literal_index;
 
         LiteralInfo() : literal_size(0), literal_type(0), literal_index(0) {}
+        LiteralInfo(uint32_t size, uint32_t type, uint32_t index)
+            : literal_size(size), literal_type((uint16_t)type), literal_index((uint16_t)index) {}
     };
 
     template <size_t nBoxCountX, size_t nBoxCountY>
@@ -680,6 +682,10 @@ private:
         min_cell_index = min_and_index >> 16U;
         min_cell_index = min_indexs_8.extract(min_cell_index);
 
+        if (min_cell_size == 1) {
+            return LiteralInfo(1, 0, min_cell_index);
+        }
+
         uint32_t min_cell_size_9;
         uint32_t min_cell_index_9;
         // box = 8
@@ -706,6 +712,9 @@ private:
                 min_cell_size = min_cell_size_9;
                 min_cell_index_9 = min_and_index >> 16U;
                 min_cell_index = 8 * BoxSize16 + min_cell_index_9;
+                if (min_cell_size_9 == 1) {
+                    return LiteralInfo(1, 0, min_cell_index);
+                }
             }
         }
 
@@ -735,15 +744,19 @@ private:
             int min_index = -1;
             uint32_t min_size = popcnt16.minpos16<Cols>(min_row_size, min_index);
             this->count_.counts.num_rows[num] = (uint8_t)min_size;
-            if (likely(min_index != -1)) {
+            if (likely(min_index == -1)) {
+                this->count_.indexs.num_rows[num] = (uint8_t)min_index;
+            }
+            else {
                 size_t row_index = num * Rows16 + min_index;
+                if (min_size == 1) {
+                    return LiteralInfo(1, 1, (uint32_t)row_index);
+                }
                 this->count_.indexs.num_rows[num] = (uint8_t)row_index;
                 min_row_index = (uint32_t)row_index;
             }
-            else {
-                this->count_.indexs.num_rows[num] = (uint8_t)min_index;
-            }
         }
+
         this->count_.total.min_literal_size[1] = (uint16_t)min_row_size;
         this->count_.total.min_literal_index[1] = (uint16_t)min_row_index;
 
@@ -770,15 +783,19 @@ private:
             int min_index = -1;
             uint32_t min_size = popcnt16.minpos16<Rows>(min_col_size, min_index);
             this->count_.counts.num_cols[num] = (uint8_t)min_size;
-            if (likely(min_index != -1)) {
+            if (likely(min_index == -1)) {
+                this->count_.indexs.num_cols[num] = (uint8_t)min_index;
+            }
+            else {
                 size_t col_index = num * Cols16 + min_index;
+                if (min_size == 1) {
+                    return LiteralInfo(1, 2, (uint32_t)col_index);
+                }
                 this->count_.indexs.num_cols[num] = (uint8_t)col_index;
                 min_col_index = (uint32_t)col_index;
             }
-            else {
-                this->count_.indexs.num_cols[num] = (uint8_t)min_index;
-            }
         }
+
         this->count_.total.min_literal_size[2] = (uint16_t)min_col_size;
         this->count_.total.min_literal_index[2] = (uint16_t)min_col_index;
 
@@ -805,15 +822,19 @@ private:
             int min_index = -1;
             uint32_t min_size = popcnt16.minpos16<BoxSize>(min_box_size, min_index);
             this->count_.counts.num_boxes[num] = (uint8_t)min_size;
-            if (likely(min_index != -1)) {
+            if (likely(min_index == -1)) {
+                this->count_.indexs.num_boxes[num] = (uint8_t)min_index;
+            }
+            else {
                 size_t box_index = num * Boxes16 + min_index;
+                if (min_size == 1) {
+                    return LiteralInfo(1, 3, (uint32_t)box_index);
+                }
                 this->count_.indexs.num_boxes[num] = (uint8_t)box_index;
                 min_box_index = (uint32_t)box_index;
             }
-            else {
-                this->count_.indexs.num_boxes[num] = (uint8_t)min_index;
-            }
         }
+
         this->count_.total.min_literal_size[3] = (uint16_t)min_box_size;
         this->count_.total.min_literal_index[3] = (uint16_t)min_box_index;
 
