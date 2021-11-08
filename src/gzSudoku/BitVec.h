@@ -2397,7 +2397,7 @@ struct BitVec16x16_AVX {
 
     template <size_t MaxLength>
     void minpos16(BitVec08x16 & minpos) const {
-        uint32_t min_and_index = this->minpos16();
+        uint32_t min_and_index = this->minpos16<MaxLength>();
         minpos = _mm_cvtsi32_si128(min_and_index);
     }
 
