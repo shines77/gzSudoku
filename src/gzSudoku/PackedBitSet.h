@@ -27,7 +27,7 @@ namespace gzSudoku {
 
 template <size_t Bytes>
 struct IntegerType {
-    typedef uint32_t type;
+    typedef size_t type;
 };
 
 template <>
@@ -660,6 +660,19 @@ public:
         return Bits;
     }
 
+    unit_type ls1b() const noexcept {
+        unit_type unit = this->array_[0];
+        if (unit != 0) {
+            unit_type bit;
+            if (sizeof(unit_type) <= sizeof(uint32_t))
+                bit = (unit_type)BitUtils::ls1b32((uint32_t)unit);
+            else
+                bit = (unit_type)BitUtils::ls1b64(unit);
+            return bit;
+        }
+        return unit_type(0);
+    }
+
     unit_type ls1b(size_t & index) const noexcept {
         for (size_t i = 0; i < kUnits; i++) {
             unit_type unit = this->array_[i];
@@ -687,35 +700,31 @@ public:
         return total_popcnt;
     }
 
-    unsigned long to_ulong() const {
-        if (Bits <= sizeof(unit_type) * 8) {
-            return static_cast<unsigned long>(this->array_[0]);
-        }
-        else {
-            return static_cast<unsigned long>(this->array_[0]);
-        }
+    inline unsigned long to_ulong(size_t index = 0) const {
+        assert(index < kUnits);
+        return static_cast<unsigned long>(this->array_[index]);
     }
 
-    uint64_t to_ullong() const {
-        if (Bits <= sizeof(unit_type) * 8) {
-            return static_cast<uint64_t>(this->array_[0]);
-        }
-        else {
-            return this->array_[0];
-        }
+    inline uint64_t to_ullong(size_t index = 0) const {
+        assert(index < kUnits);
+        return static_cast<uint64_t>(this->array_[index]);
     }
 
-    unit_type value() const {
-        return this->array_[0];
+    inline size_t to_size_t(size_t index = 0) const {
+        assert(index < kUnits);
+        return static_cast<size_t>(this->array_[index]);
     }
 
-    size_t value_sz() const {
-        if (Bits <= sizeof(uint32_t) * 8) {
-            return static_cast<size_t>(this->array_[0]);
-        }
-        else {
-            return this->array_[0];
-        }
+    inline unit_type unit_value(size_t index = 0) const {
+        assert(index < kUnits);
+        return this->array_[index];
+    }
+
+    inline size_t reset_and_get(size_t index = 0) noexcept {
+        assert(index < kUnits);
+        size_t value = static_cast<size_t>(this->array_[index]);
+        this->array_[index] = 0;
+        return value;
     }
 };
 

@@ -243,7 +243,7 @@ private:
 
     template <size_t nBoxCountX, size_t nBoxCountY>
     struct NeighborBoxes {
-        static const uint32_t kBoxesCount = (uint32_t)((nBoxCountX - 1) + (nBoxCountY - 1) + 1);
+        static const uint32_t kBoxesCount = (uint32_t)((nBoxCountX - 1) + (nBoxCountY - 1) + 0);
 
         uint32_t boxes_count() const { return kBoxesCount; }
 
@@ -309,7 +309,7 @@ private:
                 uint32_t box = uint32_t(box_y_base + box_x);
                 size_t index = 0;
                 neighbor_boxes_t neighborBoxes;
-                neighborBoxes.boxes[index++] = box;
+                //neighborBoxes.boxes[index++] = box;
                 for (size_t box_i = 0; box_i < BoxCellsX; box_i++) {
                     if (box_i != box_x) {
                         neighborBoxes.boxes[index++] = uint32_t(box_y * BoxCellsX + box_i);
@@ -322,7 +322,7 @@ private:
                 }
                 assert(index == neighborBoxes.boxes_count());
 
-                std::sort(&neighborBoxes.boxes[1], &neighborBoxes.boxes[neighborBoxes.boxes_count()]);
+                //std::sort(&neighborBoxes.boxes[1], &neighborBoxes.boxes[neighborBoxes.boxes_count()]);
                 Static.neighbor_boxes[box] = neighborBoxes;
             }
         }
@@ -524,7 +524,7 @@ private:
         }
     }
 
-    inline void fillNum(InitState & init_state, size_t pos, size_t row, size_t col,
+    inline void fillNum(InitState & init_state, size_t row, size_t col,
                         size_t box, size_t cell, size_t num) {
         assert(init_state.box_cell_nums[box][cell].test(num));
         assert(init_state.num_row_cols[num][row].test(col));
@@ -564,14 +564,54 @@ private:
         }
     }
 
+    template <size_t nLiteralType = LiteralType::MaxLiteralType>
     inline void updateNeighborCells(InitState & init_state, size_t fill_pos, size_t box, size_t num) {
         BitVec16x16_AVX cells16, mask16;
         void * pCells16, * pMask16;
         const neighbor_boxes_t & neighborBoxes = Static.neighbor_boxes[box];
         const PackedBitSet3D<Boxes, BoxSize16, Numbers16> & flip_mask
             = Static.flip_mask[fill_pos][num];
-        for (size_t i = 0; i < neighborBoxes.boxes_count(); i++) {
-            size_t box_idx = neighborBoxes.boxes[i];
+
+        size_t box_idx = box;
+        //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
+        pCells16 = (void *)&init_state.box_cell_nums[box_idx];
+        pMask16 = (void *)&flip_mask[box_idx];
+        cells16.loadAligned(pCells16);
+        mask16.loadAligned(pMask16);
+        cells16 &= mask16;
+        cells16.saveAligned(pCells16);
+
+        if (nLiteralType == LiteralType::NumRowCols) {
+            box_idx = neighborBoxes.boxes[2];
+            //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
+            pCells16 = (void *)&init_state.box_cell_nums[box_idx];
+            pMask16 = (void *)&flip_mask[box_idx];
+            cells16.loadAligned(pCells16);
+            mask16.loadAligned(pMask16);
+            cells16 &= mask16;
+            cells16.saveAligned(pCells16);
+
+            box_idx = neighborBoxes.boxes[3];
+            //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
+            pCells16 = (void *)&init_state.box_cell_nums[box_idx];
+            pMask16 = (void *)&flip_mask[box_idx];
+            cells16.loadAligned(pCells16);
+            mask16.loadAligned(pMask16);
+            cells16 &= mask16;
+            cells16.saveAligned(pCells16);
+
+        }
+        else if (nLiteralType == LiteralType::NumColRows) {
+            box_idx = neighborBoxes.boxes[0];
+            //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
+            pCells16 = (void *)&init_state.box_cell_nums[box_idx];
+            pMask16 = (void *)&flip_mask[box_idx];
+            cells16.loadAligned(pCells16);
+            mask16.loadAligned(pMask16);
+            cells16 &= mask16;
+            cells16.saveAligned(pCells16);
+
+            box_idx = neighborBoxes.boxes[1];
             //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
             pCells16 = (void *)&init_state.box_cell_nums[box_idx];
             pMask16 = (void *)&flip_mask[box_idx];
@@ -580,31 +620,49 @@ private:
             cells16 &= mask16;
             cells16.saveAligned(pCells16);
         }
+        else {
+            for (size_t i = 0; i < neighborBoxes.boxes_count(); i++) {
+                box_idx = neighborBoxes.boxes[i];
+                //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
+                pCells16 = (void *)&init_state.box_cell_nums[box_idx];
+                pMask16 = (void *)&flip_mask[box_idx];
+                cells16.loadAligned(pCells16);
+                mask16.loadAligned(pMask16);
+                cells16 &= mask16;
+                cells16.saveAligned(pCells16);
+            }
+        }
 
         //init_state.num_row_cols[num] &= Static.num_row_mask[fill_pos];
         //init_state.num_col_rows[num] &= Static.num_col_mask[fill_pos];
         //init_state.num_box_cells[num] &= Static.num_box_mask[fill_pos];
 
-        pCells16 = (void *)&init_state.num_row_cols[num];
-        pMask16 = (void *)&Static.num_row_mask[fill_pos];
-        cells16.loadAligned(pCells16);
-        mask16.loadAligned(pMask16);
-        cells16 &= mask16;
-        cells16.saveAligned(pCells16);
+        if (nLiteralType != LiteralType::NumRowCols) {
+            pCells16 = (void *)&init_state.num_row_cols[num];
+            pMask16 = (void *)&Static.num_row_mask[fill_pos];
+            cells16.loadAligned(pCells16);
+            mask16.loadAligned(pMask16);
+            cells16 &= mask16;
+            cells16.saveAligned(pCells16);
+        }
 
-        pCells16 = (void *)&init_state.num_col_rows[num];
-        pMask16 = (void *)&Static.num_col_mask[fill_pos];
-        cells16.loadAligned(pCells16);
-        mask16.loadAligned(pMask16);
-        cells16 &= mask16;
-        cells16.saveAligned(pCells16);
+        if (nLiteralType != LiteralType::NumColRows) {
+            pCells16 = (void *)&init_state.num_col_rows[num];
+            pMask16 = (void *)&Static.num_col_mask[fill_pos];
+            cells16.loadAligned(pCells16);
+            mask16.loadAligned(pMask16);
+            cells16 &= mask16;
+            cells16.saveAligned(pCells16);
+        }
 
-        pCells16 = (void *)&init_state.num_box_cells[num];
-        pMask16 = (void *)&Static.num_box_mask[fill_pos];
-        cells16.loadAligned(pCells16);
-        mask16.loadAligned(pMask16);
-        cells16 &= mask16;
-        cells16.saveAligned(pCells16);
+        if (nLiteralType != LiteralType::NumBoxCells) {
+            pCells16 = (void *)&init_state.num_box_cells[num];
+            pMask16 = (void *)&Static.num_box_mask[fill_pos];
+            cells16.loadAligned(pCells16);
+            mask16.loadAligned(pMask16);
+            cells16 &= mask16;
+            cells16.saveAligned(pCells16);
+        }
     }
 
     LiteralInfo count_literal_size_init() {
@@ -1067,7 +1125,7 @@ private:
                     size_t cell = cell_y + cell_x;
                     size_t num = val - '1';
 
-                    this->fillNum(this->init_state_, pos, row, col, box, cell, num);
+                    this->fillNum(this->init_state_, row, col, box, cell, num);
                     this->updateNeighborCells(this->init_state_, pos, box, num);
                 }
                 pos++;
@@ -1110,8 +1168,8 @@ public:
 
                 board.cells[pos] = (char)(num + '1');
 
-                this->fillNum(init_state, pos, row, col, box, cell, num);
-                this->updateNeighborCells(init_state, pos, box, num);
+                //this->fillNum(init_state, row, col, box, cell, num);
+                this->updateNeighborCells<LiteralType::BoxCellNums>(init_state, pos, box, num);
 
                 break;
             }
@@ -1124,7 +1182,7 @@ public:
                 num = literal / Rows16;
                 row = literal % Rows16;
 
-                size_t col_bits = init_state.num_row_cols[num][row].to_ulong();
+                size_t col_bits = init_state.num_row_cols[num][row].reset_and_get();
                 assert(col_bits != 0);
                 assert((col_bits & (col_bits - 1)) == 0);
                 col = BitUtils::bsf(col_bits);
@@ -1136,8 +1194,8 @@ public:
 
                 board.cells[pos] = (char)(num + '1');
 
-                this->fillNum(init_state, pos, row, col, box, cell, num);
-                this->updateNeighborCells(init_state, pos, box, num);
+                this->fillNum(init_state, row, col, box, cell, num);
+                this->updateNeighborCells<LiteralType::NumRowCols>(init_state, pos, box, num);
 
                 break;
             }
@@ -1150,7 +1208,7 @@ public:
                 num = literal / Cols16;
                 col = literal % Cols16;
 
-                size_t row_bits = init_state.num_col_rows[num][col].to_ulong();
+                size_t row_bits = init_state.num_col_rows[num][col].reset_and_get();
                 assert(row_bits != 0);
                 assert((row_bits & (row_bits - 1)) == 0);
                 row = BitUtils::bsf(row_bits);
@@ -1162,8 +1220,8 @@ public:
 
                 board.cells[pos] = (char)(num + '1');
 
-                this->fillNum(init_state, pos, row, col, box, cell, num);
-                this->updateNeighborCells(init_state, pos, box, num);
+                this->fillNum(init_state, row, col, box, cell, num);
+                this->updateNeighborCells<LiteralType::NumColRows>(init_state, pos, box, num);
 
                 break;
             }
@@ -1176,7 +1234,7 @@ public:
                 num = literal / Boxes16;
                 box = literal % Boxes16;
 
-                size_t cell_bits = init_state.num_box_cells[num][box].to_ulong();
+                size_t cell_bits = init_state.num_box_cells[num][box].reset_and_get();
                 assert(cell_bits != 0);
                 assert((cell_bits & (cell_bits - 1)) == 0);
                 cell = BitUtils::bsf(cell_bits);
@@ -1188,8 +1246,8 @@ public:
 
                 board.cells[pos] = (char)(num + '1');
 
-                this->fillNum(init_state, pos, row, col, box, cell, num);
-                this->updateNeighborCells(init_state, pos, box, num);
+                this->fillNum(init_state, row, col, box, cell, num);
+                this->updateNeighborCells<LiteralType::NumBoxCells>(init_state, pos, box, num);
 
                 break;
             }
