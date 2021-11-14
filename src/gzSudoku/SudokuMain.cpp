@@ -175,7 +175,7 @@ void run_sudoku_test(const char * filename, const char * name)
     size_t total_no_guess = 0;
 
     size_t puzzleCount = 0;
-    size_t puzzleSuccess = 0;
+    size_t puzzleSolved = 0;
     double total_time = 0.0;
 
     std::ifstream ifs;
@@ -208,7 +208,7 @@ void run_sudoku_test(const char * filename, const char * name)
                             total_no_guess++;
                         }
 
-                        puzzleSuccess++;
+                        puzzleSolved++;
                     }
                     puzzleCount++;
 #ifndef NDEBUG
@@ -230,8 +230,8 @@ void run_sudoku_test(const char * filename, const char * name)
     double guesses_percent = calc_percent(total_guesses, total_recur_counter);
     double no_guess_percent = calc_percent(total_no_guess, puzzleCount);
 
-    printf("Total puzzle count = %u, puzzle success = %u, total_no_guess: %" PRIuPTR ", no_guess %% = %0.1f %%\n\n",
-           (uint32_t)puzzleCount, (uint32_t)puzzleSuccess, total_no_guess, no_guess_percent);
+    printf("Total puzzle count = %u, puzzle solved = %u, total_no_guess: %" PRIuPTR ", no_guess %% = %0.1f %%\n\n",
+           (uint32_t)puzzleCount, (uint32_t)puzzleSolved, total_no_guess, no_guess_percent);
     printf("Total elapsed time: %0.3f ms\n\n", total_time);
     printf("recur_counter: %" PRIuPTR "\n\n"
            "total_guesses: %" PRIuPTR ", total_failed_return: %" PRIuPTR ", total_unique_candidate: %" PRIuPTR "\n\n"
@@ -240,15 +240,15 @@ void run_sudoku_test(const char * filename, const char * name)
            total_guesses, total_failed_return, total_unique_candidate,
            guesses_percent, failed_return_percent, unique_candidate_percent);
 
-    if (puzzleSuccess != 0) {
+    if (puzzleSolved != 0) {
         printf("%0.1f usec/puzzle, %0.2f guesses/puzzle, %0.1f puzzles/sec\n\n",
-               total_time * 1000.0 / puzzleSuccess,
-               (double)total_guesses / puzzleSuccess,
-               puzzleSuccess / (total_time / 1000.0));
+               total_time * 1000.0 / puzzleSolved,
+               (double)total_guesses / puzzleSolved,
+               puzzleSolved / (total_time / 1000.0));
     }
     else {
         printf("NaN usec/puzzle, NaN guesses/puzzle, %0.1f puzzles/sec\n\n",
-               puzzleSuccess / (total_time / 1000.0));
+               puzzleSolved / (total_time / 1000.0));
     }
 
     printf("------------------------------------------\n\n");
