@@ -1,8 +1,10 @@
 
 Windows:
 
-gzSudoku.exe ..\..\..\data\puzzles02_17_clue
+gzSudoku.exe ..\..\..\data\puzzles_17_clue_49151
+gzSudoku.exe ..\..\..\data\puzzles2_17_clue
 
 Linux:
 
-./gzSudoku ./data/puzzles02_17_clue
+./gzSudoku ./data/puzzles_17_clue_49151
+./gzSudoku ./data/puzzles2_17_clue
