@@ -266,11 +266,13 @@ private:
     typedef HVNeighborBoxes<BoxCountX, BoxCountY>   hv_neighbor_boxes_t;
 
     struct StaticData {
-        alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>      num_row_mask;
-        alignas(32) PackedBitSet3D<BoardSize, Cols16, Rows16>      num_col_mask;
-        alignas(32) PackedBitSet3D<BoardSize, Boxes16, BoxSize16>  num_box_mask;
+        alignas(32) PackedBitSet3D<Boxes, BoxSize16, Numbers16>     box_flip_mask[BoardSize][Numbers];
 
-        alignas(32) PackedBitSet3D<Boxes, BoxSize16, Numbers16>    flip_mask[BoardSize][Numbers];
+        alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>       num_row_mask;
+        alignas(32) PackedBitSet3D<BoardSize, Cols16, Rows16>       num_col_mask;
+        alignas(32) PackedBitSet3D<BoardSize, Boxes16, BoxSize16>   num_box_mask;
+
+        alignas(64) PackedBitSet3D<4, BoxSize16, Numbers16>         flip_mask[BoxSize][Numbers];
 
         bool                    mask_is_inited;
         neighbor_boxes_t        neighbor_boxes[Boxes];
@@ -328,7 +330,7 @@ private:
         }
     }
 
-    static void make_flip_mask(size_t fill_pos, size_t row, size_t col) {
+    static void make_box_flip_mask(size_t fill_pos, size_t row, size_t col) {
         PackedBitSet2D<Rows16, Cols16> & rows_mask      = Static.num_row_mask[fill_pos];
         PackedBitSet2D<Cols16, Rows16> & cols_mask      = Static.num_col_mask[fill_pos];
         PackedBitSet2D<Boxes16, BoxSize16> & boxes_mask = Static.num_box_mask[fill_pos];
@@ -445,9 +447,9 @@ private:
                 cell = pCellInfo[pos].cell;
 
                 for (size_t num = 0; num < Numbers; num++) {
-                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & flip_mask
-                                = Static.flip_mask[fill_pos][num];
-                    flip_mask[box][cell].set(num);
+                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_flip_mask
+                                = Static.box_flip_mask[fill_pos][num];
+                    box_flip_mask[box][cell].set(num);
                 }
                 index++;
             }
@@ -461,9 +463,9 @@ private:
                     cell = pCellInfo[pos].cell;
 
                     for (size_t num = 0; num < Numbers; num++) {
-                        PackedBitSet3D<Boxes, BoxSize16, Numbers16> & flip_mask
-                                    = Static.flip_mask[fill_pos][num];
-                        flip_mask[box][cell].set(num);
+                        PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_flip_mask
+                                    = Static.box_flip_mask[fill_pos][num];
+                        box_flip_mask[box][cell].set(num);
                     }
                     index++;
                 }
@@ -481,9 +483,9 @@ private:
                     assert(cell == cell_idx);
 
                     for (size_t num = 0; num < Numbers; num++) {
-                        PackedBitSet3D<Boxes, BoxSize16, Numbers16> & flip_mask
-                                    = Static.flip_mask[fill_pos][num];
-                        flip_mask[box][cell].set(num);
+                        PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_flip_mask
+                                    = Static.box_flip_mask[fill_pos][num];
+                        box_flip_mask[box][cell].set(num);
                     }
                     index++;
                 }
@@ -496,9 +498,63 @@ private:
 
             // Current fill pos, set all number bits
             for (size_t num = 0; num < Numbers; num++) {
-                PackedBitSet3D<Boxes, BoxSize16, Numbers16> & flip_mask
-                    = Static.flip_mask[fill_pos][num];
-                flip_mask[box][cell].fill(kAllNumberBits);
+                PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_flip_mask
+                    = Static.box_flip_mask[fill_pos][num];
+                box_flip_mask[box][cell].fill(kAllNumberBits);
+            }
+        }
+    }
+
+    static void make_flip_mask(size_t fill_cell, size_t box_cell_y, size_t box_cell_x) {
+        // Literal::BoxCellNums
+        {
+            size_t index = 0;
+
+            // horizontal scanning
+            for (size_t cx = 0; cx < BoxCellsX; cx++) {
+                size_t cell = box_cell_y * BoxCellsX + cx;
+
+                for (size_t num = 0; num < Numbers; num++) {
+                    PackedBitSet3D<4, BoxSize16, Numbers16> & flip_mask
+                                = Static.flip_mask[fill_cell][num];
+                    flip_mask[0][cell].set(num);
+                }
+                index++;
+            }
+
+            // vertical scanning
+            for (size_t cy = 0; cy < BoxCellsY; cy++) {
+                size_t cell = cy * BoxCellsX + box_cell_x;
+
+                for (size_t num = 0; num < Numbers; num++) {
+                    PackedBitSet3D<4, BoxSize16, Numbers16> & flip_mask
+                                = Static.flip_mask[fill_cell][num];
+                    flip_mask[1][cell].set(num);
+                }
+                index++;
+            }
+
+            // scanning the current box
+            for (size_t cy = 0; cy < BoxCellsY; cy++) {
+                for (size_t cx = 0; cx < BoxCellsX; cx++) {
+                    size_t cell = cy * BoxCellsX + cx;
+
+                    for (size_t num = 0; num < Numbers; num++) {
+                        PackedBitSet3D<4, BoxSize16, Numbers16> & flip_mask
+                                    = Static.flip_mask[fill_cell][num];
+                        flip_mask[2][cell].set(num);
+                    }
+                    index++;
+                }
+            }
+
+            assert(index == (Cols + Rows + (BoxCellsY * BoxCellsX)));
+
+            // Current fill pos, set all number bits
+            for (size_t num = 0; num < Numbers; num++) {
+                PackedBitSet3D<4, BoxSize16, Numbers16> & flip_mask
+                    = Static.flip_mask[fill_cell][num];
+                flip_mask[2][fill_cell].fill(kAllNumberBits);
             }
         }
     }
@@ -506,7 +562,7 @@ private:
     static void init_flip_mask() {
         for (size_t pos = 0; pos < BoardSize; pos++) {
             for (size_t num = 0; num < Numbers; num++) {
-                Static.flip_mask[pos][num].reset();
+                Static.box_flip_mask[pos][num].reset();
             }
         }
         Static.num_row_mask.reset();
@@ -516,8 +572,22 @@ private:
         size_t fill_pos = 0;
         for (size_t row = 0; row < Rows; row++) {
             for (size_t col = 0; col < Cols; col++) {
-                make_flip_mask(fill_pos, row, col);
+                make_box_flip_mask(fill_pos, row, col);
                 fill_pos++;
+            }
+        }
+
+        for (size_t cell = 0; cell < BoxSize; cell++) {
+            for (size_t num = 0; num < Numbers; num++) {
+                Static.flip_mask[cell][num].reset();
+            }
+        }
+
+        size_t fill_cell = 0;
+        for (size_t cy = 0; cy < BoxCellsY; cy++) {
+            for (size_t cx = 0; cx < BoxCellsX; cx++) {
+                make_flip_mask(fill_cell, cy, cx);
+                fill_cell++;
             }
         }
     }
@@ -622,47 +692,27 @@ private:
     }
 
     template <size_t nLiteralType = LiteralType::MaxLiteralType>
-    inline void updateNeighborCells(InitState & init_state, size_t fill_pos, size_t box, size_t num) {
+    inline void updateNeighborCells(InitState & init_state, size_t fill_pos, size_t box, size_t cell, size_t num) {
         BitVec16x16_AVX cells16, mask16;
         void * pCells16, * pMask16;
         const neighbor_boxes_t & neighborBoxes = Static.neighbor_boxes[box];
-        const PackedBitSet3D<Boxes, BoxSize16, Numbers16> & flip_mask
-            = Static.flip_mask[fill_pos][num];
+        const PackedBitSet3D<4, BoxSize16, Numbers16> & flip_mask
+            = Static.flip_mask[cell][num];
 
         size_t box_idx = box;
         //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
         pCells16 = (void *)&init_state.box_cell_nums[box_idx];
-        pMask16 = (void *)&flip_mask[box_idx];
+        pMask16 = (void *)&flip_mask[2];
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
         cells16.and_not(mask16);
         cells16.saveAligned(pCells16);
 
-        if (nLiteralType == LiteralType::NumRowCols) {
-            box_idx = neighborBoxes.boxes[2];
-            //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
-            pCells16 = (void *)&init_state.box_cell_nums[box_idx];
-            pMask16 = (void *)&flip_mask[box_idx];
-            cells16.loadAligned(pCells16);
-            mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
-            cells16.saveAligned(pCells16);
-
-            box_idx = neighborBoxes.boxes[3];
-            //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
-            pCells16 = (void *)&init_state.box_cell_nums[box_idx];
-            pMask16 = (void *)&flip_mask[box_idx];
-            cells16.loadAligned(pCells16);
-            mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
-            cells16.saveAligned(pCells16);
-
-        }
-        else if (nLiteralType == LiteralType::NumColRows) {
+        if (nLiteralType != LiteralType::NumRowCols) {
             box_idx = neighborBoxes.boxes[0];
             //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
             pCells16 = (void *)&init_state.box_cell_nums[box_idx];
-            pMask16 = (void *)&flip_mask[box_idx];
+            pMask16 = (void *)&flip_mask[0];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
             cells16.and_not(mask16);
@@ -671,23 +721,27 @@ private:
             box_idx = neighborBoxes.boxes[1];
             //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
             pCells16 = (void *)&init_state.box_cell_nums[box_idx];
-            pMask16 = (void *)&flip_mask[box_idx];
+            cells16.loadAligned(pCells16);
+            cells16.and_not(mask16);
+            cells16.saveAligned(pCells16);
+        }
+
+        if (nLiteralType != LiteralType::NumColRows) {
+            box_idx = neighborBoxes.boxes[2];
+            //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
+            pCells16 = (void *)&init_state.box_cell_nums[box_idx];
+            pMask16 = (void *)&flip_mask[1];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
             cells16.and_not(mask16);
             cells16.saveAligned(pCells16);
-        }
-        else {
-            for (size_t i = 0; i < neighborBoxes.boxes_count(); i++) {
-                box_idx = neighborBoxes.boxes[i];
-                //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
-                pCells16 = (void *)&init_state.box_cell_nums[box_idx];
-                pMask16 = (void *)&flip_mask[box_idx];
-                cells16.loadAligned(pCells16);
-                mask16.loadAligned(pMask16);
-                cells16.and_not(mask16);
-                cells16.saveAligned(pCells16);
-            }
+
+            box_idx = neighborBoxes.boxes[3];
+            //init_state.box_cell_nums[box_idx] &= flip_mask[box_idx];
+            pCells16 = (void *)&init_state.box_cell_nums[box_idx];
+            cells16.loadAligned(pCells16);
+            cells16.and_not(mask16);
+            cells16.saveAligned(pCells16);
         }
 
         //init_state.num_row_cols[num] &= Static.num_row_mask[fill_pos];
@@ -1183,7 +1237,7 @@ private:
                     size_t num = val - '1';
 
                     this->fillNum(this->init_state_, row, col, box, cell, num);
-                    this->updateNeighborCells(this->init_state_, pos, box, num);
+                    this->updateNeighborCells(this->init_state_, pos, box, cell, num);
                 }
                 pos++;
             }
@@ -1229,7 +1283,7 @@ public:
                 board.cells[pos] = (char)(num + '1');
 
                 //this->fillNum(init_state, row, col, box, cell, num);
-                this->updateNeighborCells<LiteralType::BoxCellNums>(init_state, pos, box, num);
+                this->updateNeighborCells<LiteralType::BoxCellNums>(init_state, pos, box, cell, num);
 
                 break;
             }
@@ -1255,7 +1309,7 @@ public:
                 board.cells[pos] = (char)(num + '1');
 
                 this->fillNum(init_state, row, col, box, cell, num);
-                this->updateNeighborCells<LiteralType::NumRowCols>(init_state, pos, box, num);
+                this->updateNeighborCells<LiteralType::NumRowCols>(init_state, pos, box, cell, num);
 
                 break;
             }
@@ -1281,7 +1335,7 @@ public:
                 board.cells[pos] = (char)(num + '1');
 
                 this->fillNum(init_state, row, col, box, cell, num);
-                this->updateNeighborCells<LiteralType::NumColRows>(init_state, pos, box, num);
+                this->updateNeighborCells<LiteralType::NumColRows>(init_state, pos, box, cell, num);
 
                 break;
             }
@@ -1307,7 +1361,7 @@ public:
                 board.cells[pos] = (char)(num + '1');
 
                 this->fillNum(init_state, row, col, box, cell, num);
-                this->updateNeighborCells<LiteralType::NumBoxCells>(init_state, pos, box, num);
+                this->updateNeighborCells<LiteralType::NumBoxCells>(init_state, pos, box, cell, num);
 
                 break;
             }

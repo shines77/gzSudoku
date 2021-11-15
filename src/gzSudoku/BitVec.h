@@ -449,13 +449,27 @@ struct BitVec08x16 {
     }
 
     inline bool isEqual(const BitVec08x16 & other) const {
+#if defined(__AVX512VL__) && defined(__AVX512BW__)
+        return (_mm_cmp_epi16_mask(this->m128, other.m128, _MM_CMPINT_EQ) == 0x0F);
+#elif 1
+        // isAllZeros() faster than isAllOnes(), because it's instructions less than isAllOnes().
+        BitVec08x16 is_neq_mask = _mm_xor_si128(this->m128, other.m128);
+        return is_neq_mask.isAllZeros();
+#else
         BitVec08x16 is_eq_mask = _mm_cmpeq_epi16(this->m128, other.m128);
         return is_eq_mask.isAllOnes();
+#endif
     }
 
     inline bool isNotEqual(const BitVec08x16 & other) const {
+#if 1
+        // isNotAllZeros() faster than isNotAllOnes(), because it's instructions less than isNotAllOnes().
+        BitVec08x16 is_neq_mask = _mm_xor_si128(this->m128, other.m128);
+        return is_neq_mask.isNotAllZeros();
+#else
         BitVec08x16 is_eq_mask = _mm_cmpeq_epi16(this->m128, other.m128);
         return is_eq_mask.isNotAllOnes();
+#endif
     }
 
     inline bool hasAnyZero() const {
@@ -1939,13 +1953,25 @@ struct BitVec16x16_AVX {
     }
 
     inline bool isEqual(const BitVec16x16_AVX & other) const {
+#if 1
+        // isAllZeros() faster than isAllOnes(), because it's instructions less than isAllOnes().
+        BitVec16x16_AVX is_neq_mask = _mm256_xor_si256(this->m256, other.m256);
+        return is_neq_mask.isAllZeros();
+#else
         BitVec16x16_AVX is_eq_mask = _mm256_cmpeq_epi16(this->m256, other.m256);
         return is_eq_mask.isAllOnes();
+#endif
     }
 
     inline bool isNotEqual(const BitVec16x16_AVX & other) const {
+#if 1
+        // isNotAllZeros() faster than isNotAllOnes(), because it's instructions less than isNotAllOnes().
+        BitVec16x16_AVX is_neq_mask = _mm256_xor_si256(this->m256, other.m256);
+        return is_neq_mask.isNotAllZeros();
+#else
         BitVec16x16_AVX is_eq_mask = _mm256_cmpeq_epi16(this->m256, other.m256);
         return is_eq_mask.isNotAllOnes();
+#endif
     }
 
     inline bool hasAnyZero() const {
