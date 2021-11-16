@@ -866,7 +866,7 @@ struct BitVec08x16 {
 #else
         __m128i minnum_u16;
         __m128i nums = this->m128;
-        if (MaxBits <= 4) {
+        if (MaxLength <= 4) {
             nums = _mm_min_epu16(nums, _mm_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
 
             // The minimum number of first 4 x int16_t
@@ -1559,7 +1559,7 @@ struct BitVec16x16 {
     }
 
     template <size_t MaxLength>
-    uint32_t minpos16_and_index(int & min_index) const {
+    uint32_t minpos16_and_index(int & out_min_index) const {
         static const size_t MaxLenLow = (MaxLength < 8) ? MaxLength : 8;
         static const size_t MaxLenHigh = ((MaxLength - MaxLenLow) < 8) ? (MaxLength - MaxLenLow) : 8;
 
@@ -1567,19 +1567,21 @@ struct BitVec16x16 {
         BitVec16x16 minpos;
         if (MaxLength <= 8) {
             this->low.minpos16<MaxLenLow>(minpos.low);
-            min_num = (uint32_t)_mm_extract_epi16(minpos.low.m128, 0);
-            min_index = _mm_extract_epi16(minpos.low.m128, 1);
+            uint32_t min_and_index = _mm_cvtsi128_si32(minpos.low.m128);
+            min_num = (uint32_t)(min_and_index & 0xFFFFUL);
+            out_min_index = min_and_index >> 16U;
         }
         else if (MaxLength == 9) {
             this->low.minpos16<MaxLenLow>(minpos.low);
 
             BitVec08x16 min_result = _mm_min_epu16(minpos.low.m128, this->high.m128);
-            min_num = (uint32_t)_mm_extract_epi16(min_result.m128, 0);
+            uint32_t min_and_index = _mm_cvtsi128_si32(min_result.m128);
+            min_num = (uint32_t)(min_and_index & 0xFFFFUL);
 
             __m128i equal_result_low = _mm_cmpeq_epi16(min_result.m128, minpos.low.m128);
             int equal_mask_low = _mm_movemask_epi8(equal_result_low);
             if ((equal_mask_low & 0x00000003U) != 0) {
-                min_index = _mm_extract_epi16(minpos.low.m128, 1);
+                out_min_index = min_and_index >> 16U;
             }
             else {
 #ifndef NDEBUG
@@ -1589,7 +1591,7 @@ struct BitVec16x16 {
                 assert((equal_mask_high & 0x00000003U) != 0);
                 assert(_mm_extract_epi16(minpos.high.m128, 1) == 0);
 #endif
-                min_index = 8;
+                out_min_index = 8;
             }
         }
         else {
@@ -1597,18 +1599,19 @@ struct BitVec16x16 {
             this->high.minpos16<MaxLenHigh>(minpos.high);
 
             BitVec08x16 min_result = _mm_min_epu16(minpos.low.m128, minpos.high.m128);
-            min_num = (uint32_t)_mm_extract_epi16(min_result.m128, 0);
+            uint32_t min_and_index = _mm_cvtsi128_si32(min_result.m128);
+            min_num = (uint32_t)(min_and_index & 0xFFFFUL);
 
             __m128i equal_result_low = _mm_cmpeq_epi16(min_result.m128, minpos.low.m128);
             int equal_mask_low = _mm_movemask_epi8(equal_result_low);
             if ((equal_mask_low & 0x00000003U) != 0) {
-                min_index = _mm_extract_epi16(minpos.low.m128, 1);
+                out_min_index = min_and_index >> 16U;
             }
             else {
                 __m128i equal_result_high = _mm_cmpeq_epi16(min_result.m128, minpos.high.m128);
                 int equal_mask_high = _mm_movemask_epi8(equal_result_high);
                 assert((equal_mask_high & 0x00000003U) != 0);
-                min_index = 8 + _mm_extract_epi16(minpos.high.m128, 1);
+                out_min_index = (_mm_cvtsi128_si32(minpos.high.m128) >> 16U) + 8;
             }
         }
         return min_num;
@@ -1634,7 +1637,7 @@ struct BitVec16x16 {
                 // Do nothing !
             }
             else {
-                uint32_t min_num = (uint32_t)_mm_extract_epi16(min_result.m128, 0);
+                uint32_t min_num = (uint32_t)(_mm_cvtsi128_si32(min_result.m128) & 0xFFFFUL);
 #ifndef NDEBUG
                 BitVec08x16 minpos_high;
                 this->high.minpos16<MaxLenHigh>(minpos_high);
@@ -1660,14 +1663,16 @@ struct BitVec16x16 {
                 // Do nothing !
             }
             else {
-                uint32_t min_num = (uint32_t)_mm_extract_epi16(min_result.m128, 0);
+                uint32_t min_and_index = _mm_cvtsi128_si32(min_result.m128);
+                uint32_t min_num = (uint32_t)(min_and_index & 0xFFFFUL);
 
                 __m128i equal_result_high = _mm_cmpeq_epi16(min_result.m128, minpos_high.m128);
                 int equal_mask_high = _mm_movemask_epi8(equal_result_high);
                 assert((equal_mask_high & 0x00000003U) != 0);
-                uint32_t min_index = 8 + _mm_extract_epi16(minpos_high.m128, 1);
 
-                uint32_t min_and_index = min_num | (min_index << 16U);
+                uint32_t min_index = (_mm_cvtsi128_si32(minpos_high.m128) >> 16U) + 8;
+
+                min_and_index = min_num | (min_index << 16U);
                 minpos = _mm_cvtsi32_si128(min_and_index);
             }
         }
@@ -1681,15 +1686,90 @@ struct BitVec16x16 {
     }
 
     template <size_t MaxLength>
-    inline uint32_t minpos16(uint32_t & old_min_num, int & min_index) const {
+    inline uint32_t minpos16(uint32_t & old_min_num, int & out_min_index) const {
+#if 1
+        static const size_t MaxLenLow = (MaxLength < 8) ? MaxLength : 8;
+        static const size_t MaxLenHigh = ((MaxLength - MaxLenLow) < 8) ? (MaxLength - MaxLenLow) : 8;
+
+        uint32_t min_num;
+        BitVec16x16 minpos;
+        if (MaxLength <= 8) {
+            this->low.minpos16<MaxLenLow>(minpos.low);
+            uint32_t min_and_index = _mm_cvtsi128_si32(minpos.low.m128);
+            min_num = (uint32_t)(min_and_index & 0xFFFFUL);
+            if (min_num < old_min_num) {
+                old_min_num = min_num;
+                out_min_index = min_and_index >> 16U;
+            }
+        }
+        else if (MaxLength == 9) {
+            this->low.minpos16<MaxLenLow>(minpos.low);
+
+            BitVec08x16 min_result = _mm_min_epu16(minpos.low.m128, this->high.m128);
+            uint32_t min_and_index = _mm_cvtsi128_si32(min_result.m128);
+            min_num = (uint32_t)(min_and_index & 0xFFFFUL);
+
+            if (min_num < old_min_num) {
+                old_min_num = min_num;
+                __m128i equal_result_low = _mm_cmpeq_epi16(min_result.m128, minpos.low.m128);
+                int equal_mask_low = _mm_movemask_epi8(equal_result_low);
+                if ((equal_mask_low & 0x00000003U) != 0) {
+                    out_min_index = min_and_index >> 16U;
+                }
+                else {
+    #ifndef NDEBUG
+                    this->high.minpos16<MaxLenHigh>(minpos.high);
+                    __m128i equal_result_high = _mm_cmpeq_epi16(min_result.m128, minpos.high.m128);
+                    int equal_mask_high = _mm_movemask_epi8(equal_result_high);
+                    assert((equal_mask_high & 0x00000003U) != 0);
+                    assert(_mm_extract_epi16(minpos.high.m128, 1) == 0);
+    #endif
+                    out_min_index = 8;
+                }
+            }
+        }
+        else {
+            this->low.minpos16<MaxLenLow>(minpos.low);
+            this->high.minpos16<MaxLenHigh>(minpos.high);
+
+            BitVec08x16 min_result = _mm_min_epu16(minpos.low.m128, minpos.high.m128);
+            uint32_t min_and_index = _mm_cvtsi128_si32(min_result.m128);
+            min_num = (uint32_t)(min_and_index & 0xFFFFUL);
+
+            if (min_num < old_min_num) {
+                old_min_num = min_num;
+                __m128i equal_result_low = _mm_cmpeq_epi16(min_result.m128, minpos.low.m128);
+                int equal_mask_low = _mm_movemask_epi8(equal_result_low);
+                if ((equal_mask_low & 0x00000003U) != 0) {
+                    out_min_index = min_and_index >> 16U;
+                }
+                else {
+                    __m128i equal_result_high = _mm_cmpeq_epi16(min_result.m128, minpos.high.m128);
+                    int equal_mask_high = _mm_movemask_epi8(equal_result_high);
+                    assert((equal_mask_high & 0x00000003U) != 0);
+                    out_min_index = (_mm_cvtsi128_si32(minpos.high.m128) >> 16U) + 8;
+                }
+            }
+        }
+        return min_num;
+#elif 1
         BitVec08x16 minpos;
         this->minpos16<MaxLength>(minpos);
         uint32_t min_and_index = (uint32_t)_mm_cvtsi128_si32(minpos.m128);
         uint32_t min_num = min_and_index & 0xFFFFUL;
         if (min_num < old_min_num) {
             old_min_num = min_num;
-            min_index = (int)(min_and_index >> 16U);
+            out_min_index = (int)(min_and_index >> 16U);
         }
+#else
+        BitVec08x16 minpos;
+        int min_index;
+        uint32_t min_num = this->minpos16_and_index<MaxLength>(min_index);
+        if (min_num < old_min_num) {
+            old_min_num = min_num;
+            out_min_index = min_index;
+        }
+#endif
         return min_num;
     }
 
