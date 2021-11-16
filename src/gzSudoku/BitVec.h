@@ -880,7 +880,7 @@ struct BitVec08x16 {
             minnum_u16 = _mm_min_epu16(nums, _mm_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
         }
 
-        // TODO: Mixed the min_num (16bit) and index (3bit) to minpos info (32bit).
+        // Mixed the min_num (16bit) and index (3bit) to minpos info (32bit).
 
         // Get the index of minimum number
         uint32_t min_num = SSE::_mm_cvtsi128_si32_low(minnum_u16);

@@ -1058,17 +1058,15 @@ private:
 
             uint32_t min_and_index = _mm_cvtsi128_si32(minpos.m128);
             uint32_t min_size = min_and_index & 0xFFFFUL;
-            uint32_t min_index;
+            assert(min_size > 0);
 
-            if (min_size == 1) {
-                min_index = min_and_index >> 16U;
-                min_index = (uint32_t)(box * BoxSize16 + min_index);
-                return LiteralInfo(1, 0, min_index);
-            }
             if (min_size < min_cell_size) {
-                min_cell_size = min_size;
-                min_index = min_and_index >> 16U;
+                uint32_t min_index = min_and_index >> 16U;
                 min_index = (uint32_t)(box * BoxSize16 + min_index);
+                if (min_size == 1) {
+                    return LiteralInfo(1, 0, min_index);
+                }
+                min_cell_size = min_size;
                 min_cell_index = min_index;
             }
         }
@@ -1244,18 +1242,15 @@ private:
 
             uint32_t min_and_index = _mm_cvtsi128_si32(minpos.m128);
             uint32_t min_size = min_and_index & 0xFFFFUL;
-            uint32_t min_index;
-
             assert(min_size > 0);
-            if (min_size == 1) {
-                min_index = min_and_index >> 16U;
-                min_index = (uint32_t)(box * BoxSize16 + min_index);
-                return LiteralInfo(1, 0, min_index);
-            }
+
             if (min_size < min_cell_size) {
-                min_cell_size = min_size;
-                min_index = min_and_index >> 16U;
+                uint32_t min_index = min_and_index >> 16U;
                 min_index = (uint32_t)(box * BoxSize16 + min_index);
+                if (min_size == 1) {
+                    return LiteralInfo(1, 0, min_index);
+                }
+                min_cell_size = min_size;
                 min_cell_index = min_index;
             }
         }
