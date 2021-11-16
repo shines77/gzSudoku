@@ -36,8 +36,10 @@
 #include "BitArray.h"
 #include "BitVec.h"
 
-#define V4A_LITERAL_ORDER_MODE   0
-#define V4A_SAVE_COUNT_SIZE      1
+#define V4A_LITERAL_ORDER_MODE  0
+#define V4A_SAVE_COUNT_SIZE     1
+
+#define V4A_USE_SIMD_INIT       0
 
 namespace gzSudoku {
 namespace v4a {
@@ -610,7 +612,7 @@ private:
     }
 
     void init_literal_size() {
-#if 1
+#if V4A_USE_SIMD_INIT
         BitVec16x16_AVX mask_1, mask_2, mask_3, mask_4;
         mask_1.fill_u16(Numbers);
         for (size_t box = 0; box < Boxes; box++) {
@@ -647,7 +649,7 @@ private:
     }
 
     void init_literal_count() {
-#if 1
+#if V4A_USE_SIMD_INIT
         BitVec16x16_AVX bitVec;
         bitVec.setAllOnes();
         bitVec.saveAligned((void *)&this->count_.counts.box_cells[0]);
@@ -674,7 +676,7 @@ private:
     }
 
     void init_literal_index() {
-#if 1
+#if V4A_USE_SIMD_INIT
         BitVec08x16 bitVec;
         bitVec.setAllOnes();
         bitVec.saveAligned((void *)&this->count_.indexs.box_cells[0]);
@@ -701,7 +703,7 @@ private:
     }
 
     void init_literal_total() {
-#if 1
+#if V4A_USE_SIMD_INIT
         BitVec16x16_AVX bitVec;
         bitVec.setAllOnes();
         bitVec.saveAligned((void *)&this->count_.total.min_literal_size[0]);
@@ -1627,7 +1629,7 @@ private:
 
     void init_board(Board & board) {
         init_literal_info();
-#if 1
+#if V4A_USE_SIMD_INIT
         BitVec16x16_AVX mask_1, mask_2, mask_3, mask_4;
         mask_1.fill_u16(kAllNumberBits);
         for (size_t box = 0; box < Boxes; box++) {
