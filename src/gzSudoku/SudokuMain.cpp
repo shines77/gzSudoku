@@ -212,7 +212,7 @@ void run_sudoku_test(const char * filename, const char * name)
                     }
                     puzzleCount++;
 #ifndef NDEBUG
-                    if (puzzleCount > 1000)
+                    if (puzzleCount > 100000)
                         break;
 #endif
                 }
@@ -280,7 +280,9 @@ int main(int argc, char * argv[])
     if (1)
     {
         if (filename != nullptr) {
+#if defined(NDEBUG)
             run_sudoku_test<v4::Solver>(filename, "dfs::v4");
+#endif
             run_sudoku_test<v4a::Solver>(filename, "dfs::v4a");
         }
     }

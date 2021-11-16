@@ -643,7 +643,7 @@ struct BitVec08x16 {
 
     template <size_t MaxLength, size_t MaxBits>
     BitVec08x16 popcount16() const {
-#if defined(__AVX512VPOPCNTW__) || (defined(__AVX512_BITALG__) && defined(__AVX512VL__))
+#if (defined(__AVX512_BITALG__) && defined(__AVX512VL__)) || defined(__AVX512VPOPCNTW__)
         return _mm_popcnt_epi16(this->m128);
 #elif defined(__SSSE3__)
         if (MaxBits <= 8) {
@@ -983,6 +983,10 @@ struct BitVec16x16 {
 
     inline void castTo(BitVec08x16 & _low) const {
         _low = this->low;
+    }
+
+    inline void castTo(BitVec16x16 & vec) const {
+        vec = *this;
     }
 
     inline void splitTo(BitVec08x16 & _low, BitVec08x16 & _high) const {
@@ -1755,14 +1759,24 @@ struct BitVec16x16_AVX {
     }
 
     inline void castTo(BitVec16x16 & xmm) const {
-        // __m128i _mm256_extracti128_si256(__m256i a, const int imm8);
-        xmm.low = _mm256_castsi256_si128(this->m256);
+#if 0
+        xmm.low = _mm256_extracti128_si256(this->m256, 0);
         xmm.high = _mm256_extracti128_si256(this->m256, 1);
+#else
+        // __m128i _mm256_extracti128_si256(__m256i a, const int imm8);
+        xmm.high = _mm256_extracti128_si256(this->m256, 1);
+        xmm.low = _mm256_castsi256_si128(this->m256);
+#endif
     }
 
     inline void splitTo(BitVec08x16 & low, BitVec08x16 & high) const {
-        low = _mm256_castsi256_si128(this->m256);
+#if 1
+        low = _mm256_extracti128_si256(this->m256, 0);
         high = _mm256_extracti128_si256(this->m256, 1);
+#else
+        high = _mm256_extracti128_si256(this->m256, 1);
+        low = _mm256_castsi256_si128(this->m256);
+#endif
     }
 
     inline BitVec08x16 getLow() const {
