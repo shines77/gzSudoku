@@ -1831,6 +1831,123 @@ public:
         return empties;
     }
 
+    void do_unique_literal(Board & board, InitState & init_state, const LiteralInfo & literalInfo) {
+        size_t pos, row, col, box, cell, num;
+
+        switch (literalInfo.literal_type) {
+            case LiteralType::BoxCellNums:
+            {
+                size_t box_pos = literalInfo.literal_index;
+                assert(box_pos < Boxes * BoxSize16);
+
+                const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box_pos];
+                row = boxesInfo.row;
+                col = boxesInfo.col;
+                box = boxesInfo.box;
+                cell = boxesInfo.cell;
+                pos = boxesInfo.pos;
+
+                size_t num_bits = init_state.box_cell_nums[box][cell].to_ulong();
+                assert(num_bits != 0);
+                assert((num_bits & (num_bits - 1)) == 0);
+                num = BitUtils::bsf(num_bits);
+
+                assert(board.cells[pos] == '.');
+                board.cells[pos] = (char)(num + '1');
+
+                //this->fillNum(init_state, row, col, box, cell, num);
+                this->updateNeighborCells<LiteralType::BoxCellNums>(init_state, pos, box, cell, num);
+
+                break;
+            }
+
+            case LiteralType::NumRowCols:
+            {
+                size_t literal = literalInfo.literal_index;
+                assert(literal < Numbers * Rows16);
+
+                num = literal / Rows16;
+                row = literal % Rows16;
+
+                size_t col_bits = init_state.num_row_cols[num][row].reset_and_get();
+                assert(col_bits != 0);
+                assert((col_bits & (col_bits - 1)) == 0);
+                col = BitUtils::bsf(col_bits);
+                pos = row * Cols + col;
+
+                const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                box = cellInfo.box;
+                cell = cellInfo.cell;
+
+                assert(board.cells[pos] == '.');
+                board.cells[pos] = (char)(num + '1');
+
+                this->fillNum(init_state, row, col, box, cell, num);
+                this->updateNeighborCells<LiteralType::NumRowCols>(init_state, pos, box, cell, num);
+
+                break;
+            }
+
+            case LiteralType::NumColRows:
+            {
+                size_t literal = literalInfo.literal_index;
+                assert(literal < Numbers * Cols16);
+
+                num = literal / Cols16;
+                col = literal % Cols16;
+
+                size_t row_bits = init_state.num_col_rows[num][col].reset_and_get();
+                assert(row_bits != 0);
+                assert((row_bits & (row_bits - 1)) == 0);
+                row = BitUtils::bsf(row_bits);
+                pos = row * Cols + col;
+
+                const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                box = cellInfo.box;
+                cell = cellInfo.cell;
+
+                assert(board.cells[pos] == '.');
+                board.cells[pos] = (char)(num + '1');
+
+                this->fillNum(init_state, row, col, box, cell, num);
+                this->updateNeighborCells<LiteralType::NumColRows>(init_state, pos, box, cell, num);
+
+                break;
+            }
+
+            case LiteralType::NumBoxCells:
+            {
+                size_t literal = literalInfo.literal_index;
+                assert(literal < Numbers * Boxes16);
+
+                num = literal / Boxes16;
+                box = literal % Boxes16;
+
+                size_t cell_bits = init_state.num_box_cells[num][box].reset_and_get();
+                assert(cell_bits != 0);
+                assert((cell_bits & (cell_bits - 1)) == 0);
+                cell = BitUtils::bsf(cell_bits);
+
+                const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box * BoxSize16 + cell];
+                row = boxesInfo.row;
+                col = boxesInfo.col;
+                pos = boxesInfo.pos;
+
+                assert(board.cells[pos] == '.');
+                board.cells[pos] = (char)(num + '1');
+
+                this->fillNum(init_state, row, col, box, cell, num);
+                this->updateNeighborCells<LiteralType::NumBoxCells>(init_state, pos, box, cell, num);
+
+                break;
+            }
+
+            default:
+                assert(false);
+                break;
+        }
+    }
+
     bool search(Board & board, size_t empties, const LiteralInfo & literalInfo) {
         if (empties == 0) {
             if (kSearchMode > SearchMode::OneAnswer) {
@@ -1855,9 +1972,21 @@ public:
 
         LiteralInfo literalInfo = this->count_literal_size_init();
         assert(literalInfo.literal_size > 0);
+#if 1
+        assert(literalInfo.literal_size > 0);
+        while (literalInfo.literal_size == 1) {
+            this->do_unique_literal(board, this->init_state_, literalInfo);
+            literalInfo = this->count_literal_size_init();
+            assert(literalInfo.literal_size > 0);
+            empties--;
+            if (empties == 0)
+                break;
+        }
+#else
         if (literalInfo.literal_size == 1) {
             empties = this->search_unique_candidate(board, empties, this->init_state_, literalInfo);
         }
+#endif
 
         this->min_info_ = literalInfo;
 
