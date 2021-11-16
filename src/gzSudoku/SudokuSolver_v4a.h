@@ -748,7 +748,8 @@ private:
         //init_state.num_col_rows[num] &= Static.num_col_mask[fill_pos];
         //init_state.num_box_cells[num] &= Static.num_box_mask[fill_pos];
 
-        if (nLiteralType != LiteralType::NumRowCols) {
+        //if (nLiteralType != LiteralType::NumRowCols)
+        {
             pCells16 = (void *)&init_state.num_row_cols[num];
             pMask16 = (void *)&Static.num_row_mask[fill_pos];
             cells16.loadAligned(pCells16);
@@ -757,7 +758,8 @@ private:
             cells16.saveAligned(pCells16);
         }
 
-        if (nLiteralType != LiteralType::NumColRows) {
+        //if (nLiteralType != LiteralType::NumColRows)
+        {
             pCells16 = (void *)&init_state.num_col_rows[num];
             pMask16 = (void *)&Static.num_col_mask[fill_pos];
             cells16.loadAligned(pCells16);
@@ -766,7 +768,8 @@ private:
             cells16.saveAligned(pCells16);
         }
 
-        if (nLiteralType != LiteralType::NumBoxCells) {
+        //if (nLiteralType != LiteralType::NumBoxCells)
+        {
             pCells16 = (void *)&init_state.num_box_cells[num];
             pMask16 = (void *)&Static.num_box_mask[fill_pos];
             cells16.loadAligned(pCells16);
@@ -1562,39 +1565,42 @@ private:
 
     void init_board(Board & board) {
         init_literal_info();
-        /*
+        //*
         this->init_state_.box_cell_nums.fill(kAllNumberBits);
         this->init_state_.num_row_cols.fill(kAllColBits);
         this->init_state_.num_col_rows.fill(kAllRowBits);
         this->init_state_.num_box_cells.fill(kAllBoxCellBits);
         //*/
+#if 0
+        std::memset((void *)&this->count_.sizes.box_cells[0], Numbers, sizeof(this->count_.sizes.box_cells));
 
-        std::memset((void *)&this->count_.sizes.box_cells[0], 0, sizeof(this->count_.sizes.box_cells));
-        std::memset((void *)&this->count_.sizes.num_boxes[0], 0, sizeof(this->count_.sizes.num_boxes));
-        std::memset((void *)&this->count_.sizes.num_rows[0], 0, sizeof(this->count_.sizes.num_rows));
-        std::memset((void *)&this->count_.sizes.num_cols[0], 0, sizeof(this->count_.sizes.num_cols));
-
+        std::memset((void *)&this->count_.sizes.num_rows[0], Cols, sizeof(this->count_.sizes.num_rows));
+        std::memset((void *)&this->count_.sizes.num_cols[0], Rows, sizeof(this->count_.sizes.num_cols));
+        std::memset((void *)&this->count_.sizes.num_boxes[0], BoxSize, sizeof(this->count_.sizes.num_boxes));
+#endif
+        //*
         for (size_t box = 0; box < Boxes; box++) {
-            for (size_t cell = 0; cell < BoxSize; cell++) {
-                this->init_state_.box_cell_nums[box][cell].fill(kAllNumberBits);
+            for (size_t cell = 0; cell < BoxSize16; cell++) {
+                //this->init_state_.box_cell_nums[box][cell].fill(kAllNumberBits);
                 this->count_.sizes.box_cells[box][cell] = Numbers;
             }
         }
 
         for (size_t num = 0; num < Numbers; num++) {
-            for (size_t row = 0; row < Rows; row++) {
-                this->init_state_.num_row_cols[num][row].fill(kAllColBits);
+            for (size_t row = 0; row < Rows16; row++) {
+                //this->init_state_.num_row_cols[num][row].fill(kAllColBits);
                 this->count_.sizes.num_rows[num][row] = Cols;
             }
-            for (size_t col = 0; col < Cols; col++) {
-                this->init_state_.num_col_rows[num][col].fill(kAllRowBits);
+            for (size_t col = 0; col < Cols16; col++) {
+                //this->init_state_.num_col_rows[num][col].fill(kAllRowBits);
                 this->count_.sizes.num_cols[num][col] = Rows;
             }
-            for (size_t box = 0; box < Boxes; box++) {
-                this->init_state_.num_box_cells[num][box].fill(kAllBoxCellBits);
+            for (size_t box = 0; box < Boxes16; box++) {
+                //this->init_state_.num_box_cells[num][box].fill(kAllBoxCellBits);
                 this->count_.sizes.num_boxes[num][box] = BoxSize;
             }
         }
+        //*/
 
         if (kSearchMode > SearchMode::OneAnswer) {
             this->answers_.clear();
@@ -1623,19 +1629,6 @@ private:
             }
         }
         assert(pos == BoardSize);
-
-        LiteralInfo literalInfo = this->count_literal_size_init();
-        assert(literalInfo.literal_size > 0);
-        while (literalInfo.literal_size == 1) {
-            this->do_unique_literal(board, this->init_state_, literalInfo);
-            literalInfo = this->count_literal_size_init();
-            assert(literalInfo.literal_size > 0);
-            empties--;
-            if (empties == 0)
-                break;
-        }
-
-        this->min_info_ = literalInfo;
     }
 
 public:
@@ -1775,7 +1768,22 @@ public:
 
     bool solve(Board & board) {
         this->init_board(board);
+
         size_t empties = this->calc_empties(board);
+
+        LiteralInfo literalInfo = this->count_literal_size_init();
+        assert(literalInfo.literal_size > 0);
+        while (literalInfo.literal_size == 1) {
+            this->do_unique_literal(board, this->init_state_, literalInfo);
+            literalInfo = this->count_literal_size_init();
+            assert(literalInfo.literal_size > 0);
+            empties--;
+            if (empties == 0)
+                break;
+        }
+
+        this->min_info_ = literalInfo;
+
         bool success = this->search(board, empties, this->min_info_);
         return success;
     }

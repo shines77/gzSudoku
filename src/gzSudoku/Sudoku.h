@@ -17,7 +17,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <bitset>
-#include <cstring>      // For std::memset()
+#include <cstring>      // For std::memset(), std::memcpy()
 #include <type_traits>
 #include <algorithm>    // For std::sort()
 
@@ -548,8 +548,8 @@ struct Sudoku {
             cell_info = new CellInfo[kBoardSize];
             cell_info16 = new CellInfo[kRows * kCols16];
 
-            ::memset(cell_info, 0, sizeof(CellInfo) * kBoardSize);
-            ::memset(cell_info16, 0, sizeof(CellInfo) * kRows * kCols16);
+            std::memset(cell_info, 0, sizeof(CellInfo) * kBoardSize);
+            std::memset(cell_info16, 0, sizeof(CellInfo) * kRows * kCols16);
 
             size_t pos = 0;
             for (size_t row = 0; row < kRows; row++) {
@@ -620,8 +620,8 @@ struct Sudoku {
             boxes_info = new BoxesInfo[kBoxes * kBoxSize];
             boxes_info16 = new BoxesInfo[kBoxes * kBoxSize16];
 
-            ::memset(boxes_info, 0, sizeof(BoxesInfo) * kBoxes * kBoxSize);
-            ::memset(boxes_info16, 0, sizeof(BoxesInfo) * kBoxes * kBoxSize16);
+            std::memset(boxes_info, 0, sizeof(BoxesInfo) * kBoxes * kBoxSize);
+            std::memset(boxes_info16, 0, sizeof(BoxesInfo) * kBoxes * kBoxSize16);
 
             size_t index = 0;
             for (size_t box = 0; box < kBoxes; box++) {
