@@ -548,6 +548,9 @@ struct Sudoku {
             cell_info = new CellInfo[kBoardSize];
             cell_info16 = new CellInfo[kRows * kCols16];
 
+            ::memset(cell_info, 0, sizeof(CellInfo) * kBoardSize);
+            ::memset(cell_info16, 0, sizeof(CellInfo) * kRows * kCols16);
+
             size_t pos = 0;
             for (size_t row = 0; row < kRows; row++) {
                 for (size_t col = 0; col < kCols; col++) {
@@ -616,6 +619,9 @@ struct Sudoku {
         if (boxes_info == nullptr) {
             boxes_info = new BoxesInfo[kBoxes * kBoxSize];
             boxes_info16 = new BoxesInfo[kBoxes * kBoxSize16];
+
+            ::memset(boxes_info, 0, sizeof(BoxesInfo) * kBoxes * kBoxSize);
+            ::memset(boxes_info16, 0, sizeof(BoxesInfo) * kBoxes * kBoxSize16);
 
             size_t index = 0;
             for (size_t box = 0; box < kBoxes; box++) {
