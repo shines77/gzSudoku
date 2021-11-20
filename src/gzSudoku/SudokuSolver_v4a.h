@@ -1848,7 +1848,7 @@ private:
     }
 
 public:
-    void do_unique_literal(Board & board, InitState & init_state, const LiteralInfo & literalInfo) {
+    void do_unique_literal(Board & board, InitState & init_state, SimpleLiteralInfo literalInfo) {
         size_t pos, row, col, box, cell, num;
 
         switch (literalInfo.literal_type) {
@@ -2139,23 +2139,24 @@ public:
         this->init_board(board);
 
         size_t empties = this->calc_empties(board);
-#if 0
-        LiteralInfo literalInfo = this->count_literal_size_init_v2();
-        assert(literalInfo.literal_size > 0);
+#if 1
+        SimpleLiteralInfo literalInfo = this->find_unique_candidate();
+        assert(literalInfo.isValid());
 
-        while (literalInfo.literal_size == 1) {
+        while (literalInfo.isValid()) {
             this->do_unique_literal(board, this->init_state_, literalInfo);
-            literalInfo = this->count_literal_size_init_v2();
-            assert(literalInfo.literal_size > 0);
+            literalInfo = this->find_unique_candidate();
+            assert(literalInfo.isValid());
             empties--;
             if (empties == 0)
                 break;
         }
 
-        this->min_info_ = literalInfo;
+        this->min_info_ = literalInfo.toLiteralInfo(255);;
 #else
         SimpleLiteralInfo literalInfo = this->find_unique_candidate();
         assert(literalInfo.isValid());
+
         if (literalInfo.isValid()) {
             empties = this->search_unique_candidate(this->init_state_, board, empties, literalInfo);
         }
