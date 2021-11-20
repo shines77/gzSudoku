@@ -1318,8 +1318,8 @@ struct BitVec16x16 {
             if (isNonZeros || (index_high != -1)) {
                 return (8 + index_high);
             }
+            else return -1;
         }
-        return -1;
     }
 
     template <bool isNonZeros>
@@ -1333,8 +1333,8 @@ struct BitVec16x16 {
             if (isNonZeros || (index_high != -1)) {
                 return (8 + index_high);
             }
+            else return -1;
         }
-        return -1;
     }
 
     inline uint16_t extract(int index) const {
