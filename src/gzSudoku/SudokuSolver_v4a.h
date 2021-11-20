@@ -1848,7 +1848,7 @@ private:
     }
 
 public:
-    void do_unique_literal(Board & board, InitState & init_state, SimpleLiteralInfo literalInfo) {
+    void do_unique_literal(InitState & init_state, Board & board, SimpleLiteralInfo literalInfo) {
         size_t pos, row, col, box, cell, num;
 
         switch (literalInfo.literal_type) {
@@ -2144,7 +2144,7 @@ public:
         assert(literalInfo.isValid());
 
         while (literalInfo.isValid()) {
-            this->do_unique_literal(board, this->init_state_, literalInfo);
+            this->do_unique_literal(this->init_state_, board, literalInfo);
             literalInfo = this->find_unique_candidate();
             assert(literalInfo.isValid());
             empties--;
