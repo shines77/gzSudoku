@@ -762,9 +762,9 @@ public:
 
     inline size_t set_and_get(size_t value, size_t index = 0) {
         assert(index < kUnits);
-        size_t value = static_cast<size_t>(this->array_[index]);
+        size_t oldValue = static_cast<size_t>(this->array_[index]);
         this->array_[index] = static_cast<unit_type>(value);
-        return value;
+        return oldValue;
     }
 };
 
