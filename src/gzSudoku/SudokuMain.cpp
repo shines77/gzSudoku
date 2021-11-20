@@ -61,6 +61,9 @@ static const size_t kEnableV2Solution = 1;
 static const size_t kEnableV3Solution = 1;
 static const size_t kEnableV4Solution = 1;
 
+static std::vector<Board> bm_puzzles;
+static size_t bm_puzzleTotal = 0;
+
 // Index: [0 - 4]
 #define TEST_CASE_INDEX         4
 
@@ -124,6 +127,53 @@ size_t read_sudoku_board(Board & board, char line[256])
     return pos;
 }
 
+size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
+{
+    size_t puzzleCount = 0;
+
+    std::ifstream ifs;
+    try {
+        ifs.open(filename, std::ios::in);
+        if (ifs.good()) {
+            ifs.seekg(0, std::ios::end);
+            std::fstream::pos_type total_size = ifs.tellg();
+            ifs.seekg(0, std::ios::beg);
+
+            std::cout << "File name: " << filename << std::endl;
+            std::cout << "File size: " << total_size << " Byte(s)." << std::endl;
+
+            size_t predictedSize = total_size / (Sudoku::kBoardSize + 1) + 200;
+            puzzles.resize(predictedSize);
+
+            std::cout << "Predicted Size: " << predictedSize << std::endl << std::endl;
+
+            while (!ifs.eof()) {
+                char line[256];
+                std::memset(line, 0, 16);
+                ifs.getline(line, sizeof(line) - 1);
+
+                Board board;
+                size_t num_grids = read_sudoku_board(board, line);
+                // Sudoku::BoardSize = 81
+                if (num_grids >= Sudoku::kBoardSize) {
+                    if (puzzleCount < predictedSize)
+                        puzzles[puzzleCount] = board;
+                    else
+                        puzzles.push_back(board);
+                    puzzleCount++;
+                }
+            }
+
+            ifs.close();
+        }
+    }
+    catch (std::exception & ex) {
+        std::cout << "Exception info: " << ex.what() << std::endl << std::endl;
+    }
+
+    return puzzleCount;
+}
+
 template <typename SudokuSlover>
 void run_solver_testcase(size_t index)
 {
@@ -161,7 +211,7 @@ void run_a_testcase(size_t index)
 }
 
 template <typename SudokuSolver, bool TestOutput = false>
-void run_sudoku_test(const char * filename, const char * name)
+void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleCount, const char * name)
 {
     typedef typename SudokuSolver::basic_solver_t   BasicSolverTy;
     //typedef typename SudokuSolver::solver_type      SolverTy;
@@ -174,48 +224,9 @@ void run_sudoku_test(const char * filename, const char * name)
     size_t total_failed_return = 0;
     size_t total_no_guess = 0;
 
-    size_t puzzleCount = 0;
     size_t puzzleProcessed = 0;
     size_t puzzleSolved = 0;
     double total_time = 0.0;
-
-    BasicSolver basicSolver;
-    std::vector<Board> puzzles;
-
-    std::ifstream ifs;
-    try {
-        ifs.open(filename, std::ios::in);
-        if (ifs.good()) {
-            ifs.seekg(0, std::ios::end);
-            std::fstream::pos_type total_size = ifs.tellg();
-            ifs.seekg(0, std::ios::beg);
-
-            size_t predictedSize = total_size / (Sudoku::kBoardSize + 1) + 200;
-            puzzles.resize(predictedSize);
-
-            while (!ifs.eof()) {
-                char line[256];
-                std::memset(line, 0, 16);
-                ifs.getline(line, sizeof(line) - 1);
-
-                Board board;
-                size_t num_grids = read_sudoku_board(board, line);
-                // Sudoku::BoardSize = 81
-                if (num_grids >= Sudoku::kBoardSize) {
-                    if (puzzleCount < predictedSize)
-                        puzzles[puzzleCount] = board;
-                    else
-                        puzzles.push_back(board);
-                    puzzleCount++;
-                }
-            }
-
-            ifs.close();
-        }
-    }
-    catch (std::exception & ex) {
-        std::cout << "Exception info: " << ex.what() << std::endl << std::endl;
-    }
 
     std::ofstream ofs;
     try {
@@ -223,8 +234,9 @@ void run_sudoku_test(const char * filename, const char * name)
             ofs.open("noguess_output.txt", std::ios::out | std::ios::trunc);
         }
 
-        SudokuSolver solver;
         Board board;
+        SudokuSolver solver;
+        BasicSolver basicSolver;
         jtest::StopWatch sw;
         sw.start();
 
@@ -320,10 +332,13 @@ int main(int argc, char * argv [])
     if (1)
     {
         if (filename != nullptr) {
+            // Read the puzzles data
+            bm_puzzleTotal = load_sudoku_puzzles(filename, bm_puzzles);
+
 #if defined(NDEBUG)
-            run_sudoku_test<v4::Solver>(filename, "dfs::v4");
+            run_sudoku_test<v4::Solver>(bm_puzzles, bm_puzzleTotal, "dfs::v4");
 #endif
-            run_sudoku_test<v4a::Solver, false>(filename, "dfs::v4a");
+            run_sudoku_test<v4a::Solver, false>(bm_puzzles, bm_puzzleTotal, "dfs::v4a");
         }
     }
 
