@@ -1,6 +1,6 @@
 
-#ifndef JSTD_PACKED_BITSET_H
-#define JSTD_PACKED_BITSET_H
+#ifndef GZ_SUDOKU_PACKED_BITSET_H
+#define GZ_SUDOKU_PACKED_BITSET_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -22,6 +22,7 @@
 
 #include "BitUtils.h"
 #include "BitSet.h"
+#include "PowerOf2.h"
 
 namespace gzSudoku {
 
@@ -46,8 +47,28 @@ struct IntegerType<2U> {
 };
 
 template <>
+struct IntegerType<3U> {
+    typedef uint32_t type;
+};
+
+template <>
 struct IntegerType<4U> {
     typedef uint32_t type;
+};
+
+template <>
+struct IntegerType<5U> {
+    typedef uint64_t type;
+};
+
+template <>
+struct IntegerType<6U> {
+    typedef uint64_t type;
+};
+
+template <>
+struct IntegerType<7U> {
+    typedef uint64_t type;
 };
 
 template <>
@@ -55,18 +76,24 @@ struct IntegerType<8U> {
     typedef uint64_t type;
 };
 
+template <size_t N>
+struct RoundToPow2 {
+    static const size_t value = compile_time::round_to_pow2<N>::value;
+};
+
 template <size_t Bits>
 class PackedBitSet {
 public:
-    static const size_t kBitsPerByte = 8;
-    static const size_t kAlignment = sizeof(uint8_t) * kBitsPerByte;
-    static const size_t kMaxBitsAlignment = sizeof(size_t) * kBitsPerByte;
-    static const size_t kBitsAlignment = (Bits < kMaxBitsAlignment) ?
-                                         AlignedTo<Bits, kAlignment>::value :
-                                         kMaxBitsAlignment;
+    static const size_t kByteBits = 8;
+    static const size_t kSizeOfLong = sizeof(size_t);
+    static const size_t kAlignmentBits = sizeof(uint8_t) * kByteBits;
+    static const size_t kMaxAlignmentBits = kSizeOfLong * kByteBits;
+    static const size_t kUnitAlignmentBits = (Bits < kMaxAlignmentBits) ?
+                                         RoundToPow2<Bits>::value :
+                                         kMaxAlignmentBits;
 
-    static const size_t kUnitBits  = kBitsAlignment;
-    static const size_t kUnitBytes = kBitsAlignment / kBitsPerByte;
+    static const size_t kUnitBits  = kUnitAlignmentBits;
+    static const size_t kUnitBytes = kUnitAlignmentBits / kByteBits;
 
     typedef typename IntegerType<kUnitBytes>::type  unit_type;
     typedef PackedBitSet<Bits>                      this_type;
@@ -77,6 +104,8 @@ public:
     static const size_t kRestBits = (Bits % kUnitBits);
     static const unit_type kFullMask = unit_type(-1);
     static const unit_type kTrimMask = (kRestBits != 0) ? (unit_type(size_t(1) << kRestBits) - 1) : kFullMask;
+
+    static const size_t kMemSetThresholdUnits = 4;
 
 private:
     unit_type array_[kUnits];
@@ -364,7 +393,7 @@ public:
 
     this_type & set() noexcept {
         if (kRestBits != 0) {
-            if (kUnits <= 8) {
+            if (kUnits <= kMemSetThresholdUnits) {
                 size_t i = 0;
                 for (; i < kUnits - 1; i++) {
                     this->array_[i] = kFullMask;
@@ -377,7 +406,7 @@ public:
             }
         }
         else {
-            if (kUnits <= 8) {
+            if (kUnits <= kMemSetThresholdUnits) {
                 for (size_t i = 0; i < kUnits; i++) {
                     this->array_[i] = kFullMask;
                 }
@@ -432,7 +461,7 @@ public:
     }
 
     this_type & reset() noexcept {
-        if (kUnits <= 8) {
+        if (kUnits <= kMemSetThresholdUnits) {
             for (size_t i = 0; i < kUnits; i++) {
                 this->array_[i] = 0;
             }
@@ -444,6 +473,7 @@ public:
     }
 
 #if 1
+
     this_type & reset(size_t pos) {
         assert(pos < Bits);
         if (Bits <= kUnitBits) {
@@ -469,7 +499,9 @@ public:
         this->array_[index] ^= unit_type(bit);
         return (*this);
     }
+
 #else
+
     this_type & reset(size_t pos) {
         assert(pos < Bits);
         if (Bits <= kUnitBits) {
@@ -495,6 +527,7 @@ public:
         this->array_[index] &= unit_type(~bit);
         return (*this);
     }
+
 #endif
 
     this_type & flip() noexcept {
@@ -660,7 +693,7 @@ public:
         return Bits;
     }
 
-    unit_type ls1b() const noexcept {
+    inline unit_type ls1b() const noexcept {
         unit_type unit = this->array_[0];
         if (unit != 0) {
             unit_type bit;
@@ -673,7 +706,7 @@ public:
         return unit_type(0);
     }
 
-    unit_type ls1b(size_t & index) const noexcept {
+    inline unit_type ls1b(size_t & index) const noexcept {
         for (size_t i = 0; i < kUnits; i++) {
             unit_type unit = this->array_[i];
             if (unit != 0) {
@@ -690,7 +723,7 @@ public:
         return unit_type(0);
     }
 
-    size_t count() const noexcept {
+    inline size_t count() const noexcept {
         size_t total_popcnt = 0;
         for (size_t i = 0; i < kUnits; i++) {
             size_t unit = this->array_[i];
@@ -720,10 +753,17 @@ public:
         return this->array_[index];
     }
 
-    inline size_t reset_and_get(size_t index = 0) noexcept {
+    inline size_t reset_and_get(size_t index = 0) {
         assert(index < kUnits);
         size_t value = static_cast<size_t>(this->array_[index]);
         this->array_[index] = 0;
+        return value;
+    }
+
+    inline size_t set_and_get(size_t value, size_t index = 0) {
+        assert(index < kUnits);
+        size_t value = static_cast<size_t>(this->array_[index]);
+        this->array_[index] = static_cast<unit_type>(value);
         return value;
     }
 };
@@ -731,30 +771,33 @@ public:
 template <size_t Bits>
 inline
 PackedBitSet<Bits> operator & (const PackedBitSet<Bits> & left,
-                              const PackedBitSet<Bits> & right) noexcept {
+                               const PackedBitSet<Bits> & right) noexcept {
     // left And right
-    PackedBitSet<Bits> answer = left;
-    return (answer &= right);
+    PackedBitSet<Bits> result = left;
+    result &= right;
+    return result;
 }
 
 template <size_t Bits>
 inline
 PackedBitSet<Bits> operator | (const PackedBitSet<Bits> & left,
-                              const PackedBitSet<Bits> & right) noexcept {
+                               const PackedBitSet<Bits> & right) noexcept {
     // left Or right
-    PackedBitSet<Bits> answer = left;
-    return (answer |= right);
+    PackedBitSet<Bits> result = left;
+    result |= right;
+    return result;
 }
 
 template <size_t Bits>
 inline
 PackedBitSet<Bits> operator ^ (const PackedBitSet<Bits> & left,
-                              const PackedBitSet<Bits> & right) noexcept {
+                               const PackedBitSet<Bits> & right) noexcept {
     // left Xor right
-    PackedBitSet<Bits> answer = left;
-    return (answer ^= right);
+    PackedBitSet<Bits> result = left;
+    result ^= right;
+    return result;
 }
 
 } // namespace gzSudoku
 
-#endif // JSTD_PACKED_BITSET_H
+#endif // GZ_SUDOKU_PACKED_BITSET_H

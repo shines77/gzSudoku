@@ -1,6 +1,6 @@
 
-#ifndef JSTD_BITVEC_H
-#define JSTD_BITVEC_H
+#ifndef GZ_SUDOKU_BITVEC_H
+#define GZ_SUDOKU_BITVEC_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -2539,4 +2539,4 @@ typedef BitVec16x16_AVX BitVec16x16;
 
 } // namespace gzSudoku
 
-#endif // JSTD_BITVEC_H
+#endif // GZ_SUDOKU_BITVEC_H

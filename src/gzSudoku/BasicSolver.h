@@ -1,6 +1,6 @@
 
-#ifndef JM_BASIC_SOLVER_H
-#define JM_BASIC_SOLVER_H
+#ifndef GZ_SUDOKU_BASIC_SOLVER_H
+#define GZ_SUDOKU_BASIC_SOLVER_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -123,4 +123,4 @@ public:
 
 } // namespace gzSudoku
 
-#endif // JM_BASIC_SOLVER_H
+#endif // GZ_SUDOKU_BASIC_SOLVER_H

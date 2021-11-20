@@ -1,6 +1,6 @@
 
-#ifndef JSTD_BITSCAN_H
-#define JSTD_BITSCAN_H
+#ifndef GZ_SUDOKU_BITUTILS_H
+#define GZ_SUDOKU_BITUTILS_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -382,4 +382,4 @@ struct BitUtils {
 #undef JSTD_IS_X86_64
 #undef JSTD_WORD_SIZE
 
-#endif // JSTD_BITSCAN_H
+#endif // GZ_SUDOKU_BITUTILS_H
