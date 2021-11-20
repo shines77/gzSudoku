@@ -140,7 +140,7 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
             ifs.seekg(0, std::ios::beg);
 
             std::cout << "File name: " << filename << std::endl;
-            std::cout << "File size: " << total_size << " Byte(s)." << std::endl;
+            std::cout << "File size: " << total_size << " Byte(s)" << std::endl;
 
             size_t predictedSize = total_size / (Sudoku::kBoardSize + 1) + 200;
             puzzles.resize(predictedSize);
@@ -211,7 +211,7 @@ void run_a_testcase(size_t index)
 }
 
 template <typename SudokuSolver, bool TestOutput = false>
-void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleCount, const char * name)
+void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const char * name)
 {
     typedef typename SudokuSolver::basic_solver_t   BasicSolverTy;
     //typedef typename SudokuSolver::solver_type      SolverTy;
@@ -224,7 +224,7 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleCount, const cha
     size_t total_failed_return = 0;
     size_t total_no_guess = 0;
 
-    size_t puzzleProcessed = 0;
+    size_t puzzleCount = 0;
     size_t puzzleSolved = 0;
     double total_time = 0.0;
 
@@ -240,7 +240,7 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleCount, const cha
         jtest::StopWatch sw;
         sw.start();
 
-        for (size_t i = 0; i < puzzleCount; i++) {
+        for (size_t i = 0; i < puzzleTotal; i++) {
             board = puzzles[i];
             bool success = solver.solve(board);
             if (success) {
@@ -254,9 +254,9 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleCount, const cha
 
                 puzzleSolved++;
             }
-            puzzleProcessed++;
+            puzzleCount++;
 #ifndef NDEBUG
-            if (puzzleProcessed > 100000)
+            if (puzzleCount > 100000)
                 break;
 #endif
             if (TestOutput) {
@@ -280,10 +280,10 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleCount, const cha
     double unique_candidate_percent = calc_percent(total_unique_candidate, total_recur_counter);
     double failed_return_percent = calc_percent(total_failed_return, total_recur_counter);
     double guesses_percent = calc_percent(total_guesses, total_recur_counter);
-    double no_guess_percent = calc_percent(total_no_guess, puzzleProcessed);
+    double no_guess_percent = calc_percent(total_no_guess, puzzleCount);
 
     printf("Total puzzle count = %u, puzzle solved = %u, total_no_guess: %" PRIuPTR ", no_guess %% = %0.1f %%\n\n",
-        (uint32_t)puzzleProcessed, (uint32_t)puzzleSolved, total_no_guess, no_guess_percent);
+        (uint32_t)puzzleCount, (uint32_t)puzzleSolved, total_no_guess, no_guess_percent);
     printf("Total elapsed time: %0.3f ms\n\n", total_time);
     printf("recur_counter: %" PRIuPTR "\n\n"
         "total_guesses: %" PRIuPTR ", total_failed_return: %" PRIuPTR ", total_unique_candidate: %" PRIuPTR "\n\n"
@@ -292,15 +292,15 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleCount, const cha
         total_guesses, total_failed_return, total_unique_candidate,
         guesses_percent, failed_return_percent, unique_candidate_percent);
 
-    if (puzzleProcessed != 0) {
+    if (puzzleCount != 0) {
         printf("%0.1f usec/puzzle, %0.2f guesses/puzzle, %0.1f puzzles/sec\n\n",
-            total_time * 1000.0 / puzzleProcessed,
-            (double)total_guesses / puzzleProcessed,
-            puzzleProcessed / (total_time / 1000.0));
+            total_time * 1000.0 / puzzleCount,
+            (double)total_guesses / puzzleCount,
+            puzzleCount / (total_time / 1000.0));
     }
     else {
         printf("NaN usec/puzzle, NaN guesses/puzzle, %0.1f puzzles/sec\n\n",
-            puzzleProcessed / (total_time / 1000.0));
+            puzzleCount / (total_time / 1000.0));
     }
 
     printf("------------------------------------------\n\n");
