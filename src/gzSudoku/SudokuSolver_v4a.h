@@ -605,29 +605,48 @@ private:
     static const uint16_t kDisableLiteral16 = 0xFFFF;
 
     void init_literal_info() {
+#if V4A_USE_SIMD_INIT
+        // init_literal_size()
+        BitVec16x16_AVX full_mask;
+        full_mask.fill_u16(Numbers);
+        for (size_t box = 0; box < Boxes; box++) {
+            full_mask.saveAligned((void *)&this->count_.sizes.box_cells[box]);
+        }
+
+        for (size_t num = 0; num < Numbers; num++) {
+            full_mask.saveAligned((void *)&this->count_.sizes.num_rows[num]);
+            full_mask.saveAligned((void *)&this->count_.sizes.num_cols[num]);
+            full_mask.saveAligned((void *)&this->count_.sizes.num_boxes[num]);
+        }
+
+        // init_literal_count()
+        BitVec16x16_AVX all_ones_avx;
+        all_ones_avx.setAllOnes();
+        all_ones_avx.saveAligned((void *)&this->count_.counts.box_cells[0]);
+        all_ones_avx.saveAligned((void *)&this->count_.counts.num_rows[0]);
+        all_ones_avx.saveAligned((void *)&this->count_.counts.num_cols[0]);
+        all_ones_avx.saveAligned((void *)&this->count_.counts.num_boxes[0]);
+
+        // init_literal_total()
+        all_ones_avx.saveAligned((void *)&this->count_.total.min_literal_size[0]);
+        all_ones_avx.saveAligned((void *)&this->count_.total.min_literal_index[0]);
+
+        // init_literal_index()
+        BitVec08x16 all_ones;
+        all_ones.setAllOnes();
+        all_ones.saveAligned((void *)&this->count_.indexs.box_cells[0]);
+        all_ones.saveAligned((void *)&this->count_.indexs.num_rows[0]);
+        all_ones.saveAligned((void *)&this->count_.indexs.num_cols[0]);
+        all_ones.saveAligned((void *)&this->count_.indexs.num_boxes[0]);
+#else
         init_literal_size();
         init_literal_count();
         init_literal_index();
         init_literal_total();
+#endif
     }
 
     void init_literal_size() {
-#if V4A_USE_SIMD_INIT
-        BitVec16x16_AVX mask_1, mask_2, mask_3, mask_4;
-        mask_1.fill_u16(Numbers);
-        for (size_t box = 0; box < Boxes; box++) {
-            mask_1.saveAligned((void *)&this->count_.sizes.box_cells[box]);
-        }
-
-        mask_2.fill_u16(Cols);
-        mask_3.fill_u16(Rows);
-        mask_4.fill_u16(BoxSize);
-        for (size_t num = 0; num < Numbers; num++) {
-            mask_2.saveAligned((void *)&this->count_.sizes.num_rows[num]);
-            mask_3.saveAligned((void *)&this->count_.sizes.num_cols[num]);
-            mask_4.saveAligned((void *)&this->count_.sizes.num_boxes[num]);
-        }
-#else
         for (size_t box = 0; box < Boxes; box++) {
             for (size_t cell = 0; cell < BoxSize16; cell++) {
                 this->count_.sizes.box_cells[box][cell] = Numbers;
@@ -645,18 +664,9 @@ private:
                 this->count_.sizes.num_boxes[num][box] = BoxSize;
             }
         }
-#endif
     }
 
     void init_literal_count() {
-#if V4A_USE_SIMD_INIT
-        BitVec16x16_AVX bitVec;
-        bitVec.setAllOnes();
-        bitVec.saveAligned((void *)&this->count_.counts.box_cells[0]);
-        bitVec.saveAligned((void *)&this->count_.counts.num_rows[0]);
-        bitVec.saveAligned((void *)&this->count_.counts.num_cols[0]);
-        bitVec.saveAligned((void *)&this->count_.counts.num_boxes[0]);
-#else
         for (size_t i = 0; i < Boxes16; i++) {
             this->count_.counts.box_cells[i] = 255;
         }
@@ -672,18 +682,9 @@ private:
         for (size_t i = 0; i < Numbers16; i++) {
             this->count_.counts.num_boxes[i] = 255;
         }
-#endif
     }
 
     void init_literal_index() {
-#if V4A_USE_SIMD_INIT
-        BitVec08x16 bitVec;
-        bitVec.setAllOnes();
-        bitVec.saveAligned((void *)&this->count_.indexs.box_cells[0]);
-        bitVec.saveAligned((void *)&this->count_.indexs.num_rows[0]);
-        bitVec.saveAligned((void *)&this->count_.indexs.num_cols[0]);
-        bitVec.saveAligned((void *)&this->count_.indexs.num_boxes[0]);
-#else
         for (size_t i = 0; i < Boxes16; i++) {
             this->count_.indexs.box_cells[i] = uint8_t(-1);
         }
@@ -699,21 +700,13 @@ private:
         for (size_t i = 0; i < Numbers16; i++) {
             this->count_.indexs.num_boxes[i] = uint8_t(-1);
         }
-#endif
     }
 
     void init_literal_total() {
-#if V4A_USE_SIMD_INIT
-        BitVec16x16_AVX bitVec;
-        bitVec.setAllOnes();
-        bitVec.saveAligned((void *)&this->count_.total.min_literal_size[0]);
-        bitVec.saveAligned((void *)&this->count_.total.min_literal_index[0]);
-#else
         for (size_t i = 0; i < 16; i++) {
             this->count_.total.min_literal_size[i] = 32767;
             this->count_.total.min_literal_index[i] = uint16_t(-1);
         }
-#endif
     }
 
     inline size_t fillNum(InitState & init_state, size_t row, size_t col,
