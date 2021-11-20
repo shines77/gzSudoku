@@ -52,14 +52,14 @@
 
 using namespace gzSudoku;
 
-static const size_t kEnableDlxV1Solution =   1;
-static const size_t kEnableDlxV2Solution =   1;
-static const size_t kEnableDlxV3Solution =   1;
+static const size_t kEnableDlxV1Solution = 1;
+static const size_t kEnableDlxV2Solution = 1;
+static const size_t kEnableDlxV3Solution = 1;
 
-static const size_t kEnableV1Solution =   1;
-static const size_t kEnableV2Solution =   1;
-static const size_t kEnableV3Solution =   1;
-static const size_t kEnableV4Solution =   1;
+static const size_t kEnableV1Solution = 1;
+static const size_t kEnableV2Solution = 1;
+static const size_t kEnableV3Solution = 1;
+static const size_t kEnableV4Solution = 1;
 
 // Index: [0 - 4]
 #define TEST_CASE_INDEX         4
@@ -85,7 +85,7 @@ void make_sudoku_board(Board & board, size_t index)
                 col++;
                 assert(col <= Sudoku::kCols);
             }
-            prows++;  
+            prows++;
         }
         assert(col == Sudoku::kCols);
     }
@@ -175,21 +175,24 @@ void run_sudoku_test(const char * filename, const char * name)
     size_t total_no_guess = 0;
 
     size_t puzzleCount = 0;
+    size_t puzzleProcessed = 0;
     size_t puzzleSolved = 0;
     double total_time = 0.0;
 
     BasicSolver basicSolver;
+    std::vector<Board> puzzles;
 
     std::ifstream ifs;
-    std::ofstream ofs;
     try {
-        if (TestOutput) {
-            ofs.open("noguess_test.txt", std::ios::out | std::ios::trunc);
-        }
         ifs.open(filename, std::ios::in);
         if (ifs.good()) {
-            SudokuSolver solver;
-            jtest::StopWatch sw;
+            ifs.seekg(0, std::ios::end);
+            std::fstream::pos_type total_size = ifs.tellg();
+            ifs.seekg(0, std::ios::beg);
+
+            size_t predictedSize = total_size / (Sudoku::kBoardSize + 1) + 200;
+            puzzles.resize(predictedSize);
+
             while (!ifs.eof()) {
                 char line[256];
                 std::memset(line, 0, 16);
@@ -199,36 +202,60 @@ void run_sudoku_test(const char * filename, const char * name)
                 size_t num_grids = read_sudoku_board(board, line);
                 // Sudoku::BoardSize = 81
                 if (num_grids >= Sudoku::kBoardSize) {
-                    sw.start();
-                    bool success = solver.solve(board);
-                    sw.stop();
-
-                    double elapsed_time = sw.getElapsedMillisec();
-                    total_time += elapsed_time;
-                    if (success) {
-                        total_guesses += BasicSolverTy::num_guesses;
-                        total_unique_candidate += BasicSolverTy::num_unique_candidate;
-                        total_failed_return += BasicSolverTy::num_failed_return;
-
-                        if (BasicSolverTy::num_guesses == 0) {
-                            total_no_guess++;
-                        }
-
-                        puzzleSolved++;
-                    }
+                    if (puzzleCount < predictedSize)
+                        puzzles[puzzleCount] = board;
+                    else
+                        puzzles.push_back(board);
                     puzzleCount++;
-#ifndef NDEBUG
-                    if (puzzleCount > 100000)
-                        break;
-#endif
-                    if (TestOutput) {
-                        ofs << "#" << puzzleCount << ", " << basicSolver.calc_empties(board)
-                            << " empties" << std::endl;
-                    }
                 }
             }
+
             ifs.close();
         }
+    }
+    catch (std::exception & ex) {
+        std::cout << "Exception info: " << ex.what() << std::endl << std::endl;
+    }
+
+    std::ofstream ofs;
+    try {
+        if (TestOutput) {
+            ofs.open("noguess_output.txt", std::ios::out | std::ios::trunc);
+        }
+
+        SudokuSolver solver;
+        Board board;
+        jtest::StopWatch sw;
+        sw.start();
+
+        for (size_t i = 0; i < puzzleCount; i++) {
+            board = puzzles[i];
+            bool success = solver.solve(board);
+            if (success) {
+                total_guesses += BasicSolverTy::num_guesses;
+                total_unique_candidate += BasicSolverTy::num_unique_candidate;
+                total_failed_return += BasicSolverTy::num_failed_return;
+
+                if (BasicSolverTy::num_guesses == 0) {
+                    total_no_guess++;
+                }
+
+                puzzleSolved++;
+            }
+            puzzleProcessed++;
+#ifndef NDEBUG
+            if (puzzleProcessed > 100000)
+                break;
+#endif
+            if (TestOutput) {
+                ofs << "#" << puzzleCount << ", " << basicSolver.calc_empties(board)
+                    << " empties" << std::endl;
+            }
+        }
+
+        sw.stop();
+        total_time = sw.getElapsedMillisec();
+
         if (TestOutput) {
             ofs.close();
         }
@@ -241,33 +268,33 @@ void run_sudoku_test(const char * filename, const char * name)
     double unique_candidate_percent = calc_percent(total_unique_candidate, total_recur_counter);
     double failed_return_percent = calc_percent(total_failed_return, total_recur_counter);
     double guesses_percent = calc_percent(total_guesses, total_recur_counter);
-    double no_guess_percent = calc_percent(total_no_guess, puzzleCount);
+    double no_guess_percent = calc_percent(total_no_guess, puzzleProcessed);
 
     printf("Total puzzle count = %u, puzzle solved = %u, total_no_guess: %" PRIuPTR ", no_guess %% = %0.1f %%\n\n",
-           (uint32_t)puzzleCount, (uint32_t)puzzleSolved, total_no_guess, no_guess_percent);
+        (uint32_t)puzzleProcessed, (uint32_t)puzzleSolved, total_no_guess, no_guess_percent);
     printf("Total elapsed time: %0.3f ms\n\n", total_time);
     printf("recur_counter: %" PRIuPTR "\n\n"
-           "total_guesses: %" PRIuPTR ", total_failed_return: %" PRIuPTR ", total_unique_candidate: %" PRIuPTR "\n\n"
-           "guess %% = %0.1f %%, failed_return %% = %0.1f %%, unique_candidate %% = %0.1f %%\n\n",
-           total_recur_counter,
-           total_guesses, total_failed_return, total_unique_candidate,
-           guesses_percent, failed_return_percent, unique_candidate_percent);
+        "total_guesses: %" PRIuPTR ", total_failed_return: %" PRIuPTR ", total_unique_candidate: %" PRIuPTR "\n\n"
+        "guess %% = %0.1f %%, failed_return %% = %0.1f %%, unique_candidate %% = %0.1f %%\n\n",
+        total_recur_counter,
+        total_guesses, total_failed_return, total_unique_candidate,
+        guesses_percent, failed_return_percent, unique_candidate_percent);
 
-    if (puzzleSolved != 0) {
+    if (puzzleProcessed != 0) {
         printf("%0.1f usec/puzzle, %0.2f guesses/puzzle, %0.1f puzzles/sec\n\n",
-               total_time * 1000.0 / puzzleSolved,
-               (double)total_guesses / puzzleSolved,
-               puzzleSolved / (total_time / 1000.0));
+            total_time * 1000.0 / puzzleProcessed,
+            (double)total_guesses / puzzleProcessed,
+            puzzleProcessed / (total_time / 1000.0));
     }
     else {
         printf("NaN usec/puzzle, NaN guesses/puzzle, %0.1f puzzles/sec\n\n",
-               puzzleSolved / (total_time / 1000.0));
+            puzzleProcessed / (total_time / 1000.0));
     }
 
     printf("------------------------------------------\n\n");
 }
 
-int main(int argc, char * argv[])
+int main(int argc, char * argv [])
 {
     const char * filename = nullptr;
     const char * out_file = nullptr;
