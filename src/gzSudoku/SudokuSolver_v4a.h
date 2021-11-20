@@ -242,10 +242,34 @@ private:
 
         uint64_t value;
 
-        LiteralInfo() : value(0) {}
-        //LiteralInfo() : literal_size(0), literal_type(0), literal_index(0) {}
+        LiteralInfo(uint64_t _value = 0) : value(_value) {}
         LiteralInfo(uint32_t size, uint32_t type, uint32_t index)
             : literal_size(size), literal_type((uint16_t)type), literal_index((uint16_t)index) {}
+
+        bool isValid() const {
+            return (this->value != uint64_t(-1));
+        }
+    };
+
+    union SimpleLiteralInfo {
+        struct {
+            uint32_t literal_type;
+            uint32_t literal_index;
+        };
+
+        uint64_t value;
+
+        SimpleLiteralInfo(uint64_t _value = 0) : value(_value) {}
+        SimpleLiteralInfo(uint32_t type, uint32_t index)
+            : literal_type(type), literal_index(index) {}
+
+        bool isValid() const {
+            return (this->value != uint64_t(-1));
+        }
+
+        LiteralInfo toLiteralInfo(uint32_t literal_size) {
+            return LiteralInfo(literal_size, literal_type, literal_index);
+        }
     };
 
     template <size_t nBoxCountX, size_t nBoxCountY>
@@ -844,7 +868,7 @@ private:
         }
     }
 
-    LiteralInfo count_literal_size_init() {
+    SimpleLiteralInfo find_unique_candidate() {
         BitVec16x16 unique_mask;
         unique_mask.fill_u16(1);
 
@@ -860,7 +884,7 @@ private:
 
             if (min_index != -1) {
                 uint32_t box_index = (uint32_t)(box * BoxSize16 + min_index);
-                return LiteralInfo(1, LiteralType::BoxCellNums, box_index);
+                return SimpleLiteralInfo(LiteralType::BoxCellNums, box_index);
             }
         }
 
@@ -877,7 +901,7 @@ private:
 
             if (min_index != -1) {
                 uint32_t row_index = (uint32_t)(num * Rows16 + min_index);
-                return LiteralInfo(1, LiteralType::NumRowCols, row_index);
+                return SimpleLiteralInfo(LiteralType::NumRowCols, row_index);
             }
         }
 
@@ -894,7 +918,7 @@ private:
 
             if (min_index != -1) {
                 uint32_t col_index = (uint32_t)(num * Cols16 + min_index);
-                return LiteralInfo(1, LiteralType::NumColRows, col_index);
+                return SimpleLiteralInfo(LiteralType::NumColRows, col_index);
             }
         }
 
@@ -910,13 +934,11 @@ private:
 
             if (min_index != -1) {
                 uint32_t box_index = (uint32_t)(num * Boxes16 + min_index);
-                return LiteralInfo(1, LiteralType::NumBoxCells, box_index);
+                return SimpleLiteralInfo(LiteralType::NumBoxCells, box_index);
             }
         }
 
-        LiteralInfo literalInfo;
-        literalInfo.value = uint64_t(-1);
-        return literalInfo;
+        return SimpleLiteralInfo((uint64_t)-1);
     }
 
     LiteralInfo count_literal_size_init_v1() {
@@ -1357,7 +1379,7 @@ private:
     }
 
     template <size_t nLiteralType = LiteralType::Unknown>
-    LiteralInfo count_literal_size_init(size_t in_box, size_t num, size_t num_bits) {
+    SimpleLiteralInfo find_unique_candidate(size_t in_box, size_t num, size_t num_bits) {
         BitVec16x16 unique_mask;
         unique_mask.fill_u16(1);
 
@@ -1373,7 +1395,7 @@ private:
 
             if (min_index != -1) {
                 uint32_t box_index = (uint32_t)(box * BoxSize16 + min_index);
-                return LiteralInfo(1, LiteralType::BoxCellNums, box_index);
+                return SimpleLiteralInfo(LiteralType::BoxCellNums, box_index);
             }
         }
 
@@ -1390,7 +1412,7 @@ private:
 
             if (min_index != -1) {
                 uint32_t row_index = (uint32_t)(num * Rows16 + min_index);
-                return LiteralInfo(1, LiteralType::NumRowCols, row_index);
+                return SimpleLiteralInfo(LiteralType::NumRowCols, row_index);
             }
         }
 
@@ -1407,7 +1429,7 @@ private:
 
             if (min_index != -1) {
                 uint32_t col_index = (uint32_t)(num * Cols16 + min_index);
-                return LiteralInfo(1, LiteralType::NumColRows, col_index);
+                return SimpleLiteralInfo(LiteralType::NumColRows, col_index);
             }
         }
 
@@ -1423,13 +1445,11 @@ private:
 
             if (min_index != -1) {
                 uint32_t box_index = (uint32_t)(num * Boxes16 + min_index);
-                return LiteralInfo(1, LiteralType::NumBoxCells, box_index);
+                return SimpleLiteralInfo(LiteralType::NumBoxCells, box_index);
             }
         }
 
-        LiteralInfo literalInfo;
-        literalInfo.value = uint64_t(-1);
-        return literalInfo;
+        return SimpleLiteralInfo((uint64_t)-1);
     }
 
     template <size_t nLiteralType = LiteralType::Unknown>
@@ -1828,9 +1848,9 @@ private:
     }
 
 public:
-    size_t search_unique_candidate(Board & board, size_t empties,
-                                   InitState & init_state,
-                                   LiteralInfo & literalInfo) {
+    size_t search_unique_candidate(Board & board, InitState & init_state,
+                                   size_t empties,                                   
+                                   SimpleLiteralInfo literalInfo) {
         size_t pos, row, col, box, cell, num, num_bits;
 
         switch (literalInfo.literal_type) {
@@ -1859,9 +1879,9 @@ public:
                     //num_bits = this->fillNum(init_state, row, col, box, cell, num);
                     this->updateNeighborCells<LiteralType::BoxCellNums>(init_state, pos, box, cell, num);
 
-                    literalInfo = this->count_literal_size_init<LiteralType::BoxCellNums>(box, num, 0);
-                    if (literalInfo.literal_size == 1) {
-                        return this->search_unique_candidate(board, empties, init_state, literalInfo);
+                    SimpleLiteralInfo nextLiteralInfo = this->find_unique_candidate<LiteralType::BoxCellNums>(box, num, 0);
+                    if (nextLiteralInfo.isValid()) {
+                        return this->search_unique_candidate(board, init_state, empties, nextLiteralInfo);
                     }
                 }
 
@@ -1894,9 +1914,9 @@ public:
                     num_bits = this->fillNum(init_state, row, col, box, cell, num);
                     this->updateNeighborCells<LiteralType::NumRowCols>(init_state, pos, box, cell, num);
 
-                    literalInfo = this->count_literal_size_init<LiteralType::NumRowCols>(box, num, num_bits);
-                    if (literalInfo.literal_size == 1) {
-                        return this->search_unique_candidate(board, empties, init_state, literalInfo);
+                    SimpleLiteralInfo nextLiteralInfo = this->find_unique_candidate<LiteralType::NumRowCols>(box, num, num_bits);
+                    if (nextLiteralInfo.isValid()) {
+                        return this->search_unique_candidate(board, init_state, empties, nextLiteralInfo);
                     }
                 }
 
@@ -1929,9 +1949,9 @@ public:
                     num_bits = this->fillNum(init_state, row, col, box, cell, num);
                     this->updateNeighborCells<LiteralType::NumColRows>(init_state, pos, box, cell, num);
 
-                    literalInfo = this->count_literal_size_init<LiteralType::NumColRows>(box, num, num_bits);
-                    if (literalInfo.literal_size == 1) {
-                        return this->search_unique_candidate(board, empties, init_state, literalInfo);
+                    SimpleLiteralInfo nextLiteralInfo = this->find_unique_candidate<LiteralType::NumColRows>(box, num, num_bits);
+                    if (nextLiteralInfo.isValid()) {
+                        return this->search_unique_candidate(board, init_state, empties, nextLiteralInfo);
                     }
                 }
 
@@ -1964,9 +1984,9 @@ public:
                     num_bits = this->fillNum(init_state, row, col, box, cell, num);
                     this->updateNeighborCells<LiteralType::NumBoxCells>(init_state, pos, box, cell, num);
 
-                    literalInfo = this->count_literal_size_init<LiteralType::NumBoxCells>(box, num, num_bits);
-                    if (literalInfo.literal_size == 1) {
-                        return this->search_unique_candidate(board, empties, init_state, literalInfo);
+                    SimpleLiteralInfo nextLiteralInfo = this->find_unique_candidate<LiteralType::NumBoxCells>(box, num, num_bits);
+                    if (nextLiteralInfo.isValid()) {
+                        return this->search_unique_candidate(board, init_state, empties, nextLiteralInfo);
                     }
                 }
 
@@ -2119,27 +2139,29 @@ public:
         this->init_board(board);
 
         size_t empties = this->calc_empties(board);
+#if 0
+        LiteralInfo literalInfo = this->count_literal_size_init_v2();
+        assert(literalInfo.literal_size > 0);
 
-        LiteralInfo literalInfo = this->count_literal_size_init();
-        assert(literalInfo.literal_size > 0);
-#if 1
-        assert(literalInfo.literal_size > 0);
         while (literalInfo.literal_size == 1) {
             this->do_unique_literal(board, this->init_state_, literalInfo);
-            literalInfo = this->count_literal_size_init();
+            literalInfo = this->count_literal_size_init_v2();
             assert(literalInfo.literal_size > 0);
             empties--;
             if (empties == 0)
                 break;
         }
-#else
-        if (literalInfo.literal_size == 1) {
-            empties = this->search_unique_candidate(board, empties, this->init_state_, literalInfo);
-        }
-#endif
 
         this->min_info_ = literalInfo;
+#else
+        SimpleLiteralInfo literalInfo = this->find_unique_candidate();
+        assert(literalInfo.isValid());
+        if (literalInfo.isValid()) {
+            empties = this->search_unique_candidate(board, this->init_state_, empties, literalInfo);
+        }
 
+        this->min_info_ = literalInfo.toLiteralInfo(255);
+#endif
         bool success = this->search(board, empties, this->min_info_);
         return success;
     }
