@@ -39,7 +39,7 @@
 #define V4A_LITERAL_ORDER_MODE  0
 #define V4A_SAVE_COUNT_SIZE     1
 
-#define V4A_USE_SIMD_INIT       1
+#define V4A_USE_SIMD_INIT       0
 
 namespace gzSudoku {
 namespace v4a {
