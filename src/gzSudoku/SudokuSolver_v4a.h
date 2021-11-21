@@ -1695,7 +1695,7 @@ private:
     }
 
     SimpleLiteralInfo find_unique_candidate() {
-        BitVec16x16 unique_mask;
+        BitVec08x16 unique_mask;
         unique_mask.fill_u16(1);
 
         // Position (Box-Cell) literal
@@ -1769,7 +1769,7 @@ private:
 
     template <size_t nLiteralType = LiteralType::Unknown>
     SimpleLiteralInfo find_unique_candidate(size_t in_box, size_t num, size_t num_bits) {
-        BitVec16x16 unique_mask;
+        BitVec08x16 unique_mask;
         unique_mask.fill_u16(1);
 
         // Position (Box-Cell) literal
