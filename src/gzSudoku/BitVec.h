@@ -1313,8 +1313,8 @@ struct BitVec16x16 {
         return this->firstIndexOfOnes16<isNonZeros>(num_mask);
 #elif 1
         BitVec08x16 compare_mask_low = this->low.whichIsEqual(num_mask);
-        BitVec08x16 compare_mask_high = this->high.whichIsEqual(num_mask);
         int compare_mask_low_16 = _mm_movemask_epi8(compare_mask_low.m128);
+        BitVec08x16 compare_mask_high = this->high.whichIsEqual(num_mask);
         int compare_mask_high_16 = _mm_movemask_epi8(compare_mask_high.m128);
 
         if (compare_mask_low_16 != 0) {
@@ -1353,8 +1353,8 @@ struct BitVec16x16 {
     inline int firstIndexOfOnes16(const BitVec08x16 & compare_mask) const {
 #if 1
         BitVec08x16 compare_mask_low = this->low.whichIsEqual(compare_mask);
-        BitVec08x16 compare_mask_high = this->high.whichIsEqual(compare_mask);
         int compare_mask_low_16 = _mm_movemask_epi8(compare_mask_low.m128);
+        BitVec08x16 compare_mask_high = this->high.whichIsEqual(compare_mask);
         int compare_mask_high_16 = _mm_movemask_epi8(compare_mask_high.m128);
 
         if (compare_mask_low_16 != 0) {
