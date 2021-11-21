@@ -1694,7 +1694,7 @@ private:
         return literalInfo;
     }
 
-    SimpleLiteralInfo find_unique_candidate() {
+    SimpleLiteralInfo find_unique_candidate_sse() {
         BitVec08x16 unique_mask;
         unique_mask.fill_u16(1);
 
@@ -1768,7 +1768,7 @@ private:
     }
 
     template <size_t nLiteralType = LiteralType::Unknown>
-    SimpleLiteralInfo find_unique_candidate(size_t in_box, size_t num, size_t num_bits) {
+    SimpleLiteralInfo find_unique_candidate_sse(size_t in_box, size_t num, size_t num_bits) {
         BitVec08x16 unique_mask;
         unique_mask.fill_u16(1);
 
@@ -1829,6 +1829,153 @@ private:
             num_box_bits.loadAligned(pCells16);
 
             BitVec16x16 popcnt16 = num_box_bits.popcount16<Boxes, BoxSize>();
+            int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
+            assert(min_index >= -1 && min_index < 16);
+
+            if (min_index != -1) {
+                uint32_t box_index = (uint32_t)(num * Boxes16 + min_index);
+                return SimpleLiteralInfo(LiteralType::NumBoxCells, box_index);
+            }
+        }
+
+        return SimpleLiteralInfo(-1);
+    }
+
+    SimpleLiteralInfo find_unique_candidate() {
+        BitVec16x16_AVX unique_mask;
+        unique_mask.fill_u16(1);
+
+        // Position (Box-Cell) literal
+        for (size_t box = 0; box < Boxes; box++) {
+            void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
+            BitVec16x16_AVX box_bits;
+            box_bits.loadAligned(pCells16);
+
+            BitVec16x16_AVX popcnt16 = box_bits.popcount16<BoxSize, Numbers>();
+            int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
+            assert(min_index >= -1 && min_index < 16);
+
+            if (min_index != -1) {
+                uint32_t box_index = (uint32_t)(box * BoxSize16 + min_index);
+                return SimpleLiteralInfo(LiteralType::BoxCellNums, box_index);
+            }
+        }
+
+        // Row literal
+        for (size_t num = 0; num < Numbers; num++) {
+            void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
+            BitVec16x16_AVX num_row_bits;
+            num_row_bits.loadAligned(pCells16);
+
+            BitVec16x16_AVX popcnt16 = num_row_bits.popcount16<Rows, Cols>();
+
+            int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
+            assert(min_index >= -1 && min_index < 16);
+
+            if (min_index != -1) {
+                uint32_t row_index = (uint32_t)(num * Rows16 + min_index);
+                return SimpleLiteralInfo(LiteralType::NumRowCols, row_index);
+            }
+        }
+
+        // Col literal
+        for (size_t num = 0; num < Numbers; num++) {
+            void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
+            BitVec16x16_AVX num_col_bits;
+            num_col_bits.loadAligned(pCells16);
+
+            BitVec16x16_AVX popcnt16 = num_col_bits.popcount16<Cols, Rows>();
+
+            int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
+            assert(min_index >= -1 && min_index < 16);
+
+            if (min_index != -1) {
+                uint32_t col_index = (uint32_t)(num * Cols16 + min_index);
+                return SimpleLiteralInfo(LiteralType::NumColRows, col_index);
+            }
+        }
+
+        // Box-Cell literal
+        for (size_t num = 0; num < Numbers; num++) {
+            void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
+            BitVec16x16_AVX num_box_bits;
+            num_box_bits.loadAligned(pCells16);
+
+            BitVec16x16_AVX popcnt16 = num_box_bits.popcount16<Boxes, BoxSize>();
+            int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
+            assert(min_index >= -1 && min_index < 16);
+
+            if (min_index != -1) {
+                uint32_t box_index = (uint32_t)(num * Boxes16 + min_index);
+                return SimpleLiteralInfo(LiteralType::NumBoxCells, box_index);
+            }
+        }
+
+        return SimpleLiteralInfo(-1);
+    }
+
+    template <size_t nLiteralType = LiteralType::Unknown>
+    SimpleLiteralInfo find_unique_candidate(size_t in_box, size_t num, size_t num_bits) {
+        BitVec16x16_AVX unique_mask;
+        unique_mask.fill_u16(1);
+
+        // Position (Box-Cell) literal
+        for (size_t box = 0; box < Boxes; box++) {
+            void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
+            BitVec16x16_AVX box_bits;
+            box_bits.loadAligned(pCells16);
+
+            BitVec16x16_AVX popcnt16 = box_bits.popcount16<BoxSize, Numbers>();
+            int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
+            assert(min_index >= -1 && min_index < 16);
+
+            if (min_index != -1) {
+                uint32_t box_index = (uint32_t)(box * BoxSize16 + min_index);
+                return SimpleLiteralInfo(LiteralType::BoxCellNums, box_index);
+            }
+        }
+
+        // Row literal
+        for (size_t num = 0; num < Numbers; num++) {
+            void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
+            BitVec16x16_AVX num_row_bits;
+            num_row_bits.loadAligned(pCells16);
+
+            BitVec16x16_AVX popcnt16 = num_row_bits.popcount16<Rows, Cols>();
+
+            int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
+            assert(min_index >= -1 && min_index < 16);
+
+            if (min_index != -1) {
+                uint32_t row_index = (uint32_t)(num * Rows16 + min_index);
+                return SimpleLiteralInfo(LiteralType::NumRowCols, row_index);
+            }
+        }
+
+        // Col literal
+        for (size_t num = 0; num < Numbers; num++) {
+            void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
+            BitVec16x16_AVX num_col_bits;
+            num_col_bits.loadAligned(pCells16);
+
+            BitVec16x16_AVX popcnt16 = num_col_bits.popcount16<Cols, Rows>();
+
+            int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
+            assert(min_index >= -1 && min_index < 16);
+
+            if (min_index != -1) {
+                uint32_t col_index = (uint32_t)(num * Cols16 + min_index);
+                return SimpleLiteralInfo(LiteralType::NumColRows, col_index);
+            }
+        }
+
+        // Box-Cell literal
+        for (size_t num = 0; num < Numbers; num++) {
+            void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
+            BitVec16x16_AVX num_box_bits;
+            num_box_bits.loadAligned(pCells16);
+
+            BitVec16x16_AVX popcnt16 = num_box_bits.popcount16<Boxes, BoxSize>();
             int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
             assert(min_index >= -1 && min_index < 16);
 
