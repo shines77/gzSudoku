@@ -451,6 +451,8 @@ struct Sudoku {
 
     static const bool kAllDimIsSame = ((kNumbers == kBoxSize) && (kRows == kCols) && (kNumbers == kRows));
 
+    static const size_t kMinInitCandidates = 17;
+
     typedef Board board_type;
 
 #pragma pack(push, 1)

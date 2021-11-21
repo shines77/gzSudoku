@@ -1287,28 +1287,49 @@ struct BitVec16x16 {
     }
 
     template <bool isNonZeros, bool isRepeat = true>
-    inline int indexOfIsEqual16(const BitVec16x16 & in_num_mask) const {
+    inline int indexOfIsEqual16(const BitVec08x16 & in_num_mask) const {
         BitVec08x16 num_mask;
         if (!isRepeat) {
             // If the num_mask is not a repeat mask,
             // we repeat the first 16bit integer first.
 #if defined(__AVX2__)
-            num_mask = _mm_broadcastw_epi16(in_num_mask.low.m128);
+            num_mask = _mm_broadcastw_epi16(in_num_mask.m128);
 #elif defined(__SSSE3__)
             __m128i lookup_mask = _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
-            num_mask = _mm_shuffle_epi8(in_num_mask.low.m128, lookup_mask);
+            num_mask = _mm_shuffle_epi8(in_num_mask.m128, lookup_mask);
 #else
             // SSE2
             __m128i lookup_mask = _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
-            num_mask = in_num_mask.low;
+            num_mask = in_num_mask;
             num_mask = _mm_shufflelo_epi16(num_mask.m128, _MM_SHUFFLE(0, 0, 0, 0));
             num_mask = _mm_shuffle_epi32(num_mask.m128, _MM_SHUFFLE(0, 0, 0, 0));
 #endif
         }
         else {
-            num_mask = in_num_mask.low;
+            num_mask = in_num_mask;
         }
 
+#if 0
+        return this->firstIndexOfOnes16<isNonZeros>(num_mask);
+#elif 0
+        BitVec08x16 compare_mask_low = this->low.whichIsEqual(num_mask);
+        BitVec08x16 compare_mask_high = this->high.whichIsEqual(num_mask);
+        int compare_mask_low_16 = _mm_movemask_epi8(compare_mask_low.m128);
+        int compare_mask_high_16 = _mm_movemask_epi8(compare_mask_high.m128);
+
+        if (compare_mask_low_16 != 0) {
+            uint32_t first_offset = BitUtils::bsf(compare_mask_low_16);
+            int index_low = (int)(first_offset >> 1U);
+            return index_low;
+        }
+        else if (isNonZeros || (compare_mask_high_16 != 0)) {
+            assert(!isNonZeros || (compare_mask_high_16 != 0));
+            uint32_t first_offset = BitUtils::bsf(compare_mask_high_16);
+            int index_high = (int)(first_offset >> 1U);
+            return (8 + index_high);
+        }
+        else return -1;
+#else
         int index_low = this->low.template indexOfIsEqual16<false, true>(num_mask);
         if (index_low != -1) {
             return index_low;
@@ -1320,21 +1341,52 @@ struct BitVec16x16 {
             }
             else return -1;
         }
+#endif
+    }
+
+    template <bool isNonZeros, bool isRepeat = true>
+    inline int indexOfIsEqual16(const BitVec16x16 & num_mask) const {
+        return this->template indexOfIsEqual16<isNonZeros, isRepeat>(num_mask.low);
     }
 
     template <bool isNonZeros>
-    inline int firstIndexOfOnes16(const BitVec16x16 & compare_mask) const {
-        int index_low = this->low.template firstIndexOfOnes16<false>(compare_mask.low);
+    inline int firstIndexOfOnes16(const BitVec08x16 & compare_mask) const {
+#if 0
+        BitVec08x16 compare_mask_low = this->low.whichIsEqual(compare_mask);
+        BitVec08x16 compare_mask_high = this->high.whichIsEqual(compare_mask);
+        int compare_mask_low_16 = _mm_movemask_epi8(compare_mask_low.m128);
+        int compare_mask_high_16 = _mm_movemask_epi8(compare_mask_high.m128);
+
+        if (compare_mask_low_16 != 0) {
+            uint32_t first_offset = BitUtils::bsf(compare_mask_low_16);
+            int index_low = (int)(first_offset >> 1U);
+            return index_low;
+        }
+        else if (isNonZeros || (compare_mask_high_16 != 0)) {
+            assert(!isNonZeros || (compare_mask_high_16 != 0));
+            uint32_t first_offset = BitUtils::bsf(compare_mask_high_16);
+            int index_high = (int)(first_offset >> 1U);
+            return (8 + index_high);
+        }
+        else return -1;
+#else
+        int index_low = this->low.template firstIndexOfOnes16<false>(compare_mask);
         if (index_low != -1) {
             return index_low;
         }
         else {
-            int index_high = this->high.template firstIndexOfOnes16<isNonZeros>(compare_mask.high);
+            int index_high = this->high.template firstIndexOfOnes16<isNonZeros>(compare_mask);
             if (isNonZeros || (index_high != -1)) {
                 return (8 + index_high);
             }
             else return -1;
         }
+#endif
+    }
+
+    template <bool isNonZeros>
+    inline int firstIndexOfOnes16(const BitVec16x16 & compare_mask) const {
+        return this->template firstIndexOfOnes16<isNonZeros>(compare_mask.low);
     }
 
     inline uint16_t extract(int index) const {
