@@ -602,27 +602,6 @@ public:
         return ((this->array_[index] & unit_type(bit)) != 0);
     }
 
-    size_t value(size_t pos) const {
-        assert(pos < Bits);
-        if (Bits <= kUnitBits) {
-            return size_t(this->array_[0]);
-        }
-        else {
-            size_t index = pos / kUnitBits;
-            return size_t(this->array_[index]);
-        }
-    }
-
-    unit_type get_uint(size_t index) const {
-        assert(index < kUnits);
-        return this->array_[index];
-    }
-
-    void set_uint(size_t index, unit_type value) const {
-        assert(index < kUnits);
-        return this->array_[index] = value;
-    }
-
     bool any() const noexcept {
         for (size_t i = 0; i < kUnits - 1; i++) {
             unit_type unit = this->array_[i];
@@ -733,6 +712,16 @@ public:
         return total_popcnt;
     }
 
+    inline unit_type value(size_t index = 0) const {
+        assert(index < kUnits);
+        return this->array_[index];
+    }
+
+    inline void set_value(unit_type value, size_t index = 0) const {
+        assert(index < kUnits);
+        return this->array_[index] = value;
+    }
+
     inline unsigned long to_ulong(size_t index = 0) const {
         assert(index < kUnits);
         return static_cast<unsigned long>(this->array_[index]);
@@ -741,16 +730,6 @@ public:
     inline uint64_t to_ullong(size_t index = 0) const {
         assert(index < kUnits);
         return static_cast<uint64_t>(this->array_[index]);
-    }
-
-    inline size_t to_size_t(size_t index = 0) const {
-        assert(index < kUnits);
-        return static_cast<size_t>(this->array_[index]);
-    }
-
-    inline unit_type unit_value(size_t index = 0) const {
-        assert(index < kUnits);
-        return this->array_[index];
     }
 
     inline size_t reset_and_get(size_t index = 0) {
