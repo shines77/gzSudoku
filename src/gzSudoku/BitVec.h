@@ -648,42 +648,42 @@ struct BitVec08x16 {
 #elif defined(__SSSE3__)
         if (MaxBits <= 8) {
             // Note: Ensure that the highest 8 bits must be 0.
-            __m128i lookup  = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
-            __m128i mask4   = _mm_set1_epi16(0x0F);
-            __m128i sum_0_3 = _mm_shuffle_epi8(lookup, _mm_and_si128(this->m128, mask4));
-            __m128i sum_4_7 = _mm_shuffle_epi8(lookup, _mm_srli_epi16(this->m128, 4));
-            __m128i sum_0_7 = _mm_add_epi16(sum_0_3, sum_4_7);
-            __m128i result  = sum_0_7;
+            __m128i lookup     = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+            __m128i mask4      = _mm_set1_epi16(0x000F);
+            __m128i sum_odd_4  = _mm_shuffle_epi8(lookup, _mm_and_si128(this->m128, mask4));
+            __m128i sum_even_4 = _mm_shuffle_epi8(lookup, _mm_srli_epi16(this->m128, 4));
+            __m128i sum_0_7    = _mm_add_epi16(sum_odd_4, sum_even_4);
+            __m128i result     = sum_0_7;
             return result;
         }
         else if (MaxBits == 9) {
             // Note: Ensure that the highest 7 bits must be 0.
-            __m128i lookup  = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
-            __m128i mask4   = _mm_set1_epi16(0x0F);
-            __m128i sum_0_3 = _mm_shuffle_epi8(lookup, _mm_and_si128(this->m128, mask4));
-            __m128i sum_4_7 = _mm_shuffle_epi8(lookup, _mm_srli_epi16(this->m128, 4));
-            __m128i sum_0_7 = _mm_add_epi16(sum_0_3, sum_4_7);
-            __m128i result  = _mm_add_epi16(sum_0_7, _mm_srli_epi16(this->m128, 8));
+            __m128i lookup     = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+            __m128i mask4      = _mm_set1_epi16(0x000F);
+            __m128i sum_odd_4  = _mm_shuffle_epi8(lookup, _mm_and_si128(this->m128, mask4));
+            __m128i sum_even_4 = _mm_shuffle_epi8(lookup, _mm_srli_epi16(this->m128, 4));
+            __m128i sum_0_7    = _mm_add_epi16(sum_odd_4, sum_even_4);
+            __m128i result     = _mm_add_epi16(sum_0_7, _mm_srli_epi16(this->m128, 8));
             return result;
         }
         else {
             __m128i lookup     = _mm_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
             __m128i mask4      = _mm_set1_epi16(0x0F0F);
-            __m128i sum_00_07  = _mm_shuffle_epi8(lookup, _mm_and_si128(this->m128, mask4));
+            __m128i sum_odd_4  = _mm_shuffle_epi8(lookup, _mm_and_si128(this->m128, mask4));
             __m128i even_bytes = _mm_srli_epi16(this->m128, 4);
-            __m128i sum_08_15  = _mm_shuffle_epi8(lookup, _mm_and_si128(even_bytes, mask4));
-            __m128i sum_00_15  = _mm_add_epi16(sum_00_07, sum_08_15);
-            __m128i mask_8     = _mm_set1_epi16(0xFF);
-            __m128i sum_odd_8  = _mm_and_si128(sum_00_15, mask_8);
-            __m128i sum_even_8 = _mm_and_si128(_mm_srli_epi16(sum_00_15, 8), mask_8);
+            __m128i sum_even_4 = _mm_shuffle_epi8(lookup, _mm_and_si128(even_bytes, mask4));
+            __m128i sum_00_15  = _mm_add_epi16(sum_odd_4, sum_even_4);
+            __m128i mask8      = _mm_set1_epi16(0x00FF);
+            __m128i sum_odd_8  = _mm_and_si128(sum_00_15, mask8);
+            __m128i sum_even_8 = _mm_srli_epi16(sum_00_15, 8);
             __m128i result     = _mm_add_epi16(sum_odd_8, sum_even_8);
             return result;
         }
 #else
         // SSE2 version from https://www.hackersdelight.org/hdcodetxt/pop.c.txt
         __m128i mask1 = _mm_set1_epi8(0x77);
-        __m128i mask2 = _mm_set1_epi8(0x0f);
-        __m128i mask3 = _mm_set1_epi16(0xff);
+        __m128i mask2 = _mm_set1_epi8(0x0F);
+        __m128i mask3 = _mm_set1_epi16(0x00FF);
         __m128i x = this->m128;
         __m128i n = _mm_and_si128(mask1, _mm_srli_epi64(x, 1));
         x = _mm_sub_epi8(x, n);
@@ -2378,37 +2378,37 @@ struct BitVec16x16_AVX {
 #else
         if (MaxBits <= 8) {
             // Note: Ensure that the highest 8 bits must be 0.
-            __m256i lookup  = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
-                                               0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
-            __m256i mask4   = _mm256_set1_epi16(0x0F);
-            __m256i sum_0_3 = _mm256_shuffle_epi8(lookup, _mm256_and_si256(this->m256, mask4));
-            __m256i sum_4_7 = _mm256_shuffle_epi8(lookup, _mm256_srli_epi16(this->m256, 4));
-            __m256i sum_0_7 = _mm256_add_epi16(sum_0_3, sum_4_7);
-            __m256i result  = sum_0_7;
+            __m256i lookup     = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+                                                  0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+            __m256i mask4      = _mm256_set1_epi16(0x000F);
+            __m256i sum_odd_4  = _mm256_shuffle_epi8(lookup, _mm256_and_si256(this->m256, mask4));
+            __m256i sum_even_4 = _mm256_shuffle_epi8(lookup, _mm256_srli_epi16(this->m256, 4));
+            __m256i sum_0_7    = _mm256_add_epi16(sum_odd_4, sum_even_4);
+            __m256i result     = sum_0_7;
             return result;
         }
         else if (MaxBits == 9) {
             // Note: Ensure that the highest 7 bits must be 0.
-            __m256i lookup  = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
-                                               0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
-            __m256i mask4   = _mm256_set1_epi16(0x0F);
-            __m256i sum_0_3 = _mm256_shuffle_epi8(lookup, _mm256_and_si256(this->m256, mask4));
-            __m256i sum_4_7 = _mm256_shuffle_epi8(lookup, _mm256_srli_epi16(this->m256, 4));
-            __m256i sum_0_7 = _mm256_add_epi16(sum_0_3, sum_4_7);
-            __m256i result  = _mm256_add_epi16(sum_0_7, _mm256_srli_epi16(this->m256, 8));
+            __m256i lookup     = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+                                                  0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+            __m256i mask4      = _mm256_set1_epi16(0x000F);
+            __m256i sum_odd_4  = _mm256_shuffle_epi8(lookup, _mm256_and_si256(this->m256, mask4));
+            __m256i sum_even_4 = _mm256_shuffle_epi8(lookup, _mm256_srli_epi16(this->m256, 4));
+            __m256i sum_0_7    = _mm256_add_epi16(sum_odd_4, sum_even_4);
+            __m256i result     = _mm256_add_epi16(sum_0_7, _mm256_srli_epi16(this->m256, 8));
             return result;
         }
         else {
             __m256i lookup     = _mm256_setr_epi8(0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
                                                   0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
             __m256i mask4      = _mm256_set1_epi16(0x0F0F);
-            __m256i sum_00_07  = _mm256_shuffle_epi8(lookup, _mm256_and_si256(this->m256, mask4));
+            __m256i sum_odd_4  = _mm256_shuffle_epi8(lookup, _mm256_and_si256(this->m256, mask4));
             __m256i even_bytes = _mm256_srli_epi16(this->m256, 4);
-            __m256i sum_08_15  = _mm256_shuffle_epi8(lookup, _mm256_and_si256(even_bytes, mask4));
-            __m256i sum_00_15  = _mm256_add_epi16(sum_00_07, sum_08_15);
-            __m256i mask_8     = _mm256_set1_epi16(0xFF);
-            __m256i sum_odd_8  = _mm256_and_si256(sum_00_15, mask_8);
-            __m256i sum_even_8 = _mm256_and_si256(_mm256_srli_epi16(sum_00_15, 8), mask_8);
+            __m256i sum_even_4 = _mm256_shuffle_epi8(lookup, _mm256_and_si256(even_bytes, mask4));
+            __m256i sum_00_15  = _mm256_add_epi16(sum_odd_4, sum_even_4);
+            __m256i mask8      = _mm256_set1_epi16(0x00FF);
+            __m256i sum_odd_8  = _mm256_and_si256(sum_00_15, mask8);
+            __m256i sum_even_8 = _mm256_srli_epi16(sum_00_15, 8);
             __m256i result     = _mm256_add_epi16(sum_odd_8, sum_even_8);
             return result;
         }
@@ -2520,7 +2520,7 @@ struct BitVec16x16_AVX {
     }
 
     template <size_t MaxLength>
-    uint32_t minpos16() const {
+    inline uint32_t minpos16() const {
         BitVec08x16 minpos;
         __m256i nums = this->m256;
         __m256i minnum_u16;
