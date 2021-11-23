@@ -49,7 +49,7 @@ static const size_t kSearchMode = SearchMode::OneAnswer;
 class Solver : public BasicSolver {
 public:
     typedef BasicSolver                         basic_solver_t;
-    typedef Solver                              solver_type;
+    typedef Solver                              this_type;
 
     typedef typename Sudoku::NeighborCells      NeighborCells;
     typedef typename Sudoku::CellInfo           CellInfo;
@@ -297,13 +297,11 @@ private:
     typedef HVPeerBoxes<BoxCountX, BoxCountY>   hv_peer_boxes_t;
 
     struct StaticData {
-        alignas(32) PackedBitSet3D<Boxes, BoxSize16, Numbers16>     box_flip_mask[BoardSize][Numbers];
+        alignas(64) PackedBitSet3D<4, BoxSize16, Numbers16>         flip_mask[BoxSize][Numbers];
 
         alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>       num_row_mask;
         alignas(32) PackedBitSet3D<BoardSize, Cols16, Rows16>       num_col_mask;
         alignas(32) PackedBitSet3D<BoardSize, Boxes16, BoxSize16>   num_box_mask;
-
-        alignas(64) PackedBitSet3D<4, BoxSize16, Numbers16>         flip_mask[BoxSize][Numbers];
 
         bool                    mask_is_inited;
         peer_boxes_t            peer_boxes[Boxes];
@@ -312,7 +310,7 @@ private:
         StaticData() : mask_is_inited(false) {
             if (!Static.mask_is_inited) {
                 Sudoku::initialize();
-                solver_type::init_mask();
+                this_type::init_mask();
                 Static.mask_is_inited = true;
             }
         }
@@ -361,7 +359,7 @@ private:
         }
     }
 
-    static void make_box_flip_mask(size_t fill_pos, size_t row, size_t col) {
+    static void make_num_flip_mask(size_t fill_pos, size_t row, size_t col) {
         PackedBitSet2D<Rows16, Cols16> & rows_mask      = Static.num_row_mask[fill_pos];
         PackedBitSet2D<Cols16, Rows16> & cols_mask      = Static.num_col_mask[fill_pos];
         PackedBitSet2D<Boxes16, BoxSize16> & boxes_mask = Static.num_box_mask[fill_pos];
@@ -465,75 +463,6 @@ private:
             }
             assert(index == (Cols + Rows + (BoxCellsY * BoxCellsX) - 1));
         }
-
-        // Literal::BoxCellNums
-        {
-            size_t index = 0;
-
-            // horizontal scanning
-            for (size_t x = 0; x < Cols; x++) {
-                size_t pos = row * Cols + x;
-
-                box = pCellInfo[pos].box;
-                cell = pCellInfo[pos].cell;
-
-                for (size_t num = 0; num < Numbers; num++) {
-                    PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_flip_mask
-                                = Static.box_flip_mask[fill_pos][num];
-                    box_flip_mask[box][cell].set(num);
-                }
-                index++;
-            }
-
-            // vertical scanning
-            for (size_t y = 0; y < Rows; y++) {
-                if (y != row) {
-                    size_t pos = y * Cols + col;
-
-                    box = pCellInfo[pos].box;
-                    cell = pCellInfo[pos].cell;
-
-                    for (size_t num = 0; num < Numbers; num++) {
-                        PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_flip_mask
-                                    = Static.box_flip_mask[fill_pos][num];
-                        box_flip_mask[box][cell].set(num);
-                    }
-                    index++;
-                }
-            }
-
-            // scanning the current box
-            size_t box_first = (box_y * BoxCellsY) * Cols + box_x * BoxCellsX;
-            for (size_t cy = 0; cy < BoxCellsY; cy++) {
-                for (size_t cx = 0; cx < BoxCellsX; cx++) {
-                    size_t pos = box_first + cy * Cols + cx;
-                    size_t cell_idx = cy * BoxCellsX + cx;
-
-                    box = pCellInfo[pos].box;
-                    cell = pCellInfo[pos].cell;
-                    assert(cell == cell_idx);
-
-                    for (size_t num = 0; num < Numbers; num++) {
-                        PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_flip_mask
-                                    = Static.box_flip_mask[fill_pos][num];
-                        box_flip_mask[box][cell].set(num);
-                    }
-                    index++;
-                }
-            }
-
-            assert(index == (Cols + Rows + (BoxCellsY * BoxCellsX) - 1));
-
-            box = pCellInfo[fill_pos].box;
-            cell = pCellInfo[fill_pos].cell;
-
-            // Current fill pos, set all number bits
-            for (size_t num = 0; num < Numbers; num++) {
-                PackedBitSet3D<Boxes, BoxSize16, Numbers16> & box_flip_mask
-                    = Static.box_flip_mask[fill_pos][num];
-                box_flip_mask[box][cell].fill(kAllNumberBits);
-            }
-        }
     }
 
     static void make_flip_mask(size_t fill_cell, size_t box_cell_y, size_t box_cell_x) {
@@ -591,23 +520,6 @@ private:
     }
 
     static void init_flip_mask() {
-        for (size_t pos = 0; pos < BoardSize; pos++) {
-            for (size_t num = 0; num < Numbers; num++) {
-                Static.box_flip_mask[pos][num].reset();
-            }
-        }
-        Static.num_row_mask.reset();
-        Static.num_col_mask.reset();
-        Static.num_box_mask.reset();
-
-        size_t fill_pos = 0;
-        for (size_t row = 0; row < Rows; row++) {
-            for (size_t col = 0; col < Cols; col++) {
-                make_box_flip_mask(fill_pos, row, col);
-                fill_pos++;
-            }
-        }
-
         for (size_t cell = 0; cell < BoxSize; cell++) {
             for (size_t num = 0; num < Numbers; num++) {
                 Static.flip_mask[cell][num].reset();
@@ -621,10 +533,22 @@ private:
                 fill_cell++;
             }
         }
+
+        Static.num_row_mask.reset();
+        Static.num_col_mask.reset();
+        Static.num_box_mask.reset();
+
+        size_t fill_pos = 0;
+        for (size_t row = 0; row < Rows; row++) {
+            for (size_t col = 0; col < Cols; col++) {
+                make_num_flip_mask(fill_pos, row, col);
+                fill_pos++;
+            }
+        }
     }
 
     static void init_mask() {
-        printf("v4a::StaticData::init_mask()\n");
+        printf("v4b::StaticData::init_mask()\n");
 
         init_peer_boxes();
         init_flip_mask();
@@ -791,9 +715,9 @@ private:
     inline void fill_num_init(InitState & init_state, size_t row, size_t col,
                               size_t box, size_t cell, size_t num) {
         assert(init_state.box_cell_nums[box][cell].test(num));
-        //assert(init_state.num_row_cols[num][row].test(col));
-        //assert(init_state.num_col_rows[num][col].test(row));
-        //assert(init_state.num_box_cells[num][box].test(cell));
+        assert(init_state.num_row_cols[num][row].test(col));
+        assert(init_state.num_col_rows[num][col].test(row));
+        assert(init_state.num_box_cells[num][box].test(cell));
 
         size_t num_bits = init_state.box_cell_nums[box][cell].value();
         //init_state.box_cell_nums[box][cell].reset();
@@ -818,9 +742,9 @@ private:
     inline size_t fill_num(InitState & init_state, size_t row, size_t col,
                            size_t box, size_t cell, size_t num) {
         assert(init_state.box_cell_nums[box][cell].test(num));
-        //assert(init_state.num_row_cols[num][row].test(col));
-        //assert(init_state.num_col_rows[num][col].test(row));
-        //assert(init_state.num_box_cells[num][box].test(cell));
+        assert(init_state.num_row_cols[num][row].test(col));
+        assert(init_state.num_col_rows[num][col].test(row));
+        assert(init_state.num_box_cells[num][box].test(cell));
 
         size_t num_bits = init_state.box_cell_nums[box][cell].value();
         //init_state.box_cell_nums[box][cell].reset();

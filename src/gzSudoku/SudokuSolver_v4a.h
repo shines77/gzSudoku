@@ -49,7 +49,7 @@ static const size_t kSearchMode = SearchMode::OneAnswer;
 class Solver : public BasicSolver {
 public:
     typedef BasicSolver                         basic_solver_t;
-    typedef Solver                              solver_type;
+    typedef Solver                              this_type;
 
     typedef typename Sudoku::NeighborCells      NeighborCells;
     typedef typename Sudoku::CellInfo           CellInfo;
@@ -312,7 +312,7 @@ private:
         StaticData() : mask_is_inited(false) {
             if (!Static.mask_is_inited) {
                 Sudoku::initialize();
-                solver_type::init_mask();
+                this_type::init_mask();
                 Static.mask_is_inited = true;
             }
         }
@@ -791,24 +791,12 @@ private:
     inline void fill_num_init(InitState & init_state, size_t row, size_t col,
                               size_t box, size_t cell, size_t num) {
         assert(init_state.box_cell_nums[box][cell].test(num));
-        //assert(init_state.num_row_cols[num][row].test(col));
-        //assert(init_state.num_col_rows[num][col].test(row));
-        //assert(init_state.num_box_cells[num][box].test(cell));
+        assert(init_state.num_row_cols[num][row].test(col));
+        assert(init_state.num_col_rows[num][col].test(row));
+        assert(init_state.num_box_cells[num][box].test(cell));
 
         size_t num_bits = init_state.box_cell_nums[box][cell].value();
         //init_state.box_cell_nums[box][cell].reset();
-
-        /*
-        size_t box_pos = box * BoxSize16 + cell;
-        size_t row_idx = num * Rows16 + row;
-        size_t col_idx = num * Cols16 + col;
-        size_t box_idx = num * Boxes16 + box;
-
-        disable_cell_literal(box_pos);
-        disable_row_literal(row_idx);
-        disable_col_literal(col_idx);
-        disable_box_literal(box_idx);
-        //*/
 
         // Exclude the current number, because it will be process later.
         num_bits ^= (size_t(1) << num);
@@ -830,24 +818,12 @@ private:
     inline size_t fill_num(InitState & init_state, size_t row, size_t col,
                            size_t box, size_t cell, size_t num) {
         assert(init_state.box_cell_nums[box][cell].test(num));
-        //assert(init_state.num_row_cols[num][row].test(col));
-        //assert(init_state.num_col_rows[num][col].test(row));
-        //assert(init_state.num_box_cells[num][box].test(cell));
+        assert(init_state.num_row_cols[num][row].test(col));
+        assert(init_state.num_col_rows[num][col].test(row));
+        assert(init_state.num_box_cells[num][box].test(cell));
 
         size_t num_bits = init_state.box_cell_nums[box][cell].value();
         //init_state.box_cell_nums[box][cell].reset();
-
-        /*
-        size_t box_pos = box * BoxSize16 + cell;
-        size_t row_idx = num * Rows16 + row;
-        size_t col_idx = num * Cols16 + col;
-        size_t box_idx = num * Boxes16 + box;
-
-        disable_cell_literal(box_pos);
-        disable_row_literal(row_idx);
-        disable_col_literal(col_idx);
-        disable_box_literal(box_idx);
-        //*/
 
         // Exclude the current number, because it will be process later.
         num_bits ^= (size_t(1) << num);
