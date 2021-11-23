@@ -666,19 +666,16 @@ private:
         init_literal_info();
 
 #if V4B_USE_SIMD_INIT
-        BitVec16x16_AVX mask_1, mask_2, mask_3, mask_4;
-        mask_1.fill_u16(kAllNumberBits);
+        BitVec16x16_AVX mask;
+        mask.fill_u16(kAllNumberBits);
         for (size_t box = 0; box < Boxes; box++) {
-            mask_1.saveAligned((void *)&this->init_state_.box_cell_nums[box]);
+            mask.saveAligned((void *)&this->init_state_.box_cell_nums[box]);
         }
 
-        mask_2.fill_u16(kAllColBits);
-        mask_3.fill_u16(kAllRowBits);
-        mask_4.fill_u16(kAllBoxCellBits);
         for (size_t num = 0; num < Numbers; num++) {
-            mask_2.saveAligned((void *)&this->init_state_.num_row_cols[num]);
-            mask_3.saveAligned((void *)&this->init_state_.num_col_rows[num]);
-            mask_4.saveAligned((void *)&this->init_state_.num_box_cells[num]);
+            mask.saveAligned((void *)&this->init_state_.num_row_cols[num]);
+            mask.saveAligned((void *)&this->init_state_.num_col_rows[num]);
+            mask.saveAligned((void *)&this->init_state_.num_box_cells[num]);
         }
 #else
         this->init_state_.box_cell_nums.fill(kAllNumberBits);
@@ -697,11 +694,11 @@ private:
             for (size_t col = 0; col < Cols; col++) {
                 unsigned char val = board.cells[pos];
                 if (val != '.') {
-                    size_t box_x = col / BoxCellsX;
-                    size_t box = box_y + box_x;
-                    size_t cell_x = col % BoxCellsX;
-                    size_t cell = cell_y + cell_x;
                     size_t num = val - '1';
+                    size_t box_x = col / BoxCellsX;
+                    size_t cell_x = col % BoxCellsX;
+                    size_t box = box_y + box_x;
+                    size_t cell = cell_y + cell_x;
 
                     this->fill_num_init(this->init_state_, row, col, box, cell, num);
                     this->update_peer_cells(this->init_state_, pos, box, cell, num);

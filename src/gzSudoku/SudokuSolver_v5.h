@@ -666,19 +666,16 @@ private:
         init_literal_info();
 
 #if V5_USE_SIMD_INIT
-        BitVec16x16_AVX mask_1, mask_2, mask_3, mask_4;
-        mask_1.fill_u16(kAllNumberBits);
+        BitVec16x16_AVX mask;
+        mask.fill_u16(kAllNumberBits);
         for (size_t box = 0; box < Boxes; box++) {
-            mask_1.saveAligned((void *)&this->init_state_.box_cell_nums[box]);
+            mask.saveAligned((void *)&this->init_state_.box_cell_nums[box]);
         }
 
-        mask_2.fill_u16(kAllColBits);
-        mask_3.fill_u16(kAllRowBits);
-        mask_4.fill_u16(kAllBoxCellBits);
         for (size_t num = 0; num < Numbers; num++) {
-            mask_2.saveAligned((void *)&this->init_state_.num_row_cols[num]);
-            mask_3.saveAligned((void *)&this->init_state_.num_col_rows[num]);
-            mask_4.saveAligned((void *)&this->init_state_.num_box_cells[num]);
+            mask.saveAligned((void *)&this->init_state_.num_row_cols[num]);
+            mask.saveAligned((void *)&this->init_state_.num_col_rows[num]);
+            mask.saveAligned((void *)&this->init_state_.num_box_cells[num]);
         }
 #else
         this->init_state_.box_cell_nums.fill(kAllNumberBits);
@@ -697,11 +694,11 @@ private:
             for (size_t col = 0; col < Cols; col++) {
                 unsigned char val = board.cells[pos];
                 if (val != '.') {
-                    size_t box_x = col / BoxCellsX;
-                    size_t box = box_y + box_x;
-                    size_t cell_x = col % BoxCellsX;
-                    size_t cell = cell_y + cell_x;
                     size_t num = val - '1';
+                    size_t box_x = col / BoxCellsX;
+                    size_t cell_x = col % BoxCellsX;
+                    size_t box = box_y + box_x;
+                    size_t cell = cell_y + cell_x;
 
                     this->fill_num_init(this->init_state_, row, col, box, cell, num);
                     this->update_peer_cells(this->init_state_, pos, box, cell, num);
@@ -2215,58 +2212,6 @@ public:
 
         if (literalInfo.isValid()) {
             empties = this->search_single_literal(this->init_state_, board, empties, literalInfo);
-        }
-
-        this->last_literal_ = literalInfo.toLiteralInfoEx(255);
-
-#else
-        static const size_t kFullSearchThreshold = 56;
-
-        std::vector<LiteralInfo> single_literal_list;
-        size_t literal_total = this->find_all_single_literal(single_literal_list);
-
-        size_t new_literal_count;
-        while (single_literal_list.size() > 0) {
-            std::vector<LiteralInfo> next_single_literal_list;
-            if (true && (single_literal_list.size() == 1)) {
-                new_literal_count = this->update_and_find_all_single_literal(this->init_state_, board,
-                                                        single_literal_list[0], next_single_literal_list);
-                empties--;
-                if (empties < kFullSearchThreshold || empties == 0)
-                    break;
-            }
-            else {
-                literal_total = single_literal_list.size();
-                for (size_t i = 0; i < literal_total; i++) {
-                    bool is_legal = this->check_and_do_single_literal(this->init_state_, board, single_literal_list[i]);
-                    if (is_legal) {
-                        empties--;
-                        if (empties == 0)
-                            break;
-                    }
-                }
-
-                if (empties < kFullSearchThreshold) {
-                    break;
-                }
-
-                new_literal_count = this->find_all_single_literal(next_single_literal_list);
-            }
-
-            if (empties == 0)
-                break;
-
-            single_literal_list.swap(next_single_literal_list);
-        }
-
-        LiteralInfo literalInfo = this->find_single_literal();
-
-        while (literalInfo.isValid()) {
-            this->do_single_literal(this->init_state_, board, literalInfo);
-            literalInfo = this->find_single_literal();
-            empties--;
-            if (empties == 0)
-                break;
         }
 
         this->last_literal_ = literalInfo.toLiteralInfoEx(255);
