@@ -173,6 +173,8 @@
     <ClInclude Include="..\..\..\src\gzSudoku\Sudoku.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\SudokuSolver_v4.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\SudokuSolver_v4a.h" />
+    <ClInclude Include="..\..\..\src\gzSudoku\SudokuSolver_v4b.h" />
+    <ClInclude Include="..\..\..\src\gzSudoku\SudokuSolver_v5.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\SudokuTables.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\TestCase.h" />
   </ItemGroup>

@@ -46,6 +46,8 @@
 #include "BasicSolver.hpp"
 #include "SudokuSolver_v4.h"
 #include "SudokuSolver_v4a.h"
+#include "SudokuSolver_v4b.h"
+#include "SudokuSolver_v5.h"
 
 #include "CPUWarmUp.h"
 #include "StopWatch.h"
@@ -336,9 +338,11 @@ int main(int argc, char * argv [])
             bm_puzzleTotal = load_sudoku_puzzles(filename, bm_puzzles);
 
 #if defined(NDEBUG)
-            run_sudoku_test<v4::Solver>(bm_puzzles, bm_puzzleTotal, "dfs::v4");
+//          run_sudoku_test<v4::Solver,  false>(bm_puzzles, bm_puzzleTotal, "dfs::v4");
 #endif
             run_sudoku_test<v4a::Solver, false>(bm_puzzles, bm_puzzleTotal, "dfs::v4a");
+            run_sudoku_test<v4b::Solver, false>(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
+            run_sudoku_test<v5::Solver,  false>(bm_puzzles, bm_puzzleTotal, "dfs::v5");
         }
     }
 

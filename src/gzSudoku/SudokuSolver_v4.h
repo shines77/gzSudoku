@@ -234,11 +234,11 @@ private:
     struct LiteralInfo {
         uint32_t literal_size;
         uint16_t literal_type;
-        uint16_t literal_index;        
+        uint16_t literal_index;
     };
 
     template <size_t nBoxCountX, size_t nBoxCountY>
-    struct NeighborBoxes {
+    struct PeerBoxes {
         static const uint32_t kBoxesCount = (uint32_t)((nBoxCountX - 1) + (nBoxCountY - 1) + 1);
 
         uint32_t boxes_count() const { return kBoxesCount; }
@@ -247,7 +247,7 @@ private:
     };
 
     template <size_t nBoxCountX, size_t nBoxCountY>
-    struct HVNeighborBoxes {
+    struct HVPeerBoxes {
         static const uint32_t kHorizontalBoxes = uint32_t(nBoxCountX - 1);
         static const uint32_t kVerticalBoxes = uint32_t(nBoxCountX - 1);
 
@@ -258,8 +258,8 @@ private:
         int v_boxes[kVerticalBoxes];
     };
 
-    typedef NeighborBoxes<BoxCountX, BoxCountY>     neighbor_boxes_t;
-    typedef HVNeighborBoxes<BoxCountX, BoxCountY>   hv_neighbor_boxes_t;
+    typedef PeerBoxes<BoxCountX, BoxCountY>     peer_boxes_t;
+    typedef HVPeerBoxes<BoxCountX, BoxCountY>   hv_peer_boxes_t;
 
     struct StaticData {
         alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>      num_row_mask;
@@ -269,8 +269,8 @@ private:
         alignas(32) PackedBitSet3D<Boxes, BoxSize16, Numbers16>    flip_mask[BoardSize][Numbers];
 
         bool                    mask_is_inited;
-        neighbor_boxes_t        neighbor_boxes[Boxes];
-        hv_neighbor_boxes_t     hv_neighbor_boxes[Boxes];
+        peer_boxes_t            peer_boxes[Boxes];
+        hv_peer_boxes_t         hv_peer_boxes[Boxes];
 
         StaticData() : mask_is_inited(false) {
             if (!Static.mask_is_inited) {
@@ -298,28 +298,28 @@ public:
     ~Solver() {}
 
 private:
-    static void init_neighbor_boxes() {
+    static void init_peer_boxes() {
         for (size_t box_y = 0; box_y < BoxCellsY; box_y++) {
             size_t box_y_base = box_y * BoxCellsX;
             for (size_t box_x = 0; box_x < BoxCellsX; box_x++) {
                 uint32_t box = uint32_t(box_y_base + box_x);
                 size_t index = 0;
-                neighbor_boxes_t neighborBoxes;
-                neighborBoxes.boxes[index++] = box;
+                peer_boxes_t peerBoxes;
+                peerBoxes.boxes[index++] = box;
                 for (size_t box_i = 0; box_i < BoxCellsX; box_i++) {
                     if (box_i != box_x) {
-                        neighborBoxes.boxes[index++] = uint32_t(box_y * BoxCellsX + box_i);
+                        peerBoxes.boxes[index++] = uint32_t(box_y * BoxCellsX + box_i);
                     }
                 }
                 for (size_t box_j = 0; box_j < BoxCellsY; box_j++) {
                     if (box_j != box_y) {
-                        neighborBoxes.boxes[index++] = uint32_t(box_j * BoxCellsX + box_x);
+                        peerBoxes.boxes[index++] = uint32_t(box_j * BoxCellsX + box_x);
                     }
                 }
-                assert(index == neighborBoxes.boxes_count());
+                assert(index == peerBoxes.boxes_count());
 
-                std::sort(&neighborBoxes.boxes[1], &neighborBoxes.boxes[neighborBoxes.boxes_count()]);
-                Static.neighbor_boxes[box] = neighborBoxes;
+                std::sort(&peerBoxes.boxes[1], &peerBoxes.boxes[peerBoxes.boxes_count()]);
+                Static.peer_boxes[box] = peerBoxes;
             }
         }
     }
@@ -464,7 +464,7 @@ private:
     static void init_mask() {
         printf("v4::StaticData::init_mask()\n");
 
-        init_neighbor_boxes();
+        init_peer_boxes();
         init_flip_mask();
     }
 
@@ -561,11 +561,11 @@ private:
     }
 
     inline void updateNeighborCells(InitState & state, size_t fill_pos, size_t box, size_t num) {
-        const neighbor_boxes_t & neighborBoxes = Static.neighbor_boxes[box];
+        const peer_boxes_t & peerBoxes = Static.peer_boxes[box];
         const PackedBitSet3D<Boxes, BoxSize16, Numbers16> & flip_mask
             = Static.flip_mask[fill_pos][num];
-        for (size_t i = 0; i < neighborBoxes.boxes_count(); i++) {
-            size_t box_idx = neighborBoxes.boxes[i];
+        for (size_t i = 0; i < peerBoxes.boxes_count(); i++) {
+            size_t box_idx = peerBoxes.boxes[i];
             state.box_cell_nums[box_idx] &= flip_mask[box_idx];
         }
 
