@@ -230,8 +230,8 @@ private:
         uint64_t value;
 
         LiteralInfoEx(uint64_t _value = 0) : value(_value) {}
-        LiteralInfoEx(uint32_t size, uint32_t type, uint32_t index)
-            : literal_size(size), literal_type((uint16_t)type), literal_index((uint16_t)index) {}
+        LiteralInfoEx(size_t size, size_t type, size_t index)
+            : literal_size((uint32_t)size), literal_type((uint16_t)type), literal_index((uint16_t)index) {}
         LiteralInfoEx(const LiteralInfoEx & src) : value(src.value) {
         }
 
@@ -254,8 +254,8 @@ private:
         uint64_t value;
 
         LiteralInfo(uint64_t _value = 0) : value(_value) {}
-        LiteralInfo(uint32_t type, uint32_t index)
-            : literal_type(type), literal_index(index) {}
+        LiteralInfo(size_t type, size_t index)
+            : literal_type((uint32_t)type), literal_index((uint32_t)index) {}
         LiteralInfo(const LiteralInfo & src) : value(src.value) {
         }
 
@@ -288,10 +288,10 @@ private:
         uint64_t value;
 
         LiteralMask(uint64_t _value = 0) : value(_value) {}
-        LiteralMask(uint32_t info, uint32_t mask)
-            : literal_info_0(info), literal_mask(mask) {}
-        LiteralMask(uint32_t type, uint32_t first, uint32_t mask)
-            : literal_type((uint16_t)type), literal_first((uint16_t)first), literal_mask(mask) {}
+        LiteralMask(size_t info, size_t mask)
+            : literal_info_0((uint32_t)info), literal_mask_0((uint32_t)mask) {}
+        LiteralMask(size_t type, size_t first, size_t mask)
+            : literal_type((uint16_t)type), literal_first((uint16_t)first), literal_mask((uint32_t)mask) {}
         LiteralMask(const LiteralMask & src) : value(src.value) {
         }
 
