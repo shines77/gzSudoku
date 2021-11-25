@@ -1398,8 +1398,8 @@ private:
         uint32_t min_cell_index;
         size_t box;
         for (box = 0; box < Boxes - 1; box += 2) {
-            void * pCells16_1 = (void * )&this->init_state_.box_cell_nums[box];
-            void * pCells16_2 = (void * )&this->init_state_.box_cell_nums[box + 1];
+            void * pCells16_1 = (void *)&this->init_state_.box_cell_nums[box];
+            void * pCells16_2 = (void *)&this->init_state_.box_cell_nums[box + 1];
             BitVec16x16_AVX box_bits_1, box_bits_2;
             box_bits_1.loadAligned(pCells16_1);
             box_bits_2.loadAligned(pCells16_2);
@@ -1460,7 +1460,7 @@ private:
         uint32_t min_cell_index_9;
         // box = 8
         {
-            void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
+            void * pCells16 = (void *)&this->init_state_.box_cell_nums[box];
             BitVec16x16_AVX box_bits;
             box_bits.loadAligned(pCells16);
 
@@ -1498,7 +1498,7 @@ private:
         uint32_t min_row_size = 255;
         uint32_t min_row_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
+            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
             BitVec16x16_AVX num_row_bits;
             num_row_bits.loadAligned(pCells16);
 
@@ -1540,7 +1540,7 @@ private:
         uint32_t min_col_size = 255;
         uint32_t min_col_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
+            void * pCells16 = (void *)&this->init_state_.num_col_rows[num];
             BitVec16x16_AVX num_col_bits;
             num_col_bits.loadAligned(pCells16);
 
@@ -1582,7 +1582,7 @@ private:
         uint32_t min_box_size = 255;
         uint32_t min_box_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
+            void * pCells16 = (void *)&this->init_state_.num_box_cells[num];
             BitVec16x16_AVX num_box_bits;
             num_box_bits.loadAligned(pCells16);
 
@@ -1641,7 +1641,7 @@ private:
         uint32_t min_cell_size = 255;
         uint32_t min_cell_index = uint32_t(-1);
         for (size_t box = 0; box < Boxes; box++) {
-            void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
+            void * pCells16 = (void *)&this->init_state_.box_cell_nums[box];
             BitVec16x16_AVX box_bits;
             box_bits.loadAligned(pCells16);
 
@@ -1682,7 +1682,7 @@ private:
         uint32_t min_row_size = 255;
         uint32_t min_row_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
+            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
             BitVec16x16_AVX num_row_bits;
             num_row_bits.loadAligned(pCells16);
 
@@ -1724,7 +1724,7 @@ private:
         uint32_t min_col_size = 255;
         uint32_t min_col_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
+            void * pCells16 = (void *)&this->init_state_.num_col_rows[num];
             BitVec16x16_AVX num_col_bits;
             num_col_bits.loadAligned(pCells16);
 
@@ -1766,7 +1766,7 @@ private:
         uint32_t min_box_size = 255;
         uint32_t min_box_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
+            void * pCells16 = (void *)&this->init_state_.num_box_cells[num];
             BitVec16x16_AVX num_box_bits;
             num_box_bits.loadAligned(pCells16);
 
@@ -1826,7 +1826,7 @@ private:
         uint32_t min_cell_size = 255;
         uint32_t min_cell_index = uint32_t(-1);
         for (size_t box = 0; box < Boxes; box++) {
-            void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
+            void * pCells16 = (void *)&this->init_state_.box_cell_nums[box];
             BitVec16x16_AVX box_bits;
             box_bits.loadAligned(pCells16);
 
@@ -1867,7 +1867,7 @@ private:
         uint32_t min_row_size = 255;
         uint32_t min_row_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
+            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
             BitVec16x16_AVX num_row_bits;
             num_row_bits.loadAligned(pCells16);
 
@@ -1910,7 +1910,7 @@ private:
         uint32_t min_col_size = 255;
         uint32_t min_col_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
+            void * pCells16 = (void *)&this->init_state_.num_col_rows[num];
             BitVec16x16_AVX num_col_bits;
             num_col_bits.loadAligned(pCells16);
 
@@ -1953,7 +1953,7 @@ private:
         uint32_t min_box_size = 255;
         uint32_t min_box_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
+            void * pCells16 = (void *)&this->init_state_.num_box_cells[num];
             BitVec16x16_AVX num_box_bits;
             num_box_bits.loadAligned(pCells16);
 
@@ -2011,7 +2011,7 @@ private:
         uint32_t min_cell_size = 255;
         uint32_t min_cell_index = uint32_t(-1);
         for (size_t box = 0; box < Boxes; box++) {
-            void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
+            void * pCells16 = (void *)&this->init_state_.box_cell_nums[box];
             BitVec16x16_AVX box_bits;
             box_bits.loadAligned(pCells16);
 
@@ -2046,7 +2046,7 @@ private:
         uint32_t min_row_size = 255;
         uint32_t min_row_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
+            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
             BitVec16x16_AVX num_row_bits;
             num_row_bits.loadAligned(pCells16);
 
@@ -2081,7 +2081,7 @@ private:
         uint32_t min_col_size = 255;
         uint32_t min_col_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
+            void * pCells16 = (void *)&this->init_state_.num_col_rows[num];
             BitVec16x16_AVX num_col_bits;
             num_col_bits.loadAligned(pCells16);
 
@@ -2116,7 +2116,7 @@ private:
         uint32_t min_box_size = 255;
         uint32_t min_box_index = uint32_t(-1);
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
+            void * pCells16 = (void *)&this->init_state_.num_box_cells[num];
             BitVec16x16_AVX num_box_bits;
             num_box_bits.loadAligned(pCells16);
 
@@ -2163,7 +2163,7 @@ private:
 
         // Position (Box-Cell) literal
         for (size_t box = 0; box < Boxes; box++) {
-            void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
+            void * pCells16 = (void *)&this->init_state_.box_cell_nums[box];
             BitVec16x16 box_bits;
             box_bits.loadAligned(pCells16);
 
@@ -2179,7 +2179,7 @@ private:
 
         // Row literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
+            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
             BitVec16x16 num_row_bits;
             num_row_bits.loadAligned(pCells16);
 
@@ -2196,7 +2196,7 @@ private:
 
         // Col literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
+            void * pCells16 = (void *)&this->init_state_.num_col_rows[num];
             BitVec16x16 num_col_bits;
             num_col_bits.loadAligned(pCells16);
 
@@ -2213,7 +2213,7 @@ private:
 
         // Box-Cell literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
+            void * pCells16 = (void *)&this->init_state_.num_box_cells[num];
             BitVec16x16 num_box_bits;
             num_box_bits.loadAligned(pCells16);
 
@@ -2237,7 +2237,7 @@ private:
 
         // Position (Box-Cell) literal
         for (size_t box = 0; box < Boxes; box++) {
-            void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
+            void * pCells16 = (void *)&this->init_state_.box_cell_nums[box];
             BitVec16x16 box_bits;
             box_bits.loadAligned(pCells16);
 
@@ -2253,7 +2253,7 @@ private:
 
         // Row literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
+            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
             BitVec16x16 num_row_bits;
             num_row_bits.loadAligned(pCells16);
 
@@ -2270,7 +2270,7 @@ private:
 
         // Col literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
+            void * pCells16 = (void *)&this->init_state_.num_col_rows[num];
             BitVec16x16 num_col_bits;
             num_col_bits.loadAligned(pCells16);
 
@@ -2287,7 +2287,7 @@ private:
 
         // Box-Cell literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
+            void * pCells16 = (void *)&this->init_state_.num_box_cells[num];
             BitVec16x16 num_box_bits;
             num_box_bits.loadAligned(pCells16);
 
@@ -2310,7 +2310,7 @@ private:
 
         // Row literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
+            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
             BitVec16x16_AVX num_row_bits;
             num_row_bits.loadAligned(pCells16);
 
@@ -2327,7 +2327,7 @@ private:
 
         // Col literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
+            void * pCells16 = (void *)&this->init_state_.num_col_rows[num];
             BitVec16x16_AVX num_col_bits;
             num_col_bits.loadAligned(pCells16);
 
@@ -2344,7 +2344,7 @@ private:
 
         // Box-Cell literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
+            void * pCells16 = (void *)&this->init_state_.num_box_cells[num];
             BitVec16x16_AVX num_box_bits;
             num_box_bits.loadAligned(pCells16);
 
@@ -2360,7 +2360,7 @@ private:
 
         // Position (Box-Cell) literal
         for (size_t box = 0; box < Boxes; box++) {
-            void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
+            void * pCells16 = (void *)&this->init_state_.box_cell_nums[box];
             BitVec16x16_AVX box_bits;
             box_bits.loadAligned(pCells16);
 
@@ -2384,7 +2384,7 @@ private:
 
         // Row literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
+            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
             BitVec16x16_AVX num_row_bits;
             num_row_bits.loadAligned(pCells16);
 
@@ -2401,7 +2401,7 @@ private:
 
         // Col literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
+            void * pCells16 = (void *)&this->init_state_.num_col_rows[num];
             BitVec16x16_AVX num_col_bits;
             num_col_bits.loadAligned(pCells16);
 
@@ -2418,7 +2418,7 @@ private:
 
         // Box-Cell literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
+            void * pCells16 = (void *)&this->init_state_.num_box_cells[num];
             BitVec16x16_AVX num_box_bits;
             num_box_bits.loadAligned(pCells16);
 
@@ -2434,7 +2434,7 @@ private:
 
         // Position (Box-Cell) literal
         for (size_t box = 0; box < Boxes; box++) {
-            void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
+            void * pCells16 = (void *)&this->init_state_.box_cell_nums[box];
             BitVec16x16_AVX box_bits;
             box_bits.loadAligned(pCells16);
 
@@ -2457,7 +2457,7 @@ private:
 
         // Row literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_row_cols[num];
+            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
             BitVec16x16_AVX num_row_bits;
             num_row_bits.loadAligned(pCells16);
 
@@ -2474,7 +2474,7 @@ private:
 
         // Col literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_col_rows[num];
+            void * pCells16 = (void *)&this->init_state_.num_col_rows[num];
             BitVec16x16_AVX num_col_bits;
             num_col_bits.loadAligned(pCells16);
 
@@ -2491,7 +2491,7 @@ private:
 
         // Box-Cell literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void * )&this->init_state_.num_box_cells[num];
+            void * pCells16 = (void *)&this->init_state_.num_box_cells[num];
             BitVec16x16_AVX num_box_bits;
             num_box_bits.loadAligned(pCells16);
 
@@ -2507,7 +2507,7 @@ private:
 
         // Position (Box-Cell) literal
         for (size_t box = 0; box < Boxes; box++) {
-            void * pCells16 = (void * )&this->init_state_.box_cell_nums[box];
+            void * pCells16 = (void *)&this->init_state_.box_cell_nums[box];
             BitVec16x16_AVX box_bits;
             box_bits.loadAligned(pCells16);
 
