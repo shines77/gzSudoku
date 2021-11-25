@@ -38,7 +38,7 @@
 
 #define V4B_SAVE_COUNT_SIZE     1
 
-#define V4B_USE_SIMD_INIT       1
+#define V4B_USE_SIMD_INIT       0
 
 namespace gzSudoku {
 namespace v4b {
@@ -166,6 +166,7 @@ private:
         uint64_t value;
 
         LiteralChanged(uint64_t _value = 0) : value(_value) {}
+        ~LiteralChanged() {}
     };
 
     struct InitState {
@@ -174,7 +175,10 @@ private:
         alignas(32) PackedBitSet3D<Numbers, Cols16, Rows16>       num_col_rows;     // [num][col][row]
         alignas(32) PackedBitSet3D<Numbers, Boxes16, BoxSize16>   num_box_cells;    // [num][box][cell]
 
-        alignas(32) LiteralChanged changed;
+        LiteralChanged changed;
+
+        InitState() {}
+        ~InitState() {}
     };
 
     struct State {
@@ -182,6 +186,9 @@ private:
         BandConfigure v_band[BoxCountY];
 
         alignas(32) PackedBitSet3D<Boxes, BoxSize16, Numbers16>   box_cell_nums;    // [box][cell][num]
+
+        State() {}
+        ~State() {}
     };
 
     struct Count {
@@ -210,6 +217,9 @@ private:
             alignas(32) uint16_t min_literal_size[16];
             alignas(32) uint16_t min_literal_index[16];
         } total;
+
+        Count() {}
+        ~Count() {}
     };
 
     union literal_count_t {
@@ -339,7 +349,7 @@ private:
         peer_boxes_t            peer_boxes[Boxes];
         hv_peer_boxes_t         hv_peer_boxes[Boxes];
 
-        uint16_t                box_changed_bits[LiteralType::Unknown + 1][Boxes16];
+        uint16_t                box_changed_bits[8][Boxes16];
 
         bool                    mask_is_inited;
 
@@ -364,7 +374,7 @@ private:
     static StaticData Static;
 
 public:
-    Solver() : basic_solver_t() {
+    Solver() {
     }
     ~Solver() {}
 
@@ -398,7 +408,7 @@ private:
                 //std::sort(&peerBoxes.boxes[1], &peerBoxes.boxes[peerBoxes.boxes_count()]);
                 Static.peer_boxes[box] = peerBoxes;
 
-                for (size_t type = 0; type <= LiteralType::Unknown; type++) {
+                for (size_t type = 0; type < 8; type++) {
                     Static.box_changed_bits[type][box] = (uint16_t)(h_changed_bits | v_changed_bits);
                 }
                 Static.box_changed_bits[LiteralType::NumRowCols][box] = (uint16_t)(v_changed_bits);
@@ -732,8 +742,8 @@ private:
         this->init_state_.num_box_cells.fill(kAllBoxCellBits);
 #endif
         /*
-        this->init_state_.changed.value = (kAllBoxCellBits << 48) | (kAllRowBits << 32) |
-                                          (kAllColBits     << 16) | kAllNumberBits;
+        this->init_state_.changed.value = (kAllNumberBits << 48) | (kAllBoxCellBits << 32) |
+                                          (kAllColBits    << 16) | kAllRowBits;
         //*/
 
         if (kSearchMode > SearchMode::OneAnswer) {
@@ -826,129 +836,6 @@ private:
         const peer_boxes_t & peerBoxes = Static.peer_boxes[fill_box];
         const PackedBitSet3D<4, BoxSize16, Numbers16> & flip_mask
             = Static.flip_mask[cell][num];
-
-        // LiteralType::BoxCellNums
-        size_t box = fill_box;
-        //init_state.box_cell_nums[box] &= flip_mask[box];
-        pCells16 = (void *)&init_state.box_cell_nums[box];
-        pMask16 = (void *)&flip_mask[2];
-        cells16.loadAligned(pCells16);
-        mask16.loadAligned(pMask16);
-        cells16.and_not(mask16);
-        cells16.saveAligned(pCells16);
-
-        if (nLiteralType != LiteralType::NumRowCols) {
-            box = peerBoxes.boxes[0];
-            //init_state.box_cell_nums[box] &= flip_mask[box];
-            pCells16 = (void *)&init_state.box_cell_nums[box];
-            pMask16 = (void *)&flip_mask[0];
-            cells16.loadAligned(pCells16);
-            mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
-            cells16.saveAligned(pCells16);
-
-            box = peerBoxes.boxes[1];
-            //init_state.box_cell_nums[box] &= flip_mask[box];
-            pCells16 = (void *)&init_state.box_cell_nums[box];
-            cells16.loadAligned(pCells16);
-            cells16.and_not(mask16);
-            cells16.saveAligned(pCells16);
-        }
-
-        if (nLiteralType != LiteralType::NumColRows) {
-            box = peerBoxes.boxes[2];
-            //init_state.box_cell_nums[box] &= flip_mask[box];
-            pCells16 = (void *)&init_state.box_cell_nums[box];
-            pMask16 = (void *)&flip_mask[1];
-            cells16.loadAligned(pCells16);
-            mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
-            cells16.saveAligned(pCells16);
-
-            box = peerBoxes.boxes[3];
-            //init_state.box_cell_nums[box] &= flip_mask[box];
-            pCells16 = (void *)&init_state.box_cell_nums[box];
-            cells16.loadAligned(pCells16);
-            cells16.and_not(mask16);
-            cells16.saveAligned(pCells16);
-        }
-
-        //init_state.num_row_cols[num] &= Static.num_row_mask[fill_pos];
-        //init_state.num_col_rows[num] &= Static.num_col_mask[fill_pos];
-        //init_state.num_box_cells[num] &= Static.num_box_mask[fill_pos];
-
-        // LiteralType::NumRowCols
-        {
-            pCells16 = (void *)&init_state.num_row_cols[num];
-            pMask16 = (void *)&Static.num_row_mask[fill_pos];
-            cells16.loadAligned(pCells16);
-            mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
-            cells16.saveAligned(pCells16);
-        }
-
-        // LiteralType::NumColRows
-        {
-            pCells16 = (void *)&init_state.num_col_rows[num];
-            pMask16 = (void *)&Static.num_col_mask[fill_pos];
-            cells16.loadAligned(pCells16);
-            mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
-            cells16.saveAligned(pCells16);
-        }
-
-        // LiteralType::NumBoxCells
-        {
-            pCells16 = (void *)&init_state.num_box_cells[num];
-            pMask16 = (void *)&Static.num_box_mask[fill_pos];
-            cells16.loadAligned(pCells16);
-            mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
-            cells16.saveAligned(pCells16);
-        }
-    }
-
-    template <size_t nLiteralType = LiteralType::Unknown>
-    inline void update_peer_cells_delta(InitState & init_state, size_t fill_pos, size_t row, size_t col,
-                                        size_t fill_box, size_t cell, size_t num) {
-        assert(init_state.box_cell_nums[fill_box][cell].test(num));
-        assert(init_state.num_row_cols[num][row].test(col));
-        assert(init_state.num_col_rows[num][col].test(row));
-        assert(init_state.num_box_cells[num][fill_box].test(cell));
-
-        static const size_t fixedLiteralType = (nLiteralType > LiteralType::Unknown) ? LiteralType::Unknown : nLiteralType;
-        uint64_t box_changed_bits = Static.box_changed_bits[fixedLiteralType][fill_box];
-
-        size_t num_bits = init_state.box_cell_nums[fill_box][cell].value();
-        assert(num_bits != 0);
-        uint64_t changed = (uint64_t)num_bits * 0x0000000100010001ULL | (box_changed_bits << 48);
-        assert(changed == ((box_changed_bits << 48) | (num_bits << 32) | (num_bits << 16) | num_bits));
-        init_state.changed.value |= changed;
-
-        if (nLiteralType != LiteralType::BoxCellNums) {
-            // Exclude the current number, because it will be process later.
-            num_bits ^= (size_t(1) << num);
-            while (num_bits != 0) {
-                size_t cur_num = BitUtils::bsf(num_bits);
-                size_t num_bit = BitUtils::ls1b(num_bits);
-                num_bits ^= num_bit;
-
-                assert(init_state.num_row_cols[cur_num][row].test(col));
-                assert(init_state.num_col_rows[cur_num][col].test(row));
-                assert(init_state.num_box_cells[cur_num][fill_box].test(cell));
-
-                init_state.num_row_cols[cur_num][row].reset(col);
-                init_state.num_col_rows[cur_num][col].reset(row);
-                init_state.num_box_cells[cur_num][fill_box].reset(cell);
-            }
-        }
-
-        const PackedBitSet3D<4, BoxSize16, Numbers16> & flip_mask
-            = Static.flip_mask[cell][num];
-        const peer_boxes_t & peerBoxes = Static.peer_boxes[fill_box];
-
-        BitVec16x16_AVX cells16, mask16;
-        void * pCells16, * pMask16;
 
         // LiteralType::BoxCellNums
         size_t box = fill_box;
@@ -1622,6 +1509,136 @@ private:
         }
 
         return LiteralInfo(-1);
+    }
+
+    template <size_t nLiteralType = LiteralType::Unknown>
+    inline void update_peer_cells_delta(InitState & init_state, size_t fill_pos, size_t row, size_t col,
+                                        size_t fill_box, size_t cell, size_t num) {
+        assert(init_state.box_cell_nums[fill_box][cell].test(num));
+        assert(init_state.num_row_cols[num][row].test(col));
+        assert(init_state.num_col_rows[num][col].test(row));
+        assert(init_state.num_box_cells[num][fill_box].test(cell));
+
+        static const size_t fixedLiteralType = (nLiteralType > LiteralType::Unknown) ? LiteralType::Unknown : nLiteralType;
+        uint64_t box_changed_bits = Static.box_changed_bits[fixedLiteralType][fill_box];
+
+        size_t num_bits = init_state.box_cell_nums[fill_box][cell].value();
+        assert(num_bits != 0);
+#if 1
+        init_state.changed.literal[LiteralType::NumRowCols] |= (uint16_t)num_bits;
+        init_state.changed.literal[LiteralType::NumColRows] |= (uint16_t)num_bits;
+        init_state.changed.literal[LiteralType::NumBoxCells] |= (uint16_t)num_bits;
+        init_state.changed.literal[LiteralType::BoxCellNums] |= (uint16_t)box_changed_bits;
+#else
+        uint64_t changed = (uint64_t)num_bits * 0x0000000100010001ULL | (box_changed_bits << 48);
+        assert(changed == ((box_changed_bits << 48) | (num_bits << 32) | (num_bits << 16) | num_bits));
+        init_state.changed.value |= changed;
+#endif
+
+        if (nLiteralType != LiteralType::BoxCellNums) {
+            // Exclude the current number, because it will be process later.
+            num_bits ^= (size_t(1) << num);
+            while (num_bits != 0) {
+                size_t cur_num = BitUtils::bsf(num_bits);
+                size_t num_bit = BitUtils::ls1b(num_bits);
+                num_bits ^= num_bit;
+
+                assert(init_state.num_row_cols[cur_num][row].test(col));
+                assert(init_state.num_col_rows[cur_num][col].test(row));
+                assert(init_state.num_box_cells[cur_num][fill_box].test(cell));
+
+                init_state.num_row_cols[cur_num][row].reset(col);
+                init_state.num_col_rows[cur_num][col].reset(row);
+                init_state.num_box_cells[cur_num][fill_box].reset(cell);
+            }
+        }
+
+        const PackedBitSet3D<4, BoxSize16, Numbers16> & flip_mask
+            = Static.flip_mask[cell][num];
+        const peer_boxes_t & peerBoxes = Static.peer_boxes[fill_box];
+
+        BitVec16x16_AVX cells16, mask16;
+        void * pCells16, * pMask16;
+
+        // LiteralType::BoxCellNums
+        size_t box = fill_box;
+        //init_state.box_cell_nums[box] &= flip_mask[box];
+        pCells16 = (void *)&init_state.box_cell_nums[box];
+        pMask16 = (void *)&flip_mask[2];
+        cells16.loadAligned(pCells16);
+        mask16.loadAligned(pMask16);
+        cells16.and_not(mask16);
+        cells16.saveAligned(pCells16);
+
+        if (nLiteralType != LiteralType::NumRowCols) {
+            box = peerBoxes.boxes[0];
+            //init_state.box_cell_nums[box] &= flip_mask[box];
+            pCells16 = (void *)&init_state.box_cell_nums[box];
+            pMask16 = (void *)&flip_mask[0];
+            cells16.loadAligned(pCells16);
+            mask16.loadAligned(pMask16);
+            cells16.and_not(mask16);
+            cells16.saveAligned(pCells16);
+
+            box = peerBoxes.boxes[1];
+            //init_state.box_cell_nums[box] &= flip_mask[box];
+            pCells16 = (void *)&init_state.box_cell_nums[box];
+            cells16.loadAligned(pCells16);
+            cells16.and_not(mask16);
+            cells16.saveAligned(pCells16);
+        }
+
+        if (nLiteralType != LiteralType::NumColRows) {
+            box = peerBoxes.boxes[2];
+            //init_state.box_cell_nums[box] &= flip_mask[box];
+            pCells16 = (void *)&init_state.box_cell_nums[box];
+            pMask16 = (void *)&flip_mask[1];
+            cells16.loadAligned(pCells16);
+            mask16.loadAligned(pMask16);
+            cells16.and_not(mask16);
+            cells16.saveAligned(pCells16);
+
+            box = peerBoxes.boxes[3];
+            //init_state.box_cell_nums[box] &= flip_mask[box];
+            pCells16 = (void *)&init_state.box_cell_nums[box];
+            cells16.loadAligned(pCells16);
+            cells16.and_not(mask16);
+            cells16.saveAligned(pCells16);
+        }
+
+        //init_state.num_row_cols[num] &= Static.num_row_mask[fill_pos];
+        //init_state.num_col_rows[num] &= Static.num_col_mask[fill_pos];
+        //init_state.num_box_cells[num] &= Static.num_box_mask[fill_pos];
+
+        // LiteralType::NumRowCols
+        {
+            pCells16 = (void *)&init_state.num_row_cols[num];
+            pMask16 = (void *)&Static.num_row_mask[fill_pos];
+            cells16.loadAligned(pCells16);
+            mask16.loadAligned(pMask16);
+            cells16.and_not(mask16);
+            cells16.saveAligned(pCells16);
+        }
+
+        // LiteralType::NumColRows
+        {
+            pCells16 = (void *)&init_state.num_col_rows[num];
+            pMask16 = (void *)&Static.num_col_mask[fill_pos];
+            cells16.loadAligned(pCells16);
+            mask16.loadAligned(pMask16);
+            cells16.and_not(mask16);
+            cells16.saveAligned(pCells16);
+        }
+
+        // LiteralType::NumBoxCells
+        {
+            pCells16 = (void *)&init_state.num_box_cells[num];
+            pMask16 = (void *)&Static.num_box_mask[fill_pos];
+            cells16.loadAligned(pCells16);
+            mask16.loadAligned(pMask16);
+            cells16.and_not(mask16);
+            cells16.saveAligned(pCells16);
+        }
     }
 
     LiteralMask find_single_literal_full() {
@@ -2701,7 +2718,8 @@ public:
             }
         }
 
-        this->last_literal_ = literalInfo.toLiteralInfoEx(255);
+        //this->last_literal_ = literalInfo.toLiteralInfoEx(255);
+        empties = this->calc_empties(board);
 #elif 0
 
         LiteralInfo literalInfo = this->find_single_literal();
