@@ -36,7 +36,6 @@
 #include "BitArray.h"
 #include "BitVec.h"
 
-#define V4B_LITERAL_ORDER_MODE  0
 #define V4B_SAVE_COUNT_SIZE     1
 
 #define V4B_USE_SIMD_INIT       1
@@ -100,7 +99,6 @@ public:
     static const size_t TotalLiterals =
         TotalCellLiterals + TotalRowLiterals + TotalColLiterals + TotalBoxLiterals;
 
-#if (V4B_LITERAL_ORDER_MODE == 0)
     static const size_t LiteralFirst     = 0;
     static const size_t CellLiteralFirst = LiteralFirst;
     static const size_t RowLiteralFirst  = CellLiteralFirst + TotalCellLiterals;
@@ -112,19 +110,6 @@ public:
     static const size_t RowLiteralLast   = ColLiteralFirst;
     static const size_t ColLiteralLast   = BoxLiteralFirst;
     static const size_t BoxLiteralLast   = LiteralLast;
-#else
-    static const size_t LiteralFirst     = 0;
-    static const size_t CellLiteralFirst = LiteralFirst;
-    static const size_t BoxLiteralFirst  = CellLiteralFirst + TotalCellLiterals;
-    static const size_t RowLiteralFirst  = BoxLiteralFirst + TotalBoxLiterals;
-    static const size_t ColLiteralFirst  = RowLiteralFirst + TotalRowLiterals;
-    static const size_t LiteralLast      = ColLiteralFirst + TotalColLiterals;
-
-    static const size_t CellLiteralLast  = BoxLiteralFirst;
-    static const size_t BoxLiteralLast   = RowLiteralFirst;
-    static const size_t RowLiteralLast   = ColLiteralFirst;
-    static const size_t ColLiteralLast   = LiteralLast;
-#endif // (V4B_LITERAL_ORDER_MODE == 0)
 
     static const size_t kAllRowBits = Sudoku::kAllRowBits;
     static const size_t kAllColBits = Sudoku::kAllColBits;
@@ -140,23 +125,13 @@ public:
     static const uint32_t kLiteralCntThreshold2 = 0;
 
 private:
-#if (V4B_LITERAL_ORDER_MODE == 0)
     enum LiteralType {
-        BoxCellNums,
         NumRowCols,
         NumColRows,
         NumBoxCells,
-        Unknown
-    };
-#else
-    enum LiteralType {
         BoxCellNums,
-        NumBoxCells,
-        NumRowCols,
-        NumColRows,
         Unknown
     };
-#endif // (V4B_LITERAL_ORDER_MODE == 0)
 
 private:
 
@@ -257,6 +232,13 @@ private:
         LiteralInfoEx(uint64_t _value = 0) : value(_value) {}
         LiteralInfoEx(uint32_t size, uint32_t type, uint32_t index)
             : literal_size(size), literal_type((uint16_t)type), literal_index((uint16_t)index) {}
+        LiteralInfoEx(const LiteralInfoEx & src) : value(src.value) {
+        }
+
+        LiteralInfoEx & operator = (const LiteralInfoEx & rhs) {
+            this->value = rhs.value;
+            return *this;
+        }
 
         bool isValid() const {
             return (this->value != uint64_t(-1));
@@ -274,6 +256,13 @@ private:
         LiteralInfo(uint64_t _value = 0) : value(_value) {}
         LiteralInfo(uint32_t type, uint32_t index)
             : literal_type(type), literal_index(index) {}
+        LiteralInfo(const LiteralInfo & src) : value(src.value) {
+        }
+
+        LiteralInfo & operator = (const LiteralInfo & rhs) {
+            this->value = rhs.value;
+            return *this;
+        }
 
         bool isValid() const {
             return (this->value != uint64_t(-1));
@@ -281,6 +270,38 @@ private:
 
         LiteralInfoEx toLiteralInfoEx(uint32_t literal_size) {
             return LiteralInfoEx(literal_size, literal_type, literal_index);
+        }
+    };
+
+    union LiteralMask {
+        struct {
+            uint16_t literal_type;
+            uint16_t literal_first;
+            uint32_t literal_mask;
+        };
+
+        struct {
+            uint32_t literal_info_0;
+            uint32_t literal_mask_0;
+        };
+
+        uint64_t value;
+
+        LiteralMask(uint64_t _value = 0) : value(_value) {}
+        LiteralMask(uint32_t info, uint32_t mask)
+            : literal_info_0(info), literal_mask(mask) {}
+        LiteralMask(uint32_t type, uint32_t first, uint32_t mask)
+            : literal_type((uint16_t)type), literal_first((uint16_t)first), literal_mask(mask) {}
+        LiteralMask(const LiteralMask & src) : value(src.value) {
+        }
+
+        LiteralMask & operator = (const LiteralMask & rhs) {
+            this->value = rhs.value;
+            return *this;
+        }
+
+        bool isValid() const {
+            return (this->value != uint64_t(-1));
         }
     };
 
@@ -896,11 +917,12 @@ private:
         assert(init_state.num_box_cells[num][fill_box].test(cell));
 
         static const size_t fixedLiteralType = (nLiteralType > LiteralType::Unknown) ? LiteralType::Unknown : nLiteralType;
-        uint16_t box_changed_bits = Static.box_changed_bits[fixedLiteralType][fill_box];
+        uint64_t box_changed_bits = Static.box_changed_bits[fixedLiteralType][fill_box];
 
         size_t num_bits = init_state.box_cell_nums[fill_box][cell].value();
-        uint64_t changed = (uint64_t)num_bits * 0x0001000100010000ULL | box_changed_bits;
-        assert(changed == ((num_bits << 48) | (num_bits << 32) | (num_bits << 16) | box_changed_bits));
+        assert(num_bits != 0);
+        uint64_t changed = (uint64_t)num_bits * 0x0000000100010001ULL | (box_changed_bits << 48);
+        assert(changed == ((box_changed_bits << 48) | (num_bits << 32) | (num_bits << 16) | num_bits));
         init_state.changed.value |= changed;
 
         if (nLiteralType != LiteralType::BoxCellNums) {
@@ -1602,8 +1624,74 @@ private:
         return LiteralInfo(-1);
     }
 
-    template <size_t nLiteralType = LiteralType::Unknown>
-    LiteralInfo find_single_literal_delta() {
+    LiteralMask find_single_literal_full() {
+        BitVec16x16_AVX unique_mask;
+        unique_mask.fill_u16(1);
+
+        // Row literal
+        for (size_t num = 0; num < Numbers; num++) {
+            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
+            BitVec16x16_AVX num_row_bits;
+            num_row_bits.loadAligned(pCells16);
+
+            BitVec16x16_AVX popcnt16 = num_row_bits.popcount16<Rows, Cols>();
+
+            uint32_t single_mask = popcnt16.maskOfIsEqual16<true>(unique_mask);
+            if (single_mask != 0) {
+                assert(single_mask < (1UL << 19));
+                return LiteralMask(LiteralType::NumRowCols, uint32_t(num), single_mask);
+            }
+        }
+
+        // Col literal
+        for (size_t num = 0; num < Numbers; num++) {
+            void * pCells16 = (void *)&this->init_state_.num_col_rows[num];
+            BitVec16x16_AVX num_col_bits;
+            num_col_bits.loadAligned(pCells16);
+
+            BitVec16x16_AVX popcnt16 = num_col_bits.popcount16<Cols, Rows>();
+
+            uint32_t single_mask = popcnt16.maskOfIsEqual16<true>(unique_mask);
+            if (single_mask != 0) {
+                assert(single_mask < (1UL << 19));
+                return LiteralMask(LiteralType::NumColRows, uint32_t(num), single_mask);
+            }
+        }
+
+        // Box-Cell literal
+        for (size_t num = 0; num < Numbers; num++) {
+            void * pCells16 = (void *)&this->init_state_.num_box_cells[num];
+            BitVec16x16_AVX num_box_bits;
+            num_box_bits.loadAligned(pCells16);
+
+            BitVec16x16_AVX popcnt16 = num_box_bits.popcount16<Boxes, BoxSize>();
+
+            uint32_t single_mask = popcnt16.maskOfIsEqual16<true>(unique_mask);
+            if (single_mask != 0) {
+                assert(single_mask < (1UL << 19));
+                return LiteralMask(LiteralType::NumBoxCells, uint32_t(num), single_mask);
+            }
+        }
+
+        // Position (Box-Cell) literal
+        for (size_t box = 0; box < Boxes; box++) {
+            void * pCells16 = (void *)&this->init_state_.box_cell_nums[box];
+            BitVec16x16_AVX box_bits;
+            box_bits.loadAligned(pCells16);
+
+            BitVec16x16_AVX popcnt16 = box_bits.popcount16<BoxSize, Numbers>();
+
+            uint32_t single_mask = popcnt16.maskOfIsEqual16<true>(unique_mask);
+            if (single_mask != 0) {
+                assert(single_mask < (1UL << 19));
+                return LiteralMask(LiteralType::BoxCellNums, uint32_t(box), single_mask);
+            }
+        }
+
+        return LiteralMask(-1);
+    }
+
+    LiteralMask find_single_literal_delta() {
         BitVec16x16_AVX unique_mask;
         unique_mask.fill_u16(1);
 
@@ -1617,14 +1705,12 @@ private:
 
                 BitVec16x16_AVX popcnt16 = num_row_bits.popcount16<Rows, Cols>();
 
-                int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
-                assert(min_index >= -1 && min_index < 16);
-
-                if (min_index != -1) {
+                uint32_t single_mask = popcnt16.maskOfIsEqual16<true>(unique_mask);
+                if (single_mask != 0) {
                     num_bits = (num_bits & 0xFFFEU) << num;
                     this->init_state_.changed.literal[LiteralType::NumRowCols] = num_bits;
-                    uint32_t row_index = (uint32_t)(num * Rows16 + min_index);
-                    return LiteralInfo(LiteralType::NumRowCols, row_index);
+                    assert(single_mask < (1UL << 19));
+                    return LiteralMask(LiteralType::NumRowCols, uint32_t(num), single_mask);
                 }
             }
             num_bits >>= 1;
@@ -1642,14 +1728,12 @@ private:
 
                 BitVec16x16_AVX popcnt16 = num_col_bits.popcount16<Cols, Rows>();
 
-                int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
-                assert(min_index >= -1 && min_index < 16);
-
-                if (min_index != -1) {
+                uint32_t single_mask = popcnt16.maskOfIsEqual16<true>(unique_mask);
+                if (single_mask != 0) {
                     num_bits = (num_bits & 0xFFFEU) << num;
                     this->init_state_.changed.literal[LiteralType::NumColRows] = num_bits;
-                    uint32_t col_index = (uint32_t)(num * Cols16 + min_index);
-                    return LiteralInfo(LiteralType::NumColRows, col_index);
+                    assert(single_mask < (1UL << 19));
+                    return LiteralMask(LiteralType::NumColRows, uint32_t(num), single_mask);
                 }
             }
             num_bits >>= 1;
@@ -1666,14 +1750,13 @@ private:
                 num_box_bits.loadAligned(pCells16);
 
                 BitVec16x16_AVX popcnt16 = num_box_bits.popcount16<Boxes, BoxSize>();
-                int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
-                assert(min_index >= -1 && min_index < 16);
 
-                if (min_index != -1) {
+                uint32_t single_mask = popcnt16.maskOfIsEqual16<true>(unique_mask);
+                if (single_mask != 0) {
                     num_bits = (num_bits & 0xFFFEU) << num;
                     this->init_state_.changed.literal[LiteralType::NumBoxCells] = num_bits;
-                    uint32_t box_index = (uint32_t)(num * Boxes16 + min_index);
-                    return LiteralInfo(LiteralType::NumBoxCells, box_index);
+                    assert(single_mask < (1UL << 19));
+                    return LiteralMask(LiteralType::NumBoxCells, uint32_t(num), single_mask);
                 }
             }
             num_bits >>= 1;
@@ -1682,30 +1765,29 @@ private:
         this->init_state_.changed.literal[LiteralType::NumBoxCells] = 0;
 
         // Position (Box-Cell) literal
-        uint16_t cell_bits = this->init_state_.changed.literal[LiteralType::BoxCellNums];
+        uint16_t boxes_bits = this->init_state_.changed.literal[LiteralType::BoxCellNums];
         for (size_t box = 0; box < Boxes; box++) {
-            if ((cell_bits & 1) != 0) {
+            if ((boxes_bits & 1) != 0) {
                 void * pCells16 = (void *)&this->init_state_.box_cell_nums[box];
                 BitVec16x16_AVX box_bits;
                 box_bits.loadAligned(pCells16);
 
                 BitVec16x16_AVX popcnt16 = box_bits.popcount16<BoxSize, Numbers>();
-                int min_index = popcnt16.indexOfIsEqual16<false>(unique_mask);
-                assert(min_index >= -1 && min_index < 16);
 
-                if (min_index != -1) {
-                    cell_bits = (cell_bits & 0xFFFEU) << box;
-                    this->init_state_.changed.literal[LiteralType::BoxCellNums] = cell_bits;
-                    uint32_t box_index = (uint32_t)(box * BoxSize16 + min_index);
-                    return LiteralInfo(LiteralType::BoxCellNums, box_index);
+                uint32_t single_mask = popcnt16.maskOfIsEqual16<true>(unique_mask);
+                if (single_mask != 0) {
+                    boxes_bits = (boxes_bits & 0xFFFEU) << box;
+                    this->init_state_.changed.literal[LiteralType::BoxCellNums] = boxes_bits;
+                    assert(single_mask < (1UL << 19));
+                    return LiteralMask(LiteralType::BoxCellNums, uint32_t(box), single_mask);
                 }
             }
-            cell_bits >>= 1;
+            boxes_bits >>= 1;
         }
 
         this->init_state_.changed.literal[LiteralType::BoxCellNums] = 0;
 
-        return LiteralInfo(-1);
+        return LiteralMask(-1);
     }
 
     size_t find_all_single_literal(std::vector<LiteralInfo> & single_literal_list) {
@@ -2545,8 +2627,8 @@ private:
     }
 
 public:
-    bool search(Board & board, size_t empties, const LiteralInfoEx & literalInfo) {
-        if (empties == 0) {
+    bool search(Board & board, ptrdiff_t empties, const LiteralInfoEx & literalInfo) {
+        if (empties <= 0) {
             if (kSearchMode > SearchMode::OneAnswer) {
                 this->answers_.push_back(board);
                 if (kSearchMode == SearchMode::MoreThanOneAnswer) {
@@ -2565,7 +2647,7 @@ public:
     bool solve(Board & board) {
         this->init_board(board);
 
-        size_t empties = this->calc_empties(board);
+        ptrdiff_t empties = this->calc_empties(board);
         assert(empties >= Sudoku::kMinInitCandidates);
 #if 0
         LiteralInfo literalInfo = this->find_single_literal();
@@ -2580,15 +2662,43 @@ public:
 
         this->last_literal_ = literalInfo.toLiteralInfoEx(255);
 #elif 1
-        LiteralInfo literalInfo = this->find_single_literal();
+        LiteralInfo literalInfo;
+        LiteralMask literalMask = this->find_single_literal_full();
         this->init_state_.changed.value = 0;
 
-        while (literalInfo.isValid()) {
-            this->do_single_literal_delta(this->init_state_, board, literalInfo);
-            literalInfo = this->find_single_literal_delta();
-            empties--;
-            if (empties == 0)
+        static const size_t TableLs2b[16] = {
+            0xFFFFFFFC, 0xFFFFFFF0, 0xFFFFFFC0, 0xFFFFFF00,
+            0xFFFFFC00, 0xFFFFF000, 0xFFFFC000, 0xFFFF0000,
+            0xFFFC0000, 0xFFF00000, 0xFFC00000, 0xFF000000,
+            0xFC000000, 0xF0000000, 0xC0000000, 0x00000000
+        };
+
+        while (literalMask.isValid()) {
+            uint32_t literal_type    = literalMask.literal_type;
+            uint32_t literal_first   = literalMask.literal_first;
+            literalInfo.literal_type = literal_type;
+            size_t single_mask       = literalMask.literal_mask;
+            assert(single_mask != 0);
+            ptrdiff_t count = 0;
+            while (single_mask != 0) {
+                uint32_t index = BitUtils::bsf(single_mask);
+                assert((index & 1) == 0);
+                assert(index < 9 * 2);
+                index >>= 1;
+                assert(index < 9);
+                single_mask &= TableLs2b[index];
+                literalInfo.literal_index = (literal_first * 16) | index;
+                this->do_single_literal_delta(this->init_state_, board, literalInfo);
+                count++;
+            }
+            LiteralMask nextLiteralMask = this->find_single_literal_delta();
+            if (!nextLiteralMask.isValid())
+                empties = empties;
+            literalMask = nextLiteralMask;
+            empties -= count;
+            if (empties <= 0) {
                 break;
+            }
         }
 
         this->last_literal_ = literalInfo.toLiteralInfoEx(255);

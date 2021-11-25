@@ -103,6 +103,11 @@
         _mm_cvtsi128_si32(_mm256_castsi256_si128(val))
 #endif // _mm256_cvtsi256_si32
 
+#if !defined(_mm256_insert_epi16)
+#define _mm256_insert_epi16(target, value, index) \
+        AVX2::template mm256_insert_epi16<index>(target, value)
+#endif // _mm256_insert_epi16
+
 //
 // Intel Intrinsics Guide (SIMD)
 //
@@ -149,13 +154,15 @@ union alignas(32) IntVec256 {
 
 struct SSE {
 
-static uint32_t _mm_cvtsi128_si32_low(__m128i m128)
+static inline
+uint32_t mm_cvtsi128_si32_low(__m128i m128)
 {
     uint32_t low32 = _mm_cvtsi128_si32(m128);
     return (low32 & 0xFFFFUL);
 }
 
-static uint32_t _mm_cvtsi128_si32_high(__m128i m128)
+static inline
+uint32_t mm_cvtsi128_si32_high(__m128i m128)
 {
     uint32_t low32 = _mm_cvtsi128_si32(m128);
     return (low32 >> 16U);
@@ -165,23 +172,91 @@ static uint32_t _mm_cvtsi128_si32_high(__m128i m128)
 
 struct AVX {
 
-static uint32_t _mm256_cvtsi256_si32_low(__m256i m256)
+static inline
+uint32_t mm256_cvtsi256_si32_low(__m256i m256)
 {
     return (uint32_t)(_mm256_cvtsi256_si32(m256) & 0xFFFFUL);
 }
 
-static uint32_t _mm256_cvtsi256_si32_high(__m256i m256)
+static inline
+uint32_t mm256_cvtsi256_si32_high(__m256i m256)
 {
     return (uint32_t)(_mm256_cvtsi256_si32(m256) >> 16U);
 }
 
 }; // AVX Wrapper
 
+struct AVX2 {
+
+//
+// See: https://agner.org/optimize/
+//
+// See: https://stackoverflow.com/questions/54048226/move-an-int64-t-to-the-high-quadwords-of-an-avx2-m256i-vector
+// See: https://stackoverflow.com/questions/58303958/how-to-implement-16-and-32-bit-integer-insert-and-extract-operations-with-avx-51
+//
+template <int index>
+static inline
+__m256i mm256_insert_epi16(__m256i target, int value)
+{
+    __m256i result;
+    switch (index) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        {
+            __m128i result128 = _mm_insert_epi16(_mm256_castsi256_si128(target), value, (index < 8) ? index : 0);
+            result = _mm256_castsi128_si256(result128);
+            break;
+        }
+
+        case 8:
+        {
+#if 1
+            __m128i high128 = _mm256_extracti128_si256(target, 1);
+            __m128i value128 = _mm_cvtsi32_si128(value);
+            __m128i mixed128 = _mm_blend_epi16(high128, value128, 0x00000001);
+            result = _mm256_inserti128_si256(target, mixed128, 1);
+#else
+            __m128i result128 = _mm_insert_epi16(_mm256_castsi256_si128(target), value, 0);
+            __m256i result256 = _mm256_inserti128_si256(_mm256_castsi128_si256(result128), result128, 1);
+            result = _mm256_blend_epi16(target, result256, 0b00000001);
+#endif
+            break;
+        }
+
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 13:
+        case 14:
+        case 15:
+        {
+            __m128i high128 = _mm256_extracti128_si256(target, 1);
+            __m128i mixed128 = _mm_insert_epi16(high128, value, (index >= 8) ? (index - 8) : 0);
+            result = _mm256_inserti128_si256(target, mixed128, 1);
+            break;
+        }
+
+        default:
+            static_assert((index < 16), "AVX2::_mm256_insert_epi16(target, value, index), index is out of range [0, 15].");
+            break;
+    }
+    return result;
+}
+
+}; // AVX2 Wrapper
+
 struct AVX512 {
 
 #if !(defined(__AVX512__) && defined(__AVX512_FP16__))
 
-static uint32_t _mm_cvtsi128_si16(__m128i m128)
+static inline uint32_t mm_cvtsi128_si16(__m128i m128)
 {
     uint32_t low32 = _mm_cvtsi128_si32(m128);   // SSE2
     return (low32 & 0xFFFFUL);
@@ -775,7 +850,7 @@ struct BitVec08x16 {
     uint32_t min_u8() const {
         BitVec08x16 min_nums;
         this->min_u8<MaxLength>(min_nums);
-        uint32_t min_num = (uint32_t)SSE::_mm_cvtsi128_si32_low(min_nums.m128);
+        uint32_t min_num = (uint32_t)SSE::mm_cvtsi128_si32_low(min_nums.m128);
         return min_num;
     }
 
@@ -837,25 +912,25 @@ struct BitVec08x16 {
         BitVec08x16 min_nums;
         this->min_i16<MaxLength>(min_nums);
         // _mm_cvtsi128_si32(m128i) is faster than _mm_extract_epi16(m128i, index)
-        return (int32_t)SSE::_mm_cvtsi128_si32_low(min_nums.m128);
+        return (int32_t)SSE::mm_cvtsi128_si32_low(min_nums.m128);
     }
 
     template <size_t MaxLength>
     uint32_t min_u16() const {
         BitVec08x16 min_nums;
         this->min_u16<MaxLength>(min_nums);
-        return (uint32_t)SSE::_mm_cvtsi128_si32_low(min_nums.m128);
+        return (uint32_t)SSE::mm_cvtsi128_si32_low(min_nums.m128);
     }
 
     static uint32_t minpos16_get_num(const BitVec08x16 & minpos) {
         // _mm_cvtsi128_si32(m128i) is faster than _mm_extract_epi16(m128i, index)
-        uint32_t min_num = (uint32_t)SSE::_mm_cvtsi128_si32_low(minpos.m128);
+        uint32_t min_num = (uint32_t)SSE::mm_cvtsi128_si32_low(minpos.m128);
         return min_num;
     }
 
     static uint32_t minpos16_get_index(const BitVec08x16 & minpos) {
         // _mm_cvtsi128_si32(m128i) is faster than _mm_extract_epi16(m128i, index)
-        uint32_t index = (uint32_t)SSE::_mm_cvtsi128_si32_high(minpos.m128);
+        uint32_t index = (uint32_t)SSE::mm_cvtsi128_si32_high(minpos.m128);
         return index;
     }
 
@@ -883,7 +958,7 @@ struct BitVec08x16 {
         // Mixed the min_num (16bit) and index (3bit) to minpos info (32bit).
 
         // Get the index of minimum number
-        uint32_t min_num = SSE::_mm_cvtsi128_si32_low(minnum_u16);
+        uint32_t min_num = SSE::mm_cvtsi128_si32_low(minnum_u16);
         uint32_t min_index = (uint32_t)this->template indexOfIsEqual16<true>(min_num);
 
         uint32_t min_and_index = min_num | (min_index << 16);
@@ -1501,14 +1576,14 @@ struct BitVec16x16 {
         BitVec16x16 min_num;
         this->min_i16<MaxLength>(min_num);
         // _mm_cvtsi128_si32(m128i) faster than _mm_extract_epi16(m128i, index)
-        return (int32_t)SSE::_mm_cvtsi128_si32_low(min_num.low.m128);
+        return (int32_t)SSE::mm_cvtsi128_si32_low(min_num.low.m128);
     }
 
     template <size_t MaxLength>
     inline uint32_t min_u16() const {
         BitVec16x16 min_num;
         this->min_u16<MaxLength>(min_num);
-        return (uint32_t)SSE::_mm_cvtsi128_si32_low(min_num.low.m128);
+        return (uint32_t)SSE::mm_cvtsi128_si32_low(min_num.low.m128);
     }
 
     template <size_t MaxLength>
@@ -2238,6 +2313,18 @@ struct BitVec16x16_AVX {
         return this->template firstIndexOfOnes16<isNonZeros>(is_equal_mask);
     }
 
+    template <bool isRepeat = true>
+    inline int maskOfIsEqual16(const BitVec16x16_AVX & in_num_mask) const {
+        BitVec16x16_AVX num_mask = in_num_mask;
+        if (!isRepeat) {
+            // If the num_mask is not a repeat mask,
+            // we repeat the first 16bit integer first.
+            num_mask = _mm256_broadcastw_epi16(_mm256_castsi256_si128(num_mask.m256));
+        }
+        BitVec16x16_AVX is_equal_mask = this->whichIsEqual(num_mask);
+        return this->maskOfOnes16(is_equal_mask);
+    }
+
     template <bool isNonZeros>
     inline int firstIndexOfOnes16(const BitVec16x16_AVX & compare_mask) const {
         int compare_mask_32 = _mm256_movemask_epi8(compare_mask.m256);
@@ -2248,6 +2335,18 @@ struct BitVec16x16_AVX {
             return first_index;
         }
         else return -1;
+    }
+
+    inline uint32_t maskOfOnes16(const BitVec16x16_AVX & compare_mask) const {
+#if 1
+        uint32_t compare_mask_32 = (uint32_t)_mm256_movemask_epi8(compare_mask.m256);
+        return compare_mask_32;
+#else
+        __m256i compare_mask_pack = _mm256_packs_epi16(compare_mask.m256, _mm256_setzero_si256());
+        uint32_t compare_mask_32 = (uint32_t)_mm256_movemask_epi8(compare_mask_pack);
+        uint32_t compare_mask_16 = (compare_mask_32 & 0x000000FFUL) | (compare_mask_32 >> 8U);
+        return compare_mask_16;
+#endif
     }
 
     inline uint16_t extract(int index) const {
@@ -2450,7 +2549,7 @@ struct BitVec16x16_AVX {
 #if 1 || (defined(_MSC_VER) && (_MSC_VER < 2000))
         BitVec08x16 min_nums_128;
         min_nums.castTo(min_nums_128);
-        uint32_t min_num = SSE::_mm_cvtsi128_si32_low(min_nums_128.m128);
+        uint32_t min_num = SSE::mm_cvtsi128_si32_low(min_nums_128.m128);
         return (int8_t)(min_num & 0xFFUL);
 #else
   #if 1
@@ -2502,7 +2601,7 @@ struct BitVec16x16_AVX {
 #if 1 || (defined(_MSC_VER) && (_MSC_VER < 2000))
         BitVec08x16 min_nums_128;
         min_nums.castTo(min_nums_128);
-        uint32_t min_num = SSE::_mm_cvtsi128_si32_low(min_nums_128.m128);
+        uint32_t min_num = SSE::mm_cvtsi128_si32_low(min_nums_128.m128);
         return (uint8_t)(min_num & 0xFFUL);
 #else
   #if 1
@@ -2559,8 +2658,50 @@ struct BitVec16x16_AVX {
 
     template <size_t MaxLength>
     inline void minpos16(BitVec08x16 & minpos) const {
+#if 1
         uint32_t min_and_index = this->minpos16<MaxLength>();
         minpos = _mm_cvtsi32_si128(min_and_index);
+#else
+        BitVec08x16 minpos;
+        BitVec16x16_AVX minpos256;
+        __m256i nums = this->m256;
+        __m256i minnum_u16;
+        if (MaxLength <= 4) {
+            nums = _mm256_min_epu16(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(2, 3, 0, 1)));
+
+            // The minimum number of first 4 x int16_t
+            minnum_u16 = _mm256_min_epu16(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+        }
+        else if (MaxLength <= 8) {
+            nums = _mm256_min_epu16(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(1, 0, 3, 2)));
+            nums = _mm256_min_epu16(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+
+            // The minimum number of first 8 x int16_t
+            minnum_u16 = _mm256_min_epu16(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+        }
+        else {
+            nums = _mm256_min_epu16(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(3, 2, 3, 2)));
+            nums = _mm256_min_epu16(nums, _mm256_shuffle_epi32(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+            nums = _mm256_min_epu16(nums, _mm256_shufflelo_epi16(nums, _MM_SHUFFLE(1, 1, 1, 1)));
+
+            // The minimum number of total 16 x int16_t
+            //__m256i nums_high = _mm256_permute4x64_epi64(nums, _MM_SHUFFLE(1, 0, 3, 2));
+            //
+            // Use _mm256_permute2x128_si256() can reset high 128 bits to 0,
+            // but low bits[32:127] is not reset to 0 yet.
+            //
+            __m256i nums_high = _mm256_permute2x128_si256(nums, nums, 0b10000001);
+            minnum_u16 = _mm256_min_epu16(nums, nums_high);
+        }
+
+        // Get the index of minimum number
+        uint32_t min_index = (uint32_t)this->template indexOfIsEqual16<true, false>(minnum_u16);
+        assert(min_index != -1);
+
+        __m256i minpos256 = _mm256_castsi128_si256(minpos.m128);
+        minpos256 = _mm256_insert_epi16(minnum_u16, min_index, 1);
+        minpos = _mm256_castsi256_si128(minpos256);
+#endif
     }
 
     template <size_t MaxLength>

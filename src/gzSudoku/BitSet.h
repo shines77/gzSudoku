@@ -33,6 +33,8 @@ struct AlignedTo {
     static const size_t value = (size + alignment - 1) / alignment * alignment;
 };
 
+#pragma pack(push, 1)
+
 template <size_t Bits>
 class SmallBitSet {
 public:
@@ -704,6 +706,8 @@ public:
         }
     }
 };
+
+#pragma pack(pop)
 
 template <size_t Bits>
 inline

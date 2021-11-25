@@ -81,6 +81,8 @@ struct RoundToPow2 {
     static const size_t value = compile_time::round_to_pow2<N>::value;
 };
 
+#pragma pack(push, 1)
+
 template <size_t Bits>
 class PackedBitSet {
 public:
@@ -746,6 +748,8 @@ public:
         return oldValue;
     }
 };
+
+#pragma pack(pop)
 
 template <size_t Bits>
 inline

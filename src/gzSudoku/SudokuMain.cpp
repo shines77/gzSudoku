@@ -339,10 +339,12 @@ int main(int argc, char * argv [])
 
 #if defined(NDEBUG)
 //          run_sudoku_test<v4::Solver,  false>(bm_puzzles, bm_puzzleTotal, "dfs::v4");
-#endif
             run_sudoku_test<v4a::Solver, false>(bm_puzzles, bm_puzzleTotal, "dfs::v4a");
             run_sudoku_test<v4b::Solver, false>(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
             run_sudoku_test<v5::Solver,  false>(bm_puzzles, bm_puzzleTotal, "dfs::v5");
+#else
+            run_sudoku_test<v4b::Solver, false>(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
+#endif
         }
     }
 
