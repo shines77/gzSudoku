@@ -38,7 +38,7 @@
 
 #define V4B_SAVE_COUNT_SIZE     1
 
-#define V4B_USE_SIMD_INIT       0
+#define V4B_USE_SIMD_INIT       1
 
 namespace gzSudoku {
 namespace v4b {
@@ -724,16 +724,16 @@ private:
         init_literal_info();
 
 #if V4B_USE_SIMD_INIT
-        BitVec16x16_AVX mask;
-        mask.fill_u16(kAllNumberBits);
+        BitVec16x16_AVX full_mask;
+        full_mask.fill_u16(kAllNumberBits);
         for (size_t box = 0; box < Boxes; box++) {
-            mask.saveAligned((void *)&this->init_state_.box_cell_nums[box]);
+            full_mask.saveAligned((void *)&this->init_state_.box_cell_nums[box]);
         }
 
         for (size_t num = 0; num < Numbers; num++) {
-            mask.saveAligned((void *)&this->init_state_.num_row_cols[num]);
-            mask.saveAligned((void *)&this->init_state_.num_col_rows[num]);
-            mask.saveAligned((void *)&this->init_state_.num_box_cells[num]);
+            full_mask.saveAligned((void *)&this->init_state_.num_row_cols[num]);
+            full_mask.saveAligned((void *)&this->init_state_.num_col_rows[num]);
+            full_mask.saveAligned((void *)&this->init_state_.num_box_cells[num]);
         }
 #else
         this->init_state_.box_cell_nums.fill(kAllNumberBits);
