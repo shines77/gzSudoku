@@ -1524,7 +1524,7 @@ private:
 
         size_t num_bits = init_state.box_cell_nums[fill_box][cell].value();
         assert(num_bits != 0);
-#if 1
+#if 0
         init_state.changed.literal[LiteralType::NumRowCols] |= (uint16_t)num_bits;
         init_state.changed.literal[LiteralType::NumColRows] |= (uint16_t)num_bits;
         init_state.changed.literal[LiteralType::NumBoxCells] |= (uint16_t)num_bits;
