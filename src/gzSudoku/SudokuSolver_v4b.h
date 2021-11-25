@@ -38,7 +38,7 @@
 
 #define V4B_SAVE_COUNT_SIZE     1
 
-#define V4B_USE_SIMD_INIT       0
+#define V4B_USE_SIMD_INIT       1
 
 namespace gzSudoku {
 namespace v4b {
@@ -745,6 +745,11 @@ private:
         this->init_state_.changed.value = (kAllNumberBits << 48) | (kAllBoxCellBits << 32) |
                                           (kAllColBits    << 16) | kAllRowBits;
         //*/
+
+        this->init_state_.changed.literal[LiteralType::NumRowCols] = kAllColBits;
+        this->init_state_.changed.literal[LiteralType::NumColRows] = kAllRowBits;
+        this->init_state_.changed.literal[LiteralType::NumBoxCells] = kAllBoxCellBits;
+        this->init_state_.changed.literal[LiteralType::BoxCellNums] = kAllNumberBits;
 
         if (kSearchMode > SearchMode::OneAnswer) {
             this->answers_.clear();
@@ -1534,7 +1539,6 @@ private:
         assert(changed == ((box_changed_bits << 48) | (num_bits << 32) | (num_bits << 16) | num_bits));
         init_state.changed.value |= changed;
 #endif
-
         if (nLiteralType != LiteralType::BoxCellNums) {
             // Exclude the current number, because it will be process later.
             num_bits ^= (size_t(1) << num);
@@ -1553,8 +1557,7 @@ private:
             }
         }
 
-        const PackedBitSet3D<4, BoxSize16, Numbers16> & flip_mask
-            = Static.flip_mask[cell][num];
+        const PackedBitSet3D<4, BoxSize16, Numbers16> & flip_mask = Static.flip_mask[cell][num];
         const peer_boxes_t & peerBoxes = Static.peer_boxes[fill_box];
 
         BitVec16x16_AVX cells16, mask16;
@@ -2808,11 +2811,6 @@ public:
 #elif 1
         LiteralInfo literalInfo;
         LiteralMask literalMask = this->find_single_literal_full();
-        //this->init_state_.changed.value = 0;
-        this->init_state_.changed.literal[LiteralType::NumRowCols] = kAllColBits;
-        this->init_state_.changed.literal[LiteralType::NumColRows] = kAllRowBits;
-        this->init_state_.changed.literal[LiteralType::NumBoxCells] = kAllBoxCellBits;
-        this->init_state_.changed.literal[LiteralType::BoxCellNums] = kAllNumberBits;
 
         static const size_t TableLs2b[16] = {
             0xFFFFFFFC, 0xFFFFFFF0, 0xFFFFFFC0, 0xFFFFFF00,
@@ -2839,14 +2837,11 @@ public:
                 this->do_single_literal_delta(this->init_state_, board, literalInfo);
                 count++;
             }
-            LiteralMask nextLiteralMask = this->find_single_literal_delta();
-            if (!nextLiteralMask.isValid())
-                empties = empties;
-            literalMask = nextLiteralMask;
             empties -= count;
             if (empties <= 0) {
                 break;
             }
+            literalMask = this->find_single_literal_delta();
         }
 
         //this->last_literal_ = literalInfo.toLiteralInfoEx(255);
