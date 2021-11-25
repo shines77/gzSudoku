@@ -38,7 +38,7 @@
 
 #define V4B_SAVE_COUNT_SIZE     1
 
-#define V4B_USE_SIMD_INIT       1
+#define V4B_USE_SIMD_INIT       0
 
 namespace gzSudoku {
 namespace v4b {
