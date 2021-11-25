@@ -207,6 +207,11 @@ void run_a_testcase(size_t index)
         printf("gzSudoku: v4a::Solution - dfs\n\n");
 
         run_solver_testcase<v4a::Solver>(index);
+
+        printf("------------------------------------------\n\n");
+        printf("gzSudoku: v4b::Solution - dfs\n\n");
+
+        run_solver_testcase<v4b::Solver>(index);
     }
 
     printf("------------------------------------------\n\n");
