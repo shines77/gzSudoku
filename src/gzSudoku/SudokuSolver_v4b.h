@@ -207,10 +207,10 @@ private:
         } counts;
 
         struct Index {
-            alignas(16) uint8_t box_cells[Boxes16];
-            alignas(16) uint8_t num_boxes[Numbers16];
-            alignas(16) uint8_t num_rows[Numbers16];
-            alignas(16) uint8_t num_cols[Numbers16];
+            alignas(32) uint8_t box_cells[Boxes16];
+            alignas(32) uint8_t num_boxes[Numbers16];
+            alignas(32) uint8_t num_rows[Numbers16];
+            alignas(32) uint8_t num_cols[Numbers16];
         } indexs;
 
         struct Total {
@@ -1997,7 +1997,7 @@ private:
         }
     }
 
-    void do_single_literal_delta(InitState & init_state, Board & board, LiteralInfo literalInfo) {
+    bool do_single_literal_delta(InitState & init_state, Board & board, LiteralInfo literalInfo) {
         size_t pos, row, col, box, cell, num;
 
         switch (literalInfo.literal_type) {
@@ -2014,14 +2014,17 @@ private:
                 pos = boxesInfo.pos;
 
                 size_t num_bits = init_state.box_cell_nums[box][cell].to_ulong();
-                assert(num_bits != 0);
-                assert((num_bits & (num_bits - 1)) == 0);
-                num = BitUtils::bsf(num_bits);
+                if (num_bits != 0) {
+                    assert(num_bits != 0);
+                    assert((num_bits & (num_bits - 1)) == 0);
+                    num = BitUtils::bsf(num_bits);
 
-                assert(board.cells[pos] == '.');
-                board.cells[pos] = (char)(num + '1');
+                    assert(board.cells[pos] == '.');
+                    board.cells[pos] = (char)(num + '1');
 
-                this->update_peer_cells_delta<LiteralType::BoxCellNums>(init_state, pos, row, col, box, cell, num);
+                    this->update_peer_cells_delta<LiteralType::BoxCellNums>(init_state, pos, row, col, box, cell, num);
+                    return true;
+                }
 
                 break;
             }
@@ -2035,19 +2038,22 @@ private:
                 row = literal % Rows16;
 
                 size_t col_bits = init_state.num_row_cols[num][row].to_ulong();
-                assert(col_bits != 0);
-                assert((col_bits & (col_bits - 1)) == 0);
-                col = BitUtils::bsf(col_bits);
-                pos = row * Cols + col;
+                if (col_bits != 0) {
+                    assert(col_bits != 0);
+                    assert((col_bits & (col_bits - 1)) == 0);
+                    col = BitUtils::bsf(col_bits);
+                    pos = row * Cols + col;
 
-                const CellInfo & cellInfo = Sudoku::cell_info[pos];
-                box = cellInfo.box;
-                cell = cellInfo.cell;
+                    const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                    box = cellInfo.box;
+                    cell = cellInfo.cell;
 
-                assert(board.cells[pos] == '.');
-                board.cells[pos] = (char)(num + '1');
+                    assert(board.cells[pos] == '.');
+                    board.cells[pos] = (char)(num + '1');
 
-                this->update_peer_cells_delta<LiteralType::NumRowCols>(init_state, pos, row, col, box, cell, num);
+                    this->update_peer_cells_delta<LiteralType::NumRowCols>(init_state, pos, row, col, box, cell, num);
+                    return true;
+                }
 
                 break;
             }
@@ -2061,19 +2067,22 @@ private:
                 col = literal % Cols16;
 
                 size_t row_bits = init_state.num_col_rows[num][col].to_ulong();
-                assert(row_bits != 0);
-                assert((row_bits & (row_bits - 1)) == 0);
-                row = BitUtils::bsf(row_bits);
-                pos = row * Cols + col;
+                if (row_bits != 0) {
+                    assert(row_bits != 0);
+                    assert((row_bits & (row_bits - 1)) == 0);
+                    row = BitUtils::bsf(row_bits);
+                    pos = row * Cols + col;
 
-                const CellInfo & cellInfo = Sudoku::cell_info[pos];
-                box = cellInfo.box;
-                cell = cellInfo.cell;
+                    const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                    box = cellInfo.box;
+                    cell = cellInfo.cell;
 
-                assert(board.cells[pos] == '.');
-                board.cells[pos] = (char)(num + '1');
+                    assert(board.cells[pos] == '.');
+                    board.cells[pos] = (char)(num + '1');
 
-                this->update_peer_cells_delta<LiteralType::NumColRows>(init_state, pos, row, col, box, cell, num);
+                    this->update_peer_cells_delta<LiteralType::NumColRows>(init_state, pos, row, col, box, cell, num);
+                    return true;
+                }
 
                 break;
             }
@@ -2087,19 +2096,22 @@ private:
                 box = literal % Boxes16;
 
                 size_t cell_bits = init_state.num_box_cells[num][box].to_ulong();
-                assert(cell_bits != 0);
-                assert((cell_bits & (cell_bits - 1)) == 0);
-                cell = BitUtils::bsf(cell_bits);
+                if (cell_bits != 0) {
+                    assert(cell_bits != 0);
+                    assert((cell_bits & (cell_bits - 1)) == 0);
+                    cell = BitUtils::bsf(cell_bits);
 
-                const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box * BoxSize16 + cell];
-                row = boxesInfo.row;
-                col = boxesInfo.col;
-                pos = boxesInfo.pos;
+                    const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box * BoxSize16 + cell];
+                    row = boxesInfo.row;
+                    col = boxesInfo.col;
+                    pos = boxesInfo.pos;
 
-                assert(board.cells[pos] == '.');
-                board.cells[pos] = (char)(num + '1');
+                    assert(board.cells[pos] == '.');
+                    board.cells[pos] = (char)(num + '1');
 
-                this->update_peer_cells_delta<LiteralType::NumBoxCells>(init_state, pos, row, col, box, cell, num);
+                    this->update_peer_cells_delta<LiteralType::NumBoxCells>(init_state, pos, row, col, box, cell, num);
+                    return true;
+                }
 
                 break;
             }
@@ -2108,6 +2120,8 @@ private:
                 assert(false);
                 break;
         }
+
+        return false;
     }
 
     bool check_and_do_single_literal(InitState & init_state, Board & board, LiteralInfo literalInfo) {
@@ -2683,7 +2697,7 @@ public:
         LiteralMask literalMask = this->find_single_literal_full();
         this->init_state_.changed.value = 0;
 
-        static const size_t TableLs2b[16] = {
+        static const size_t TableLs2b[32] = {
             0xFFFFFFFC, 0xFFFFFFF0, 0xFFFFFFC0, 0xFFFFFF00,
             0xFFFFFC00, 0xFFFFF000, 0xFFFFC000, 0xFFFF0000,
             0xFFFC0000, 0xFFF00000, 0xFFC00000, 0xFF000000,
@@ -2705,8 +2719,8 @@ public:
                 assert(index < 9);
                 single_mask &= TableLs2b[index];
                 literalInfo.literal_index = (literal_first * 16) | index;
-                this->do_single_literal_delta(this->init_state_, board, literalInfo);
-                count++;
+                if (this->do_single_literal_delta(this->init_state_, board, literalInfo))
+                    count++;
             }
             LiteralMask nextLiteralMask = this->find_single_literal_delta();
             if (!nextLiteralMask.isValid())
