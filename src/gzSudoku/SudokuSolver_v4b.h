@@ -318,7 +318,7 @@ private:
         }
 
         bool isValid() const {
-            return (this->value != uint64_t(-1));
+            return (this->value != 0);
         }
     };
 
@@ -1715,7 +1715,7 @@ private:
             }
         }
 
-        return LiteralMask(-1);
+        return LiteralMask(0);
     }
 
     LiteralMask find_single_literal_full(size_t fill_num) {
@@ -1830,7 +1830,7 @@ private:
             }
         }
 
-        return LiteralMask(-1);
+        return LiteralMask(0);
     }
 
     LiteralMask find_single_literal_delta() {
@@ -1929,7 +1929,7 @@ private:
 
         this->init_state_.changed.literal[LiteralType::BoxCellNums] = 0;
 
-        return LiteralMask(-1);
+        return LiteralMask(0);
     }
 
     size_t find_all_single_literal(std::vector<LiteralInfo> & single_literal_list) {
@@ -3292,23 +3292,19 @@ public:
         //this->last_literal_ = literalInfo.toLiteralInfoEx(255);
         //empties = this->calc_empties(board);
 #elif 1
-        LiteralInfo literalInfo;
         LiteralMask literalMask = this->find_single_literal_full();
 
         while (literalMask.isValid()) {
             size_t single_mask = literalMask.literal_mask;
             assert(single_mask != 0);
-            if (single_mask != 0) {
-                //size_t fill_num;
-                ptrdiff_t count = this->do_single_literal_mask(this->init_state_, board, literalMask);
-                assert(count != 0);
-                empties -= count;
-                if (empties <= 0) {
-                    break;
-                }
-                literalMask = this->find_single_literal_full();
+            //size_t fill_num;
+            ptrdiff_t count = this->do_single_literal_mask(this->init_state_, board, literalMask);
+            assert(count != 0);
+            empties -= count;
+            if (empties <= 0) {
+                break;
             }
-            else break;
+            literalMask = this->find_single_literal_full();
         }
 #elif 0
 
