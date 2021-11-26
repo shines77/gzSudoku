@@ -2362,7 +2362,170 @@ private:
         return false;
     }
 
-    size_t do_single_literal_delta(InitState & init_state, Board & board, LiteralMask literalMask, size_t & fill_num) {
+    size_t do_single_literal_mask(InitState & init_state, Board & board, LiteralMask literalMask) {
+        size_t count = 0;
+        size_t pos, row, col, box, cell, num;
+
+        switch (literalMask.literal_type) {
+            case LiteralType::NumRowCols:
+            {
+                num = literalMask.literal_first;
+
+                size_t single_mask = literalMask.literal_mask;
+                do {
+                    uint32_t index = BitUtils::bsf(single_mask);
+                    assert((index & 1) == 0);
+                    assert(index < 9 * 2);
+                    index >>= 1;
+                    assert(index < 9);
+                    single_mask &= TableLs2b[index];
+
+                    row = index;                    
+
+                    size_t col_bits = init_state.num_row_cols[num][row].to_ulong();
+                    assert(col_bits != 0);
+                    assert((col_bits & (col_bits - 1)) == 0);
+                    col = BitUtils::bsf(col_bits);
+                    pos = row * Cols + col;
+
+                    const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                    box = cellInfo.box;
+                    cell = cellInfo.cell;
+
+                    assert(board.cells[pos] == '.');
+                    board.cells[pos] = (char)(num + '1');
+
+                    this->fill_num_init(init_state, row, col, box, cell, num);
+                    this->update_peer_cells<LiteralType::NumRowCols>(init_state, pos, box, cell, num);
+
+                    count++;
+                } while (single_mask != 0);
+
+                break;
+            }
+
+            case LiteralType::NumColRows:
+            {
+                num = literalMask.literal_first;
+
+                size_t single_mask = literalMask.literal_mask;
+                do {
+                    uint32_t index = BitUtils::bsf(single_mask);
+                    assert((index & 1) == 0);
+                    assert(index < 9 * 2);
+                    index >>= 1;
+                    assert(index < 9);
+                    single_mask &= TableLs2b[index];
+
+                    col = index;                    
+
+                    size_t row_bits = init_state.num_col_rows[num][col].to_ulong();
+                    assert(row_bits != 0);
+                    assert((row_bits & (row_bits - 1)) == 0);
+                    row = BitUtils::bsf(row_bits);
+                    pos = row * Cols + col;
+
+                    const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                    box = cellInfo.box;
+                    cell = cellInfo.cell;
+
+                    assert(board.cells[pos] == '.');
+                    board.cells[pos] = (char)(num + '1');
+
+                    this->fill_num_init(init_state, row, col, box, cell, num);
+                    this->update_peer_cells<LiteralType::NumColRows>(init_state, pos, box, cell, num);
+
+                    count++;
+                } while (single_mask != 0);
+
+                break;
+            }
+
+            case LiteralType::NumBoxCells:
+            {
+                num = literalMask.literal_first;
+
+                size_t single_mask = literalMask.literal_mask;
+                do {
+                    uint32_t index = BitUtils::bsf(single_mask);
+                    assert((index & 1) == 0);
+                    assert(index < 9 * 2);
+                    index >>= 1;
+                    assert(index < 9);
+                    single_mask &= TableLs2b[index];
+
+                    box = index;
+
+                    size_t cell_bits = init_state.num_box_cells[num][box].to_ulong();
+                    assert(cell_bits != 0);
+                    assert((cell_bits & (cell_bits - 1)) == 0);
+                    cell = BitUtils::bsf(cell_bits);
+
+                    size_t box_pos = box * BoxSize16 + cell;
+                    const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box_pos];
+                    row = boxesInfo.row;
+                    col = boxesInfo.col;
+                    pos = boxesInfo.pos;
+
+                    assert(board.cells[pos] == '.');
+                    board.cells[pos] = (char)(num + '1');
+
+                    this->fill_num_init(init_state, row, col, box, cell, num);
+                    this->update_peer_cells<LiteralType::NumBoxCells>(init_state, pos, box, cell, num);
+
+                    count++;
+                } while (single_mask != 0);
+
+                break;
+            }
+
+            case LiteralType::BoxCellNums:
+            {
+                box = literalMask.literal_first;
+
+                size_t single_mask = literalMask.literal_mask;
+                do {
+                    uint32_t index = BitUtils::bsf(single_mask);
+                    assert((index & 1) == 0);
+                    assert(index < 9 * 2);
+                    index >>= 1;
+                    assert(index < 9);
+                    single_mask &= TableLs2b[index];
+
+                    cell = index;
+                    size_t box_pos = box * BoxSize16 + cell;
+
+                    const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box_pos];
+                    row = boxesInfo.row;
+                    col = boxesInfo.col;
+                    pos = boxesInfo.pos;
+
+                    size_t num_bits = init_state.box_cell_nums[box][cell].to_ulong();
+                    assert(num_bits != 0);
+                    assert((num_bits & (num_bits - 1)) == 0);
+                    num = BitUtils::bsf(num_bits);
+
+                    assert(board.cells[pos] == '.');
+                    board.cells[pos] = (char)(num + '1');
+
+                    //this->fill_num_init(init_state, row, col, box, cell, num);
+                    this->update_peer_cells<LiteralType::BoxCellNums>(init_state, pos, box, cell, num);
+
+                    count++;
+                } while (single_mask != 0);
+
+                break;
+            }
+
+            default:
+                assert(false);
+                break;
+        }
+
+        return count;
+    }
+
+    size_t do_single_literal_mask(InitState & init_state, Board & board, LiteralMask literalMask, size_t & fill_num) {
         size_t count = 0;
         size_t pos, row, col, box, cell, num;
 
@@ -3136,14 +3299,14 @@ public:
             size_t single_mask = literalMask.literal_mask;
             assert(single_mask != 0);
             if (single_mask != 0) {
-                size_t fill_num = 0;
-                ptrdiff_t count = this->do_single_literal_delta(this->init_state_, board, literalMask, fill_num);
+                //size_t fill_num;
+                ptrdiff_t count = this->do_single_literal_mask(this->init_state_, board, literalMask);
                 assert(count != 0);
                 empties -= count;
                 if (empties <= 0) {
                     break;
                 }
-                literalMask = this->find_single_literal_full(fill_num);
+                literalMask = this->find_single_literal_full();
             }
             else break;
         }
