@@ -2180,7 +2180,7 @@ public:
                 break;
         }
 
-        this->last_literal_ = literalInfo.toLiteralInfoEx(255);
+        //this->last_literal_ = literalInfo.toLiteralInfoEx(255);
 #elif 0
 
         LiteralInfo literalInfo = this->find_single_literal();
@@ -2189,7 +2189,7 @@ public:
             empties = this->search_single_literal(this->init_state_, board, empties, literalInfo);
         }
 
-        this->last_literal_ = literalInfo.toLiteralInfoEx(255);
+        //this->last_literal_ = literalInfo.toLiteralInfoEx(255);
 #endif
         bool success = this->search(board, empties, this->last_literal_);
         return success;

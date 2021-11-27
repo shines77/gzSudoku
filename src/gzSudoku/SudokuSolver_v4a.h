@@ -36,7 +36,6 @@
 #include "BitArray.h"
 #include "BitVec.h"
 
-#define V4A_LITERAL_ORDER_MODE  0
 #define V4A_SAVE_COUNT_SIZE     1
 
 #define V4A_USE_SIMD_INIT       1
@@ -100,7 +99,6 @@ public:
     static const size_t TotalLiterals =
         TotalCellLiterals + TotalRowLiterals + TotalColLiterals + TotalBoxLiterals;
 
-#if (V4A_LITERAL_ORDER_MODE == 0)
     static const size_t LiteralFirst     = 0;
     static const size_t CellLiteralFirst = LiteralFirst;
     static const size_t RowLiteralFirst  = CellLiteralFirst + TotalCellLiterals;
@@ -112,19 +110,6 @@ public:
     static const size_t RowLiteralLast   = ColLiteralFirst;
     static const size_t ColLiteralLast   = BoxLiteralFirst;
     static const size_t BoxLiteralLast   = LiteralLast;
-#else
-    static const size_t LiteralFirst     = 0;
-    static const size_t CellLiteralFirst = LiteralFirst;
-    static const size_t BoxLiteralFirst  = CellLiteralFirst + TotalCellLiterals;
-    static const size_t RowLiteralFirst  = BoxLiteralFirst + TotalBoxLiterals;
-    static const size_t ColLiteralFirst  = RowLiteralFirst + TotalRowLiterals;
-    static const size_t LiteralLast      = ColLiteralFirst + TotalColLiterals;
-
-    static const size_t CellLiteralLast  = BoxLiteralFirst;
-    static const size_t BoxLiteralLast   = RowLiteralFirst;
-    static const size_t RowLiteralLast   = ColLiteralFirst;
-    static const size_t ColLiteralLast   = LiteralLast;
-#endif // (V4A_LITERAL_ORDER_MODE == 0)
 
     static const size_t kAllRowBits = Sudoku::kAllRowBits;
     static const size_t kAllColBits = Sudoku::kAllColBits;
@@ -140,23 +125,13 @@ public:
     static const uint32_t kLiteralCntThreshold2 = 0;
 
 private:
-#if (V4A_LITERAL_ORDER_MODE == 0)
     enum LiteralType {
-        BoxCellNums,
         NumRowCols,
         NumColRows,
         NumBoxCells,
-        Unknown
-    };
-#else
-    enum LiteralType {
         BoxCellNums,
-        NumBoxCells,
-        NumRowCols,
-        NumColRows,
         Unknown
     };
-#endif // (V4A_LITERAL_ORDER_MODE == 0)
 
 private:
 
@@ -3208,7 +3183,7 @@ public:
                 break;
         }
 
-        this->last_literal_ = literalInfo.toLiteralInfoEx(255);
+        //this->last_literal_ = literalInfo.toLiteralInfoEx(255);
 #elif 0
 
         LiteralInfo literalInfo = this->find_single_literal();
@@ -3217,7 +3192,7 @@ public:
             empties = this->search_single_literal(this->init_state_, board, empties, literalInfo);
         }
 
-        this->last_literal_ = literalInfo.toLiteralInfoEx(255);
+        //this->last_literal_ = literalInfo.toLiteralInfoEx(255);
 
 #else
         static const size_t kFullSearchThreshold = 56;
@@ -3269,7 +3244,7 @@ public:
                 break;
         }
 
-        this->last_literal_ = literalInfo.toLiteralInfoEx(255);
+        //this->last_literal_ = literalInfo.toLiteralInfoEx(255);
 #endif
         bool success = this->search(board, empties, this->last_literal_);
         return success;

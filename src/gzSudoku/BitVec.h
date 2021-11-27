@@ -470,46 +470,46 @@ struct BitVec08x16 {
     }
 
     inline bool isAllZeros() const {
-#ifdef __SSE4_1__
+#if defined(__SSE4_1__)
         return (_mm_test_all_zeros(this->m128, this->m128) == 1);
 #else
         BitVec08x16 zeros;
         zeros.setAllZeros();
         BitVec08x16 compare_mask = this->whichIsEqual(zeros);
-        return (_mm_movemask_epi8(compare_mask.m128) == 0xffff);
+        return (_mm_movemask_epi8(compare_mask.m128) == 0xFFFFU);
 #endif
     }
 
     inline bool isAllOnes() const {
-#ifdef __SSE4_1__
+#if defined(__SSE4_1__)
         return (_mm_test_all_ones(this->m128) == 1);
 #else
         BitVec08x16 ones;
         ones.setAllOnes();
         BitVec08x16 compare_mask = this->whichIsEqual(ones);
-        return (_mm_movemask_epi8(compare_mask.m128) == 0xffff);
+        return (_mm_movemask_epi8(compare_mask.m128) == 0xFFFFU);
 #endif
     }
 
     inline bool isNotAllZeros() const {
-#ifdef __SSE4_1__
+#if defined(__SSE4_1__)
         return (_mm_test_all_zeros(this->m128, this->m128) == 0);
 #else
         BitVec08x16 zeros;
         zeros.setAllZeros();
         BitVec08x16 compare_mask = this->whichIsEqual(zeros);
-        return (_mm_movemask_epi8(compare_mask.m128) != 0xffff);
+        return (_mm_movemask_epi8(compare_mask.m128) != 0xFFFFU);
 #endif
     }
 
     inline bool isNotAllOnes() const {
-#ifdef __SSE4_1__
+#if defined(__SSE4_1__)
         return (_mm_test_all_ones(this->m128) == 0);
 #else
         BitVec08x16 ones;
         ones.setAllOnes();
         BitVec08x16 compare_mask = this->whichIsEqual(ones);
-        return (_mm_movemask_epi8(compare_mask.m128) != 0xffff);
+        return (_mm_movemask_epi8(compare_mask.m128) != 0xFFFFU);
 #endif
     }
 
@@ -562,6 +562,24 @@ struct BitVec08x16 {
 #else
         BitVec08x16 which_is_non_zero = this->whichIsNonZero();
         return (_mm_movemask_epi8(which_is_non_zero.m128) != 0);
+#endif
+    }
+
+    inline bool hasIntersects(const BitVec08x16 & other) const {
+#if defined(__SSE4_1__)
+        return (_mm_testz_si128(this->m128, other.m128) == 0);
+#else
+        BitVec08x16 intersects = _mm_and_si128(this->m128, other.m128);
+        return intersects.isNotAllZeros();
+#endif
+    }
+
+    inline bool isSubsetOf(const BitVec08x16 & other) const {
+#if defined(__SSE4_1__)
+        return (_mm_testc_si128(other.m128, this->m128) == 1);
+#else
+        BitVec08x16 subset = _mm_andnot_si128(other.m128, this->m128);
+        return subset.isAllZeros();
 #endif
     }
 
@@ -651,6 +669,26 @@ struct BitVec08x16 {
         return this->template firstIndexOfOnes16<isNonZeros>(is_equal_mask);
     }
 
+    template <bool isRepeat = true>
+    inline int maskOfIsEqual16(const BitVec08x16 & in_num_mask) const {
+        BitVec08x16 num_mask = in_num_mask;
+        if (!isRepeat) {
+#if defined(__AVX2__)
+            num_mask = _mm_broadcastw_epi16(num_mask.m128);
+#elif defined(__SSSE3__)
+            __m128i lookup_mask = _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
+            num_mask = _mm_shuffle_epi8(num_mask.m128, lookup_mask);
+#else
+            // SSE2
+            __m128i lookup_mask = _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
+            num_mask = _mm_shufflelo_epi16(num_mask.m128, _MM_SHUFFLE(0, 0, 0, 0));
+            num_mask = _mm_shuffle_epi32(num_mask.m128, _MM_SHUFFLE(0, 0, 0, 0));
+#endif
+        }
+        BitVec08x16 is_equal_mask = this->whichIsEqual(num_mask);
+        return this->maskOfOnes16(is_equal_mask);
+    }
+
     template <bool isNonZeros>
     inline int firstIndexOfOnes16(const BitVec08x16 & compare_mask) const {
  #if !(defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
@@ -678,6 +716,11 @@ struct BitVec08x16 {
         }
         else return -1;
 #endif
+    }
+
+    inline uint32_t maskOfOnes16(const BitVec08x16 & compare_mask) const {
+        uint32_t compare_mask_16 = (uint32_t)_mm_movemask_epi8(compare_mask.m128);
+        return compare_mask_16;
     }
 
     inline uint16_t extract(int index) const {
@@ -1301,6 +1344,14 @@ struct BitVec16x16 {
         return (this->low.hasAnyOne() && this->high.hasAnyOne());
     }
 
+    inline bool hasIntersects(const BitVec16x16 & other) const {
+        return (this->low.hasIntersects(other.low) && this->high.hasIntersects(other.high));
+    }
+
+    inline bool isSubsetOf(const BitVec16x16 & other) const {
+        return (this->low.isSubsetOf(other.low) && this->high.isSubsetOf(other.high));
+    }
+
     inline BitVec16x16 whichIsEqual(const BitVec16x16 & other) const {
         return BitVec16x16(this->low.whichIsEqual(other.low), this->high.whichIsEqual(other.high));
     }
@@ -1424,6 +1475,44 @@ struct BitVec16x16 {
         return this->template indexOfIsEqual16<isNonZeros, isRepeat>(num_mask.low);
     }
 
+    template <bool isRepeat = true>
+    inline int maskOfIsEqual16(const BitVec08x16 & in_num_mask) const {
+        BitVec08x16 num_mask;
+        if (!isRepeat) {
+            // If the num_mask is not a repeat mask,
+            // we repeat the first 16bit integer first.
+#if defined(__AVX2__)
+            num_mask = _mm_broadcastw_epi16(in_num_mask.m128);
+#elif defined(__SSSE3__)
+            __m128i lookup_mask = _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
+            num_mask = _mm_shuffle_epi8(in_num_mask.m128, lookup_mask);
+#else
+            // SSE2
+            __m128i lookup_mask = _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
+            num_mask = in_num_mask;
+            num_mask = _mm_shufflelo_epi16(num_mask.m128, _MM_SHUFFLE(0, 0, 0, 0));
+            num_mask = _mm_shuffle_epi32(num_mask.m128, _MM_SHUFFLE(0, 0, 0, 0));
+#endif
+        }
+        else {
+            num_mask = in_num_mask;
+        }
+
+        BitVec16x16 is_equal_mask;
+        is_equal_mask.low = this->low.whichIsEqual(num_mask);
+        is_equal_mask.high = this->high.whichIsEqual(num_mask);
+
+        uint32_t compare_mask_low16 = this->low.maskOfOnes16(is_equal_mask.low);
+        uint32_t compare_mask_high16 = this->high.maskOfOnes16(is_equal_mask.high);
+        uint32_t compare_mask_32 = (compare_mask_high16 << 16U) | compare_mask_low16;
+        return compare_mask_32;
+    }
+
+    template <bool isRepeat = true>
+    inline int maskOfIsEqual16(const BitVec16x16 & num_mask) const {
+        return this->template maskOfIsEqual16<isRepeat>(num_mask.low);
+    }
+
     template <bool isNonZeros>
     inline int firstIndexOfOnes16(const BitVec08x16 & compare_mask) const {
 #if 0
@@ -1462,6 +1551,20 @@ struct BitVec16x16 {
     template <bool isNonZeros>
     inline int firstIndexOfOnes16(const BitVec16x16 & compare_mask) const {
         return this->template firstIndexOfOnes16<isNonZeros>(compare_mask.low);
+    }
+
+    inline uint32_t maskOfOnes16(const BitVec08x16 & compare_mask) const {
+        uint32_t compare_mask_low16 = this->low.maskOfOnes16(compare_mask);
+        uint32_t compare_mask_high16 = this->high.maskOfOnes16(compare_mask);
+        uint32_t compare_mask_32 = (compare_mask_high16 << 16U) | compare_mask_low16;
+        return compare_mask_32;
+    }
+
+    inline uint32_t maskOfOnes16(const BitVec16x16 & compare_mask) const {
+        uint32_t compare_mask_low16 = this->low.maskOfOnes16(compare_mask.low);
+        uint32_t compare_mask_high16 = this->high.maskOfOnes16(compare_mask.high);
+        uint32_t compare_mask_32 = (compare_mask_high16 << 16U) | compare_mask_low16;
+        return compare_mask_32;
     }
 
     inline uint16_t extract(int index) const {
@@ -2219,6 +2322,14 @@ struct BitVec16x16_AVX {
         return (_mm256_movemask_epi8(which_is_non_zero.m256) != 0);
 #endif
 #endif
+    }
+
+    inline bool hasIntersects(const BitVec16x16_AVX & other) const {
+        return (_mm256_testz_si256(this->m256, other.m256) == 0);
+    }
+
+    inline bool isSubsetOf(const BitVec16x16_AVX & other) const {
+        return (_mm256_testc_si256(other.m256, this->m256) == 1);
     }
 
     inline BitVec16x16_AVX whichIsEqual(const BitVec16x16_AVX & other) const {
