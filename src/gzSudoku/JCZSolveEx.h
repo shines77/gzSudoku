@@ -28,7 +28,7 @@
 #include "BitArray.h"
 #include "BitVec.h"
 
-#define JCZ_USE_SIMD_INIT   1
+#define JCZ_USE_SIMD_INIT   0
 
 namespace gzSudoku {
 namespace JCZ {
@@ -677,11 +677,14 @@ public:
         LiteralInfo literalInfo = this->find_single_literal();
 
         while (literalInfo.isValid()) {
-            this->do_single_literal(this->init_state_, board, literalInfo);
-            literalInfo = this->find_single_literal();
-            empties--;
-            if (empties == 0)
-                break;
+            bool is_legal = this->check_and_do_single_literal(this->init_state_, board, literalInfo);
+            if (is_legal) {
+                literalInfo = this->find_single_literal();
+                empties--;
+                if (empties == 0)
+                    break;
+            }
+            else break;
         }
 #elif 0
         LiteralInfo literalInfo = this->find_single_literal();
