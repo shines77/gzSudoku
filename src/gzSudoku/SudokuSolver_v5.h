@@ -19,14 +19,6 @@
 #include <bitset>
 #include <array>        // For std::array<T, Size>
 
-#if defined(_MSC_VER)
-#include <emmintrin.h>      // For SSE 2
-#include <tmmintrin.h>      // For SSE 3
-#include <smmintrin.h>      // For SSE 4.1
-#else
-#include <x86intrin.h>      // For SSE 4.1
-#endif // _MSC_VER
-
 #include "BasicSolver.h"
 #include "Sudoku.h"
 #include "StopWatch.h"
