@@ -513,14 +513,14 @@ struct BitVec08x16 {
 #endif
     }
 
-    // Is mixed by zeros and ones
-    inline bool isMixZerosAndOnes(const BitVec08x16 & other) const {
-        return (_mm_test_mix_ones_zeros(this->m128, other.m128) == 1);
-    }
-
-    // Is not all zeros and all ones
+    // It is not all zeros and is not all ones
     inline bool isNotAllZerosAndAllOnes(const BitVec08x16 & other) const {
         return (_mm_test_mix_ones_zeros(this->m128, other.m128) == 0);
+    }
+
+    // It is mixed by zeros and ones
+    inline bool isMixZerosAndOnes(const BitVec08x16 & other) const {
+        return (_mm_test_mix_ones_zeros(this->m128, other.m128) == 1);
     }
 
     inline bool isEqual(const BitVec08x16 & other) const {

@@ -1,6 +1,6 @@
 
-#ifndef GZ_SUDOKU_JCZSOLVE_EX_H
-#define GZ_SUDOKU_JCZSOLVE_EX_H
+#ifndef GZ_SUDOKU_JCZSOLVE_V1_H
+#define GZ_SUDOKU_JCZSOLVE_V1_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -32,6 +32,7 @@
 
 namespace gzSudoku {
 namespace JCZ {
+namespace v1 {
 
 static const size_t kSearchMode = SearchMode::OneAnswer;
 
@@ -128,15 +129,18 @@ private:
     };
 
     struct InitState {
-        alignas(32) PackedBitSet3D<Numbers, Rows16, Cols16>       num_row_cols;     // [num][row][col]
-        alignas(32) PackedBitSet3D<Numbers, Cols16, Rows16>       num_col_rows;     // [num][col][row]
+        alignas(32) PackedBitSet3D<Numbers, Rows16, Cols16>     num_row_cols;     // [num][row][col]
+        alignas(32) PackedBitSet3D<Numbers, Cols16, Rows16>     num_col_rows;     // [num][col][row]
+        alignas(32) PackedBitSet2D<Rows16, Cols16>              solved;
     };
 
     struct State {
+        alignas(32) PackedBitSet3D<Numbers, Rows16, Cols16>     num_row_cols;     // [num][row][col]
+        alignas(32) PackedBitSet3D<Numbers, Cols16, Rows16>     num_col_rows;     // [num][col][row]
+        alignas(32) PackedBitSet2D<Rows16, Cols16>              solved;
+
         BandConfigure h_band[BoxCountX];
         BandConfigure v_band[BoxCountY];
-
-        alignas(32) PackedBitSet3D<Boxes, BoxSize16, Numbers16>   box_cell_nums;    // [box][cell][num]
     };
 
     union LiteralInfoEx {
@@ -204,6 +208,8 @@ private:
     struct StaticData {
         alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>       num_row_mask;
         alignas(32) PackedBitSet3D<BoardSize, Cols16, Rows16>       num_col_mask;
+        alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>       row_fill_mask;
+        alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>       col_fill_mask;
 
         bool                    mask_is_inited;
         peer_boxes_t            peer_boxes[Boxes];
@@ -259,6 +265,9 @@ private:
     static void make_flip_mask(size_t fill_pos, size_t row, size_t col) {
         PackedBitSet2D<Rows16, Cols16> & rows_mask      = Static.num_row_mask[fill_pos];
         PackedBitSet2D<Cols16, Rows16> & cols_mask      = Static.num_col_mask[fill_pos];
+
+        Static.row_fill_mask[fill_pos][row].set(col);
+        Static.col_fill_mask[fill_pos][col].set(row);
 
         const CellInfo * pCellInfo = Sudoku::cell_info;
         size_t box_x = col / BoxCellsX;
@@ -319,11 +328,22 @@ private:
             }
             assert(index == (Cols + Rows + (BoxCellsY * BoxCellsX) - 1));
         }
+
+        // Solved flip mask
+        {
+            for (size_t y = 0; y < Rows; y++) {
+                for (size_t x = 0; x < Cols; x++) {
+                    //
+                }
+            }
+        }
     }
 
     static void init_flip_mask() {
         Static.num_row_mask.reset();
         Static.num_col_mask.reset();
+        Static.row_fill_mask.reset();
+        Static.col_fill_mask.reset();
 
         size_t fill_pos = 0;
         for (size_t row = 0; row < Rows; row++) {
@@ -335,7 +355,7 @@ private:
     }
 
     static void init_mask() {
-        printf("JCZSolve::StaticData::init_mask()\n");
+        printf("JCZ::v1::Solve::StaticData::init_mask()\n");
 
         init_peer_boxes();
         init_flip_mask();
@@ -344,15 +364,19 @@ private:
     void init_board(Board & board) {
 #if JCZ_USE_SIMD_INIT
         BitVec16x16_AVX full_mask;
-        full_mask.fill_u16(kAllRowBits);
+        full_mask.fill_u16(kAllColBits);
 
         for (size_t num = 0; num < Numbers; num++) {
             full_mask.saveAligned((void *)&this->init_state_.num_row_cols[num]);
             full_mask.saveAligned((void *)&this->init_state_.num_col_rows[num]);
         }
+
+        BitVec16x16_AVX zeros;
+        zeros.saveAligned((void *)&this->init_state_.solved[0]);
 #else
         this->init_state_.num_row_cols.fill(kAllColBits);
         this->init_state_.num_col_rows.fill(kAllRowBits);
+        this->init_state_.solved.reset();
 #endif
         if (kSearchMode > SearchMode::OneAnswer) {
             this->answers_.clear();
@@ -374,17 +398,34 @@ private:
         assert(pos == BoardSize);
     }
 
-    inline void fill_num(InitState & init_state, size_t row, size_t col, size_t fill_num) {
+    inline void fill_num(InitState & init_state, size_t fill_pos, size_t fill_num) {
+        size_t row = fill_pos / Cols;
+        size_t col = fill_pos % Cols;
         assert(init_state.num_row_cols[fill_num][row].test(col));
         assert(init_state.num_col_rows[fill_num][col].test(row));
 
+        BitVec16x16_AVX cells16, mask16;
+        void * pCells16, * pMask16;
+
+        BitVec16x16_AVX row_mask, col_mask;
+        row_mask.loadAligned((void *)&Static.row_fill_mask[fill_pos]);
+        col_mask.loadAligned((void *)&Static.col_fill_mask[fill_pos]);
+
         for (size_t num = 0; num < Numbers; num++) {
-            init_state.num_row_cols[num][row].reset(col);
-            init_state.num_col_rows[num][col].reset(row);
+            //init_state.num_row_cols[num][row].reset(col);
+            //init_state.num_col_rows[num][col].reset(row);
+            pCells16 = (void *)&init_state.num_row_cols[num];
+            cells16.loadAligned(pCells16);
+            cells16.and_not(row_mask);
+            cells16.saveAligned(pCells16);
+
+            pCells16 = (void *)&init_state.num_col_rows[num];
+            cells16.loadAligned(pCells16);
+            cells16.and_not(col_mask);
+            cells16.saveAligned(pCells16);
         }
     }
 
-    template <size_t nLiteralType = LiteralType::Unknown>
     inline void update_peer_cells(InitState & init_state, size_t fill_pos, size_t num) {
         BitVec16x16_AVX cells16, mask16;
         void * pCells16, * pMask16;
@@ -410,6 +451,61 @@ private:
             mask16.loadAligned(pMask16);
             cells16.and_not(mask16);
             cells16.saveAligned(pCells16);
+        }
+    }
+
+    inline void fill_and_update_peer_cells(InitState & init_state, size_t fill_pos, size_t fill_num) {
+        size_t row = fill_pos / Cols;
+        size_t col = fill_pos % Cols;
+        assert(init_state.num_row_cols[fill_num][row].test(col));
+        assert(init_state.num_col_rows[fill_num][col].test(row));
+
+        BitVec16x16_AVX cells16, mask16;
+        void * pCells16, * pMask16;
+
+        BitVec16x16_AVX row_mask, col_mask;
+        row_mask.loadAligned((void *)&Static.row_fill_mask[fill_pos]);
+        col_mask.loadAligned((void *)&Static.col_fill_mask[fill_pos]);
+
+        for (size_t num = 0; num < Numbers; num++) {
+            if (num != fill_num) {
+                //init_state.num_row_cols[num][row].reset(col);
+                //init_state.num_col_rows[num][col].reset(row);
+
+                pCells16 = (void *)&init_state.num_row_cols[num];
+                cells16.loadAligned(pCells16);
+                cells16.and_not(row_mask);
+                cells16.saveAligned(pCells16);
+
+                pCells16 = (void *)&init_state.num_col_rows[num];
+                cells16.loadAligned(pCells16);
+                cells16.and_not(col_mask);
+                cells16.saveAligned(pCells16);
+            }
+            else {
+                //init_state.num_row_cols[num] &= Static.num_row_mask[fill_pos];
+                //init_state.num_col_rows[num] &= Static.num_col_mask[fill_pos];
+
+                // LiteralType::NumRowCols
+                {
+                    pCells16 = (void *)&init_state.num_row_cols[num];
+                    pMask16 = (void *)&Static.num_row_mask[fill_pos];
+                    cells16.loadAligned(pCells16);
+                    mask16.loadAligned(pMask16);
+                    cells16.and_not(mask16);
+                    cells16.saveAligned(pCells16);
+                }
+
+                // LiteralType::NumColRows
+                {
+                    pCells16 = (void *)&init_state.num_col_rows[num];
+                    pMask16 = (void *)&Static.num_col_mask[fill_pos];
+                    cells16.loadAligned(pCells16);
+                    mask16.loadAligned(pMask16);
+                    cells16.and_not(mask16);
+                    cells16.saveAligned(pCells16);
+                }
+            }
         }
     }
 
@@ -454,6 +550,63 @@ private:
         return LiteralInfo(-1);
     }
 
+    int find_single_candidate_cells() {
+        BitVec16x16_AVX full_mask;
+        full_mask.fill_u16(kAllNumberBits);
+
+        BitVec16x16_AVX R1, R2, R3;
+        R1.setAllZeros();
+        R2.setAllZeros();
+        R3.setAllZeros();
+#if 1
+        for (size_t num = 0; num < Numbers; num++) {
+            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
+            BitVec16x16_AVX row_bits;
+            row_bits.loadAligned(pCells16);
+
+            R3 |= R2 & row_bits;
+            R2 |= R1 & row_bits;
+            R1 |= row_bits;
+        }
+#else
+        //
+#endif
+        bool is_legal = R1.isEqual(full_mask);
+        if (!is_legal) return 0;
+
+        BitVec16x16_AVX solved_bits, zeros;
+        solved_bits.setAllZeros();
+
+        R1.and_not(R2);
+        R2.and_not(R3);
+        R1.and_not(solved_bits);
+
+        bool has_single_cell = false;
+        BitVec16x16_AVX neg_R1, low_bit;
+        while (R1.isNotAllZeros()) {
+            has_single_cell = true;
+            neg_R1 = _mm256_sub_epi32(zeros.m256, R1.m256);
+            low_bit = R1 & neg_R1;
+            R1 ^= neg_R1;
+            size_t num;
+            for (num = 0; num < Numbers; num++) {
+                void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
+                BitVec16x16_AVX row_bits;
+                row_bits.loadAligned(pCells16);
+
+                row_bits &= low_bit;
+                if (row_bits.isNotAllZeros()) {
+                    // Find the position of low bit, and fill the num.
+                    break;
+                }
+            }
+            if (num == Numbers)
+                return 0;
+        }
+
+        return (has_single_cell ? 1 : 2);
+    }
+
     void do_single_literal(InitState & init_state, Board & board, LiteralInfo literalInfo) {
         size_t pos, row, col, num;
 
@@ -475,8 +628,8 @@ private:
                 assert(board.cells[pos] == '.');
                 board.cells[pos] = (char)(num + '1');
 
-                this->fill_num(init_state, row, col, num);
-                this->update_peer_cells<LiteralType::NumRowCols>(init_state, pos, num);
+                this->fill_num(init_state, pos, num);
+                this->update_peer_cells(init_state, pos, num);
 
                 break;
             }
@@ -498,8 +651,8 @@ private:
                 assert(board.cells[pos] == '.');
                 board.cells[pos] = (char)(num + '1');
 
-                this->fill_num(init_state, row, col, num);
-                this->update_peer_cells<LiteralType::NumColRows>(init_state, pos, num);
+                this->fill_num(init_state, pos, num);
+                this->update_peer_cells(init_state, pos, num);
 
                 break;
             }
@@ -532,8 +685,8 @@ private:
                     assert(board.cells[pos] == '.');
                     board.cells[pos] = (char)(num + '1');
 
-                    this->fill_num(init_state, row, col, num);
-                    this->update_peer_cells<LiteralType::NumRowCols>(init_state, pos, num);
+                    this->fill_num(init_state, pos, num);
+                    this->update_peer_cells(init_state, pos, num);
                     return true;
                 }
 
@@ -558,8 +711,8 @@ private:
                     assert(board.cells[pos] == '.');
                     board.cells[pos] = (char)(num + '1');
 
-                    this->fill_num(init_state, row, col, num);
-                    this->update_peer_cells<LiteralType::NumColRows>(init_state, pos, num);
+                    this->fill_num(init_state, pos, num);
+                    this->update_peer_cells(init_state, pos, num);
                     return true;
                 }
 
@@ -707,7 +860,8 @@ public:
 
 Solver::StaticData Solver::Static;
 
+} // namespace v1
 } // namespace JCZ
 } // namespace gzSudoku
 
-#endif // GZ_SUDOKU_JCZSOLVE_EX_H
+#endif // GZ_SUDOKU_JCZSOLVE_V1_H
