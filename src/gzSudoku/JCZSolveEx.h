@@ -131,13 +131,15 @@ private:
     struct InitState {
         alignas(32) PackedBitSet3D<Numbers, Rows16, Cols16>     num_row_cols;     // [num][row][col]
         alignas(32) PackedBitSet3D<Numbers, Cols16, Rows16>     num_col_rows;     // [num][col][row]
-        alignas(32) PackedBitSet2D<Rows16, Cols16>              solved;
+        alignas(32) PackedBitSet2D<Rows16, Cols16>              row_solved;
+        alignas(32) PackedBitSet2D<Cols16, Rows16>              col_solved;
     };
 
     struct State {
         alignas(32) PackedBitSet3D<Numbers, Rows16, Cols16>     num_row_cols;     // [num][row][col]
         alignas(32) PackedBitSet3D<Numbers, Cols16, Rows16>     num_col_rows;     // [num][col][row]
-        alignas(32) PackedBitSet2D<Rows16, Cols16>              solved;
+        alignas(32) PackedBitSet2D<Rows16, Cols16>              row_solved;
+        alignas(32) PackedBitSet2D<Cols16, Rows16>              col_solved;
 
         BandConfigure h_band[BoxCountX];
         BandConfigure v_band[BoxCountY];
@@ -263,8 +265,8 @@ private:
     }
 
     static void make_flip_mask(size_t fill_pos, size_t row, size_t col) {
-        PackedBitSet2D<Rows16, Cols16> & rows_mask      = Static.num_row_mask[fill_pos];
-        PackedBitSet2D<Cols16, Rows16> & cols_mask      = Static.num_col_mask[fill_pos];
+        PackedBitSet2D<Rows16, Cols16> & rows_mask = Static.num_row_mask[fill_pos];
+        PackedBitSet2D<Cols16, Rows16> & cols_mask = Static.num_col_mask[fill_pos];
 
         Static.row_fill_mask[fill_pos][row].set(col);
         Static.col_fill_mask[fill_pos][col].set(row);
@@ -300,6 +302,8 @@ private:
                 }
             }
             assert(index == (Cols + Rows + (BoxCellsY * BoxCellsX) - 1));
+
+            rows_mask[row].reset(col);
         }
 
         // Literal::NumColRows
@@ -327,15 +331,8 @@ private:
                 }
             }
             assert(index == (Cols + Rows + (BoxCellsY * BoxCellsX) - 1));
-        }
 
-        // Solved flip mask
-        {
-            for (size_t y = 0; y < Rows; y++) {
-                for (size_t x = 0; x < Cols; x++) {
-                    //
-                }
-            }
+            cols_mask[col].reset(row);
         }
     }
 
@@ -372,11 +369,13 @@ private:
         }
 
         BitVec16x16_AVX zeros;
-        zeros.saveAligned((void *)&this->init_state_.solved[0]);
+        zeros.saveAligned((void *)&this->init_state_.row_solved);
+        zeros.saveAligned((void *)&this->init_state_.col_solved);
 #else
         this->init_state_.num_row_cols.fill(kAllColBits);
         this->init_state_.num_col_rows.fill(kAllRowBits);
-        this->init_state_.solved.reset();
+        this->init_state_.row_solved.reset();
+        this->init_state_.col_solved.reset();
 #endif
         if (kSearchMode > SearchMode::OneAnswer) {
             this->answers_.clear();
@@ -388,8 +387,6 @@ private:
                 unsigned char val = board.cells[pos];
                 if (val != '.') {
                     size_t num = val - '1';
-
-                    this->fill_num(this->init_state_, row, col, num);
                     this->update_peer_cells(this->init_state_, pos, num);
                 }
                 pos++;
@@ -398,7 +395,7 @@ private:
         assert(pos == BoardSize);
     }
 
-    inline void fill_num(InitState & init_state, size_t fill_pos, size_t fill_num) {
+    inline void update_peer_cells(InitState & init_state, size_t fill_pos, size_t fill_num) {
         size_t row = fill_pos / Cols;
         size_t col = fill_pos % Cols;
         assert(init_state.num_row_cols[fill_num][row].test(col));
@@ -410,6 +407,17 @@ private:
         BitVec16x16_AVX row_mask, col_mask;
         row_mask.loadAligned((void *)&Static.row_fill_mask[fill_pos]);
         col_mask.loadAligned((void *)&Static.col_fill_mask[fill_pos]);
+
+        BitVec16x16_AVX row_solved_bits, col_solved_bits;
+        pCells16 = (void *)&init_state.row_solved;
+        row_solved_bits.loadAligned(pCells16);
+        row_solved_bits |= row_mask;
+        row_solved_bits.saveAligned(pCells16);
+
+        pCells16 = (void *)&init_state.col_solved;
+        col_solved_bits.loadAligned(pCells16);
+        col_solved_bits |= col_mask;
+        col_solved_bits.saveAligned(pCells16);
 
         for (size_t num = 0; num < Numbers; num++) {
             //init_state.num_row_cols[num][row].reset(col);
@@ -424,37 +432,34 @@ private:
             cells16.and_not(col_mask);
             cells16.saveAligned(pCells16);
         }
-    }
-
-    inline void update_peer_cells(InitState & init_state, size_t fill_pos, size_t num) {
-        BitVec16x16_AVX cells16, mask16;
-        void * pCells16, * pMask16;
 
         //init_state.num_row_cols[num] &= Static.num_row_mask[fill_pos];
         //init_state.num_col_rows[num] &= Static.num_col_mask[fill_pos];
 
         // LiteralType::NumRowCols
         {
-            pCells16 = (void *)&init_state.num_row_cols[num];
+            pCells16 = (void *)&init_state.num_row_cols[fill_num];
             pMask16 = (void *)&Static.num_row_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
             cells16.and_not(mask16);
+            cells16._or(row_mask);
             cells16.saveAligned(pCells16);
         }
 
         // LiteralType::NumColRows
         {
-            pCells16 = (void *)&init_state.num_col_rows[num];
+            pCells16 = (void *)&init_state.num_col_rows[fill_num];
             pMask16 = (void *)&Static.num_col_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
             cells16.and_not(mask16);
+            cells16._or(col_mask);
             cells16.saveAligned(pCells16);
         }
     }
 
-    inline void fill_and_update_peer_cells(InitState & init_state, size_t fill_pos, size_t fill_num) {
+    inline void batch_update_peer_cells(InitState & init_state, size_t fill_pos, size_t fill_num) {
         size_t row = fill_pos / Cols;
         size_t col = fill_pos % Cols;
         assert(init_state.num_row_cols[fill_num][row].test(col));
@@ -466,6 +471,17 @@ private:
         BitVec16x16_AVX row_mask, col_mask;
         row_mask.loadAligned((void *)&Static.row_fill_mask[fill_pos]);
         col_mask.loadAligned((void *)&Static.col_fill_mask[fill_pos]);
+
+        BitVec16x16_AVX row_solved_bits, col_solved_bits;
+        pCells16 = (void *)&init_state.row_solved;
+        row_solved_bits.loadAligned(pCells16);
+        row_solved_bits |= row_mask;
+        row_solved_bits.saveAligned(pCells16);
+
+        pCells16 = (void *)&init_state.col_solved;
+        col_solved_bits.loadAligned(pCells16);
+        col_solved_bits |= col_mask;
+        col_solved_bits.saveAligned(pCells16);
 
         for (size_t num = 0; num < Numbers; num++) {
             if (num != fill_num) {
@@ -493,6 +509,7 @@ private:
                     cells16.loadAligned(pCells16);
                     mask16.loadAligned(pMask16);
                     cells16.and_not(mask16);
+                    cells16._or(row_mask);
                     cells16.saveAligned(pCells16);
                 }
 
@@ -503,6 +520,7 @@ private:
                     cells16.loadAligned(pCells16);
                     mask16.loadAligned(pMask16);
                     cells16.and_not(mask16);
+                    cells16._or(col_mask);
                     cells16.saveAligned(pCells16);
                 }
             }
@@ -513,11 +531,18 @@ private:
         BitVec16x16_AVX unique_mask;
         unique_mask.fill_u16(1);
 
+        void * pCells16;
+
+        BitVec16x16_AVX row_solved_bits;
+        pCells16 = (void *)&this->init_state_.row_solved;
+        row_solved_bits.loadAligned(pCells16);
+
         // Row literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
             BitVec16x16_AVX num_row_bits;
+            pCells16 = (void *)&this->init_state_.num_row_cols[num];
             num_row_bits.loadAligned(pCells16);
+            num_row_bits.and_not(row_solved_bits);
 
             BitVec16x16_AVX popcnt16 = num_row_bits.popcount16<Rows, Cols>();
 
@@ -530,11 +555,16 @@ private:
             }
         }
 
+        BitVec16x16_AVX col_solved_bits;
+        pCells16 = (void *)&this->init_state_.col_solved;
+        col_solved_bits.loadAligned(pCells16);
+
         // Col literal
         for (size_t num = 0; num < Numbers; num++) {
-            void * pCells16 = (void *)&this->init_state_.num_col_rows[num];
             BitVec16x16_AVX num_col_bits;
+            pCells16 = (void *)&this->init_state_.num_col_rows[num];
             num_col_bits.loadAligned(pCells16);
+            num_col_bits.and_not(col_solved_bits);
 
             BitVec16x16_AVX popcnt16 = num_col_bits.popcount16<Cols, Rows>();
 
@@ -550,10 +580,7 @@ private:
         return LiteralInfo(-1);
     }
 
-    int find_single_candidate_cells() {
-        BitVec16x16_AVX full_mask;
-        full_mask.fill_u16(kAllNumberBits);
-
+    int find_single_candidate_cells(Board & board) {
         BitVec16x16_AVX R1, R2, R3;
         R1.setAllZeros();
         R2.setAllZeros();
@@ -571,40 +598,90 @@ private:
 #else
         //
 #endif
+        BitVec16x16_AVX full_mask;
+        full_mask.fill_u16(kAllNumberBits);
         bool is_legal = R1.isEqual(full_mask);
-        if (!is_legal) return 0;
+        if (!is_legal) return -1;
 
         BitVec16x16_AVX solved_bits, zeros;
-        solved_bits.setAllZeros();
+        solved_bits.loadAligned((void *)&this->init_state_.row_solved);
+        zeros.setAllZeros();
 
         R1.and_not(R2);
         R2.and_not(R3);
         R1.and_not(solved_bits);
 
-        bool has_single_cell = false;
-        BitVec16x16_AVX neg_R1, low_bit;
+        int has_single_cell = 0;
+        int cell_count = 0;
         while (R1.isNotAllZeros()) {
-            has_single_cell = true;
-            neg_R1 = _mm256_sub_epi32(zeros.m256, R1.m256);
+            BitVec16x16_AVX neg_R1, low_bit;
+            has_single_cell = 1;
+            neg_R1 = _mm256_sub_epi64(zeros.m256, R1.m256);
             low_bit = R1 & neg_R1;
-            R1 ^= neg_R1;
+            R1 ^= low_bit;
             size_t num;
             for (num = 0; num < Numbers; num++) {
-                void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
                 BitVec16x16_AVX row_bits;
+                void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
                 row_bits.loadAligned(pCells16);
 
                 row_bits &= low_bit;
                 if (row_bits.isNotAllZeros()) {
                     // Find the position of low bit, and fill the num.
+                    IntVec256 row_vec;
+                    row_bits.saveAligned((void *)&row_vec);
+
+ #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+                    for (size_t i = 0; i < 3; i++) {
+                        uint64_t bits64 = row_vec.u64[i];
+                        while (bits64 != 0) {
+                            size_t bit_pos = BitUtils::bsf64(bits64);
+                            size_t row = bit_pos / Cols16 + i * 4;
+                            size_t col = bit_pos % Cols16;
+
+                            size_t pos = row * Cols + col;
+
+                            assert(board.cells[pos] == '.');
+                            board.cells[pos] = (char)(num + '1');
+
+                            this->update_peer_cells(this->init_state_, pos, num);
+                            cell_count++;
+
+                            uint64_t bit = BitUtils::ls1b64(bits64);
+                            bits64 ^= bit;
+                        }
+                    }
+#else
+                    for (size_t i = 0; i < 5; i++) {
+                        uint32_t bits32 = row_vec.u32[i];
+                        while (bits32 != 0) {
+                            size_t bit_pos = BitUtils::bsf32(bits32);
+                            size_t row = bit_pos / Cols16 + i * 2;
+                            size_t col = bit_pos % Cols16;
+
+                            size_t pos = row * Cols + col;
+
+                            assert(board.cells[pos] == '.');
+                            board.cells[pos] = (char)(num + '1');
+
+                            this->update_peer_cells(this->init_state_, pos, num);
+                            cell_count++;
+
+                            uint32_t bit = BitUtils::ls1b32(bits32);
+                            bits32 ^= bit;
+                        }
+                    }
+#endif
                     break;
                 }
             }
             if (num == Numbers)
-                return 0;
+                return -1;
+            assert(cell_count != 0);
         }
 
-        return (has_single_cell ? 1 : 2);
+        return (has_single_cell ? cell_count : 0);
     }
 
     void do_single_literal(InitState & init_state, Board & board, LiteralInfo literalInfo) {
@@ -628,9 +705,7 @@ private:
                 assert(board.cells[pos] == '.');
                 board.cells[pos] = (char)(num + '1');
 
-                this->fill_num(init_state, pos, num);
                 this->update_peer_cells(init_state, pos, num);
-
                 break;
             }
 
@@ -651,9 +726,7 @@ private:
                 assert(board.cells[pos] == '.');
                 board.cells[pos] = (char)(num + '1');
 
-                this->fill_num(init_state, pos, num);
                 this->update_peer_cells(init_state, pos, num);
-
                 break;
             }
 
@@ -685,7 +758,6 @@ private:
                     assert(board.cells[pos] == '.');
                     board.cells[pos] = (char)(num + '1');
 
-                    this->fill_num(init_state, pos, num);
                     this->update_peer_cells(init_state, pos, num);
                     return true;
                 }
@@ -711,7 +783,6 @@ private:
                     assert(board.cells[pos] == '.');
                     board.cells[pos] = (char)(num + '1');
 
-                    this->fill_num(init_state, pos, num);
                     this->update_peer_cells(init_state, pos, num);
                     return true;
                 }
@@ -752,8 +823,7 @@ private:
 
                 empties--;
                 if (empties > 0) {
-                    this->fill_num(init_state, row, col, num);
-                    this->update_peer_cells<LiteralType::NumRowCols>(init_state, pos, num);
+                    this->update_peer_cells(init_state, pos, num);
 
                     LiteralInfo nextLI = this->find_single_literal();
                     if (nextLI.isValid()) {
@@ -783,8 +853,7 @@ private:
 
                 empties--;
                 if (empties > 0) {
-                    this->fill_num(init_state, row, col, num);
-                    this->update_peer_cells<LiteralType::NumColRows>(init_state, pos, num);
+                    this->update_peer_cells(init_state, pos, num);
 
                     LiteralInfo nextLI = this->find_single_literal();
                     if (nextLI.isValid()) {
@@ -804,8 +873,8 @@ private:
     }
 
 public:
-    bool search(Board & board, size_t empties, const LiteralInfoEx & literalInfo) {
-        if (empties == 0) {
+    bool search(Board & board, ptrdiff_t empties, const LiteralInfoEx & literalInfo) {
+        if (empties <= 0) {
             if (kSearchMode > SearchMode::OneAnswer) {
                 this->answers_.push_back(board);
                 if (kSearchMode == SearchMode::MoreThanOneAnswer) {
@@ -824,17 +893,44 @@ public:
     bool solve(Board & board) {
         this->init_board(board);
 
-        size_t empties = this->calc_empties(board);
+        ptrdiff_t empties = this->calc_empties(board);
         assert(empties >= Sudoku::kMinInitCandidates);
 #if 1
+        LiteralInfo literalInfo = this->find_single_literal();
+
+        while (literalInfo.isValid()) {
+            this->do_single_literal(this->init_state_, board, literalInfo);
+Next_Search:
+            literalInfo = this->find_single_literal();
+            if (!literalInfo.isValid()) {
+                int single_cells = find_single_candidate_cells(board);
+                if (single_cells <= 0)
+                    break;
+                empties -= single_cells;
+                if (empties <= 0)
+                    break;
+                goto Next_Search;
+            }
+            else {
+                empties--;
+                if (empties <= 0)
+                    break;
+            }
+        }
+#elif 0
         LiteralInfo literalInfo = this->find_single_literal();
 
         while (literalInfo.isValid()) {
             bool is_legal = this->check_and_do_single_literal(this->init_state_, board, literalInfo);
             if (is_legal) {
                 literalInfo = this->find_single_literal();
+                if (!literalInfo.isValid()) {
+                    int has_single_cells = find_single_candidate_cells();
+                    if (has_single_cells != 1)
+                        break;
+                }
                 empties--;
-                if (empties == 0)
+                if (empties <= 0)
                     break;
             }
             else break;

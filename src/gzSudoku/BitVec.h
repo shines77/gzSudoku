@@ -128,26 +128,26 @@ namespace gzSudoku {
 
 #pragma pack(push, 1)
 
-union alignas(16) IntVec128 {
-    int8_t   i8[16];
-    uint8_t  u8[16];
-    int16_t  i16[8];
-    uint16_t u16[8];
-    int32_t  i32[4];
-    uint32_t u32[4];
-    int64_t  i64[2];
-    uint64_t u64[2];
+union IntVec128 {
+    alignas(16) int8_t   i8[16];
+    alignas(16) uint8_t  u8[16];
+    alignas(16) int16_t  i16[8];
+    alignas(16) uint16_t u16[8];
+    alignas(16) int32_t  i32[4];
+    alignas(16) uint32_t u32[4];
+    alignas(16) int64_t  i64[2];
+    alignas(16) uint64_t u64[2];
 };
 
-union alignas(32) IntVec256 {
-    int8_t   i8[32];
-    uint8_t  u8[32];
-    int16_t  i16[16];
-    uint16_t u16[16];
-    int32_t  i32[8];
-    uint32_t u32[8];
-    int64_t  i64[4];
-    uint64_t u64[4];
+union IntVec256 {
+    alignas(32) int8_t   i8[32];
+    alignas(32) uint8_t  u8[32];
+    alignas(32) int16_t  i16[16];
+    alignas(32) uint16_t u16[16];
+    alignas(32) int32_t  i32[8];
+    alignas(32) uint32_t u32[8];
+    alignas(32) int64_t  i64[4];
+    alignas(32) uint64_t u64[4];
 };
 
 #pragma pack(pop)
