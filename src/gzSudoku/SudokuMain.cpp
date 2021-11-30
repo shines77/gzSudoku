@@ -22,6 +22,10 @@
 //#undef __SSE4_1__
 //#undef __SSE4_2__
 
+#if defined(_MSC_VER) && !defined(NDEBUG)
+#include <vld.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -142,6 +146,7 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
             std::fstream::pos_type total_size = ifs.tellg();
             ifs.seekg(0, std::ios::beg);
 
+            std::cout << std::endl;
             std::cout << "File name: " << filename << std::endl;
             std::cout << "File size: " << total_size << " Byte(s)" << std::endl;
 

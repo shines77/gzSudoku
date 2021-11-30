@@ -28,7 +28,7 @@
 #include "BitArray.h"
 #include "BitVec.h"
 
-#define JCZ_USE_SIMD_INIT   0
+#define JCZ_USE_SIMD_INIT   1
 
 namespace gzSudoku {
 namespace JCZ {
@@ -211,7 +211,7 @@ private:
         alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>       num_row_mask;
         alignas(32) PackedBitSet3D<BoardSize, Cols16, Rows16>       num_col_mask;
         alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>       row_fill_mask;
-        alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>       col_fill_mask;
+        alignas(32) PackedBitSet3D<BoardSize, Cols16, Rows16>       col_fill_mask;
 
         bool                    mask_is_inited;
         peer_boxes_t            peer_boxes[Boxes];
@@ -369,6 +369,7 @@ private:
         }
 
         BitVec16x16_AVX zeros;
+        zeros.setAllZeros();
         zeros.saveAligned((void *)&this->init_state_.row_solved);
         zeros.saveAligned((void *)&this->init_state_.col_solved);
 #else
@@ -531,10 +532,8 @@ private:
         BitVec16x16_AVX unique_mask;
         unique_mask.fill_u16(1);
 
-        void * pCells16;
-
         BitVec16x16_AVX row_solved_bits;
-        pCells16 = (void *)&this->init_state_.row_solved;
+        void * pCells16 = (void *)&this->init_state_.row_solved;
         row_solved_bits.loadAligned(pCells16);
 
         // Row literal
