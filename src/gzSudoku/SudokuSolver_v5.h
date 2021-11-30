@@ -129,66 +129,50 @@ private:
 
 #pragma pack(push, 1)
 
-    struct BandConfigure {
-        alignas(32) PackedBitSet2D<Config8, Numbers16> config;          // Band[config][num]
-        alignas(16) PackedBitSet2D<Config8, Numbers16> exclude;         // Band[config][num]
+    struct alignas(32) BandConfigure {
+        PackedBitSet2D<Config8, Numbers16> config;          // Band[config][num]
+        PackedBitSet2D<Config8, Numbers16> exclude;         // Band[config][num]
     };
 
-    struct Box {
-        alignas(32) PackedBitSet2D<BoxSize16, Numbers16> nums;          // Boxes[cell][num]
+    struct alignas(32) InitState {
+        PackedBitSet3D<Boxes, BoxSize16, Numbers16>   box_cell_nums;    // [box][cell][num]
+        PackedBitSet3D<Numbers, Rows16, Cols16>       num_row_cols;     // [num][row][col]
+        PackedBitSet3D<Numbers, Cols16, Rows16>       num_col_rows;     // [num][col][row]
+        PackedBitSet3D<Numbers, Boxes16, BoxSize16>   num_box_cells;    // [num][box][cell]
     };
 
-    struct Row {
-        alignas(32) PackedBitSet2D<Rows16, Cols16> cols;                // Number[row][col]
-    };
+    struct alignas(32) State {
+        PackedBitSet3D<Boxes, BoxSize16, Numbers16>   box_cell_nums;    // [box][cell][num]
 
-    struct Col {
-        alignas(32) PackedBitSet2D<Rows16, Cols16> rows;                // Number[col][row]
-    };
-
-    struct BoxCell {
-        alignas(32) PackedBitSet2D<Boxes16, BoxSize16> cells;           // Number[box][cell]
-    };
-
-    struct InitState {
-        alignas(32) PackedBitSet3D<Boxes, BoxSize16, Numbers16>   box_cell_nums;    // [box][cell][num]
-        alignas(32) PackedBitSet3D<Numbers, Rows16, Cols16>       num_row_cols;     // [num][row][col]
-        alignas(32) PackedBitSet3D<Numbers, Cols16, Rows16>       num_col_rows;     // [num][col][row]
-        alignas(32) PackedBitSet3D<Numbers, Boxes16, BoxSize16>   num_box_cells;    // [num][box][cell]
-    };
-
-    struct State {
         BandConfigure h_band[BoxCountX];
-        BandConfigure v_band[BoxCountY];
-
-        alignas(32) PackedBitSet3D<Boxes, BoxSize16, Numbers16>   box_cell_nums;    // [box][cell][num]
+        BandConfigure v_band[BoxCountY];        
     };
 
-    struct Count {
+    struct alignas(32) Count {
         struct Sizes {
-            alignas(32) uint16_t box_cells[Boxes][BoxSize16];
-            alignas(32) uint16_t num_boxes[Numbers][Boxes16];
-            alignas(32) uint16_t num_rows[Numbers][Rows16];
-            alignas(32) uint16_t num_cols[Numbers][Cols16];
+            uint16_t box_cells[Boxes][BoxSize16];
+            uint16_t num_boxes[Numbers][Boxes16];
+            uint16_t num_rows[Numbers][Rows16];
+            uint16_t num_cols[Numbers][Cols16];
         } sizes;
 
         struct Counts {
-            alignas(32) uint16_t box_cells[Boxes16];
-            alignas(32) uint16_t num_boxes[Numbers16];
-            alignas(32) uint16_t num_rows[Numbers16];
-            alignas(32) uint16_t num_cols[Numbers16];
+            uint16_t box_cells[Boxes16];
+            uint16_t num_boxes[Numbers16];
+            uint16_t num_rows[Numbers16];
+            uint16_t num_cols[Numbers16];
         } counts;
 
         struct Index {
-            alignas(16) uint8_t box_cells[Boxes16];
-            alignas(16) uint8_t num_boxes[Numbers16];
-            alignas(16) uint8_t num_rows[Numbers16];
-            alignas(16) uint8_t num_cols[Numbers16];
+            uint8_t box_cells[Boxes16];
+            uint8_t num_boxes[Numbers16];
+            uint8_t num_rows[Numbers16];
+            uint8_t num_cols[Numbers16];
         } indexs;
 
         struct Total {
-            alignas(32) uint16_t min_literal_size[16];
-            alignas(32) uint16_t min_literal_index[16];
+            uint16_t min_literal_size[16];
+            uint16_t min_literal_index[16];
         } total;
     };
 
@@ -263,12 +247,12 @@ private:
     typedef PeerBoxes<BoxCountX, BoxCountY>     peer_boxes_t;
     typedef HVPeerBoxes<BoxCountX, BoxCountY>   hv_peer_boxes_t;
 
-    struct StaticData {
-        alignas(64) PackedBitSet3D<4, BoxSize16, Numbers16>         flip_mask[BoxSize][Numbers];
+    struct alignas(32) StaticData {
+        PackedBitSet3D<4, BoxSize16, Numbers16>         flip_mask[BoxSize][Numbers];
 
-        alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>       num_row_mask;
-        alignas(32) PackedBitSet3D<BoardSize, Cols16, Rows16>       num_col_mask;
-        alignas(32) PackedBitSet3D<BoardSize, Boxes16, BoxSize16>   num_box_mask;
+        PackedBitSet3D<BoardSize, Rows16, Cols16>       num_row_mask;
+        PackedBitSet3D<BoardSize, Cols16, Rows16>       num_col_mask;
+        PackedBitSet3D<BoardSize, Boxes16, BoxSize16>   num_box_mask;
 
         bool                    mask_is_inited;
         peer_boxes_t            peer_boxes[Boxes];

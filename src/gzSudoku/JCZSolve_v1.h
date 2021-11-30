@@ -124,22 +124,22 @@ private:
 #pragma pack(push, 1)
 
     struct alignas(32) BandConfigure {
-        alignas(32) PackedBitSet2D<Config8, Numbers16> config;          // Band[config][num]
-        alignas(16) PackedBitSet2D<Config8, Numbers16> exclude;         // Band[config][num]
+        PackedBitSet2D<Config8, Numbers16> config;          // Band[config][num]
+        PackedBitSet2D<Config8, Numbers16> exclude;         // Band[config][num]
     };
 
     struct alignas(32) InitState {
-        alignas(32) PackedBitSet3D<Numbers, Rows16, Cols16>     num_row_cols;     // [num][row][col]
-        alignas(32) PackedBitSet3D<Numbers, Cols16, Rows16>     num_col_rows;     // [num][col][row]
-        alignas(32) PackedBitSet2D<Rows16, Cols16>              row_solved;
-        alignas(32) PackedBitSet2D<Cols16, Rows16>              col_solved;
+        PackedBitSet3D<Numbers, Rows16, Cols16>     num_row_cols;     // [num][row][col]
+        PackedBitSet3D<Numbers, Cols16, Rows16>     num_col_rows;     // [num][col][row]
+        PackedBitSet2D<Rows16, Cols16>              row_solved;
+        PackedBitSet2D<Cols16, Rows16>              col_solved;
     };
 
     struct alignas(32) State {
-        alignas(32) PackedBitSet3D<Numbers, Rows16, Cols16>     num_row_cols;     // [num][row][col]
-        alignas(32) PackedBitSet3D<Numbers, Cols16, Rows16>     num_col_rows;     // [num][col][row]
-        alignas(32) PackedBitSet2D<Rows16, Cols16>              row_solved;
-        alignas(32) PackedBitSet2D<Cols16, Rows16>              col_solved;
+        PackedBitSet3D<Numbers, Rows16, Cols16>     num_row_cols;     // [num][row][col]
+        PackedBitSet3D<Numbers, Cols16, Rows16>     num_col_rows;     // [num][col][row]
+        PackedBitSet2D<Rows16, Cols16>              row_solved;
+        PackedBitSet2D<Cols16, Rows16>              col_solved;
 
         BandConfigure h_band[BoxCountX];
         BandConfigure v_band[BoxCountY];
@@ -208,10 +208,10 @@ private:
     typedef PeerBoxes<BoxCountX, BoxCountY>     peer_boxes_t;
 
     struct alignas(32) StaticData {
-        alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>       num_row_mask;
-        alignas(32) PackedBitSet3D<BoardSize, Cols16, Rows16>       num_col_mask;
-        alignas(32) PackedBitSet3D<BoardSize, Rows16, Cols16>       row_fill_mask;
-        alignas(32) PackedBitSet3D<BoardSize, Cols16, Rows16>       col_fill_mask;
+        PackedBitSet3D<BoardSize, Rows16, Cols16>       num_row_mask;
+        PackedBitSet3D<BoardSize, Cols16, Rows16>       num_col_mask;
+        PackedBitSet3D<BoardSize, Rows16, Cols16>       row_fill_mask;
+        PackedBitSet3D<BoardSize, Cols16, Rows16>       col_fill_mask;
 
         bool                    mask_is_inited;
         peer_boxes_t            peer_boxes[Boxes];
