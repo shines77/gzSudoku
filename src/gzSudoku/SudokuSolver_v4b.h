@@ -329,12 +329,11 @@ private:
         PackedBitSet3D<BoardSize, Cols16, Rows16>       num_col_mask;
         PackedBitSet3D<BoardSize, Boxes16, BoxSize16>   num_box_mask;
 
-        peer_boxes_t            peer_boxes[Boxes];
-        hv_peer_boxes_t         hv_peer_boxes[Boxes];
+        peer_boxes_t    peer_boxes[Boxes];
+        hv_peer_boxes_t hv_peer_boxes[Boxes];
 
-        uint16_t                box_changed_bits[8][Boxes16];
-
-        bool                    mask_is_inited;
+        uint16_t        box_changed_bits[8][Boxes16];
+        bool            mask_is_inited;
 
         StaticData() : mask_is_inited(false) {
             if (!Static.mask_is_inited) {

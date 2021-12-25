@@ -517,6 +517,7 @@ struct Sudoku {
 
     static void finalize() {
         if (is_inited) {
+            printf("Sudoku::finalize()\n");
             if (cell_info) {
                 delete[] cell_info;
                 cell_info = nullptr;
