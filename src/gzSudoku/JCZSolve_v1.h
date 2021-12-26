@@ -733,8 +733,8 @@ private:
             low_bit = R1 & neg_R1;
             R1 ^= low_bit;
 #endif
-            int R1_count = R1.popcount();
-            assert(R1_count > 0);
+            //int R1_count = R1.popcount();
+            //assert(R1_count > 0);
             for (size_t num = 0; num < Numbers; num++) {
                 BitVec16x16_AVX row_bits;
                 void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
@@ -788,10 +788,12 @@ private:
                         }
                     }
 #endif
+#if 0
                     if (cell_count >= R1_count) {
                         assert(cell_count > 0);
                         break;
                     }
+#endif
                 }
             }
             assert(cell_count > 0);
