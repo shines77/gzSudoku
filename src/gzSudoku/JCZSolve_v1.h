@@ -725,10 +725,8 @@ private:
         R2.and_not(R3);
         R1.and_not(solved_bits);
 
-        int has_single_cell = 0;
         int cell_count = 0;
         if (R1.isNotAllZeros()) {
-            has_single_cell = 1;
 #if 0
             BitVec16x16_AVX neg_R1, low_bit;
             neg_R1 = _mm256_sub_epi64(zeros.m256, R1.m256);
@@ -736,8 +734,8 @@ private:
             R1 ^= low_bit;
 #endif
             int R1_count = R1.popcount();
-            size_t num;
-            for (num = 0; num < Numbers; num++) {
+            assert(R1_count > 0);
+            for (size_t num = 0; num < Numbers; num++) {
                 BitVec16x16_AVX row_bits;
                 void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
                 row_bits.loadAligned(pCells16);
@@ -790,18 +788,16 @@ private:
                         }
                     }
 #endif
-                    if (cell_count >= R1_count)
+                    if (cell_count >= R1_count) {
+                        assert(cell_count > 0);
                         break;
+                    }
                 }
             }
-            //if (num == Numbers)
-            //    return -1;
-            if (cell_count == 0)
-                return -1;
-            assert(cell_count != 0);
+            assert(cell_count > 0);
         }
 
-        return (has_single_cell ? cell_count : 0);
+        return cell_count;
     }
 
     void do_single_literal(InitState & init_state, Board & board, LiteralInfo literalInfo) {
@@ -1125,7 +1121,7 @@ Next_Search:
             if (is_legal) {
                 literalInfo = this->find_single_literal();
                 if (!literalInfo.isValid()) {
-                    int has_single_cells = find_single_candidate_cells();
+                    int has_single_cells = find_single_candidate_cells(board);
                     if (has_single_cells != 1)
                         break;
                 }
