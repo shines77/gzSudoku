@@ -2611,7 +2611,7 @@ struct BitVec16x16_AVX {
     }
 
     inline int popcount() const {
-#if 0
+#if 1
         BitVec16x16 vec;
         this->castTo(vec);
         return vec.popcount();
