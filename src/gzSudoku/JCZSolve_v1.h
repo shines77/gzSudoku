@@ -764,8 +764,6 @@ private:
 
                             this->update_peer_cells(this->init_state_, pos, num);
                             cell_count++;
-                            if (cell_count >= R1_count)
-                                break;
 
                             uint64_t bit = BitUtils::ls1b64(bits64);
                             bits64 ^= bit;
@@ -786,14 +784,14 @@ private:
 
                             this->update_peer_cells(this->init_state_, pos, num);
                             cell_count++;
-                            if (cell_count >= R1_count)
-                                break;
 
                             uint32_t bit = BitUtils::ls1b32(bits32);
                             bits32 ^= bit;
                         }
                     }
 #endif
+                    if (cell_count >= R1_count)
+                        break;
                 }
             }
             //if (num == Numbers)
