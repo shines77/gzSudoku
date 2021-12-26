@@ -694,6 +694,8 @@ private:
         return LiteralInfo(-1);
     }
 
+    #define JCZ_V1_ENABLE_R1_COUNT     0
+
     int find_single_candidate_cells(Board & board) {
         BitVec16x16_AVX R1, R2, R3;
         R1.setAllZeros();
@@ -733,8 +735,10 @@ private:
             low_bit = R1 & neg_R1;
             R1 ^= low_bit;
 #endif
-            //int R1_count = R1.popcount();
-            //assert(R1_count > 0);
+#if JCZ_V1_ENABLE_R1_COUNT
+            int R1_count = R1.popcount();
+            assert(R1_count > 0);
+#endif
             for (size_t num = 0; num < Numbers; num++) {
                 BitVec16x16_AVX row_bits;
                 void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
@@ -788,7 +792,7 @@ private:
                         }
                     }
 #endif
-#if 0
+#if JCZ_V1_ENABLE_R1_COUNT
                     if (cell_count >= R1_count) {
                         assert(cell_count > 0);
                         break;
