@@ -727,7 +727,6 @@ private:
 
         int has_single_cell = 0;
         int cell_count = 0;
-        int R1_count = R1.popcount();
         if (R1.isNotAllZeros()) {
             has_single_cell = 1;
 #if 0
@@ -736,6 +735,7 @@ private:
             low_bit = R1 & neg_R1;
             R1 ^= low_bit;
 #endif
+            int R1_count = R1.popcount();
             size_t num;
             for (num = 0; num < Numbers; num++) {
                 BitVec16x16_AVX row_bits;
@@ -764,7 +764,7 @@ private:
 
                             this->update_peer_cells(this->init_state_, pos, num);
                             cell_count++;
-                            if (cell_count > R1_count)
+                            if (cell_count >= R1_count)
                                 break;
 
                             uint64_t bit = BitUtils::ls1b64(bits64);
@@ -786,7 +786,7 @@ private:
 
                             this->update_peer_cells(this->init_state_, pos, num);
                             cell_count++;
-                            if (cell_count > R1_count)
+                            if (cell_count >= R1_count)
                                 break;
 
                             uint32_t bit = BitUtils::ls1b32(bits32);
