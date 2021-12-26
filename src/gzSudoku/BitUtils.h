@@ -244,7 +244,7 @@ struct BitUtils {
         int popcount = _mm_popcnt_u32(x);
         return (unsigned int)popcount;
 #else
-        int popcount = __popcnt(x);
+        int popcount = __internal_popcnt(x);
         return (unsigned int)popcount;
 #endif
     }
@@ -256,7 +256,18 @@ struct BitUtils {
         __int64 popcount = _mm_popcnt_u64(x);
         return (unsigned int)popcount;
 #else
-        unsigned __int64 popcount = __popcnt64(x);
+        unsigned __int64 popcount = __internal_popcnt64(x);
+        return (unsigned int)popcount;
+#endif
+    }
+#else
+    static inline
+    unsigned int popcnt64(unsigned __int64 x) {
+#if defined(__POPCNT__)
+        int popcount = _mm_popcnt_u32((unsigned int)(x >> 32)) + _mm_popcnt_u32((unsigned int)(x & 0xFFFFFFFFUL));
+        return (unsigned int)popcount;
+#else
+        unsigned __int64 popcount = __internal_popcnt64(x);
         return (unsigned int)popcount;
 #endif
     }

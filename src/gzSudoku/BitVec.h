@@ -759,6 +759,18 @@ struct BitVec08x16 {
         #undef CASE
     }
 
+    inline int popcount() const {
+#if defined(__AVX512VPOPCNTDQ__)
+        __m128i counts = _mm_popcnt_epi64(this->m128);
+        return (_mm_cvtsi128_si64(counts) + _mm_cvtsi128_si64(_mm_unpackhi_epi64(counts, counts)));
+#else
+        // unpackhi_epi64() + cvtsi128_si64() compiles to the same instructions as extract_epi64(),
+        // but works on windows where extract_epi64() is missing.
+        return (BitUtils::popcnt64((uint64_t) _mm_cvtsi128_si64(this->m128)) +
+                BitUtils::popcnt64((uint64_t) _mm_cvtsi128_si64(_mm_unpackhi_epi64(this->m128, this->m128))));
+#endif
+    }
+
     template <size_t MaxLength, size_t MaxBits>
     BitVec08x16 popcount16() const {
 #if (defined(__AVX512_BITALG__) && defined(__AVX512VL__)) || defined(__AVX512VPOPCNTW__)
@@ -1619,6 +1631,23 @@ struct BitVec16x16 {
         }
         #undef CASE_LOW
         #undef CASE_HIGH
+    }
+
+    inline int popcount() const {
+#if defined(__AVX512VPOPCNTDQ__)
+        __m128i low_counts = _mm_popcnt_epi64(this->low.m128);
+        __m128i high_counts = _mm_popcnt_epi64(this->high.m128);
+        return (_mm_cvtsi128_si64(low_counts) + _mm_cvtsi128_si64(high_counts) +
+                _mm_cvtsi128_si64(_mm_unpackhi_epi64(low_counts, low_counts)) +
+                _mm_cvtsi128_si64(_mm_unpackhi_epi64(high_counts, high_counts)));
+#else
+        // unpackhi_epi64() + cvtsi128_si64() compiles to the same instructions as extract_epi64(),
+        // but works on windows where extract_epi64() is missing.
+        return (BitUtils::popcnt64((uint64_t) _mm_cvtsi128_si64(this->low.m128)) +
+                BitUtils::popcnt64((uint64_t) _mm_cvtsi128_si64(this->high.m128)) +
+                BitUtils::popcnt64((uint64_t) _mm_cvtsi128_si64(_mm_unpackhi_epi64(this->low.m128, this->low.m128))) +
+                BitUtils::popcnt64((uint64_t) _mm_cvtsi128_si64(_mm_unpackhi_epi64(this->high.m128, this->high.m128))));
+#endif
     }
 
     template <size_t MaxLength, size_t MaxBits>
@@ -2579,6 +2608,28 @@ struct BitVec16x16_AVX {
         }
         #undef CASE
 #endif // !_mm256_insert_epi16
+    }
+
+    inline int popcount() const {
+#if 0
+        BitVec16x16 vec;
+        this->castTo(vec);
+        return vec.popcount();
+#else
+        __m256i lookup = _mm256_setr_epi8(
+            0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+            0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
+        );
+        __m256i low_mask = _mm256_set1_epi8(0x0F);
+        __m256i low  = _mm256_and_si256(this->m256, low_mask);
+        __m256i high = _mm256_and_si256(_mm256_srli_epi32(this->m256, 4), low_mask);
+        __m256i popcnt_low  = _mm256_shuffle_epi8(lookup, low);
+        __m256i popcnt_high = _mm256_shuffle_epi8(lookup, high);
+        __m256i popcnt_total = _mm256_add_epi8(popcnt_low, popcnt_high);
+        __m256i total = _mm256_sad_epu8(popcnt_total, _mm256_setzero_si256());
+        int popcnt = _mm256_cvtsi256_si32(total);
+        return popcnt;
+#endif
     }
 
     template <size_t MaxLength, size_t MaxBits>

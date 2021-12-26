@@ -727,16 +727,14 @@ private:
 
         int has_single_cell = 0;
         int cell_count = 0;
-        while (R1.isNotAllZeros()) {
+        int R1_count = R1.popcount();
+        if (R1.isNotAllZeros()) {
             has_single_cell = 1;
 #if 0
             BitVec16x16_AVX neg_R1, low_bit;
             neg_R1 = _mm256_sub_epi64(zeros.m256, R1.m256);
             low_bit = R1 & neg_R1;
             R1 ^= low_bit;
-#else
-            BitVec16x16_AVX low_bit;
-            low_bit = R1;
 #endif
             size_t num;
             for (num = 0; num < Numbers; num++) {
@@ -744,7 +742,7 @@ private:
                 void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
                 row_bits.loadAligned(pCells16);
 
-                row_bits &= low_bit;
+                row_bits &= R1;
                 if (row_bits.isNotAllZeros()) {
                     // Find the position of low bit, and fill the num.
                     alignas(32) IntVec256 row_vec;
@@ -766,6 +764,8 @@ private:
 
                             this->update_peer_cells(this->init_state_, pos, num);
                             cell_count++;
+                            if (cell_count > R1_count)
+                                break;
 
                             uint64_t bit = BitUtils::ls1b64(bits64);
                             bits64 ^= bit;
@@ -786,13 +786,14 @@ private:
 
                             this->update_peer_cells(this->init_state_, pos, num);
                             cell_count++;
+                            if (cell_count > R1_count)
+                                break;
 
                             uint32_t bit = BitUtils::ls1b32(bits32);
                             bits32 ^= bit;
                         }
                     }
 #endif
-                    //break;
                 }
             }
             //if (num == Numbers)
@@ -800,7 +801,6 @@ private:
             if (cell_count == 0)
                 return -1;
             assert(cell_count != 0);
-            break;
         }
 
         return (has_single_cell ? cell_count : 0);
