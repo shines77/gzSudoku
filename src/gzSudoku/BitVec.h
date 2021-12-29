@@ -760,9 +760,14 @@ struct BitVec08x16 {
     }
 
     inline int popcount() const {
-#if defined(__AVX512VPOPCNTDQ__)
+#if defined(__AVX512VPOPCNTDQ__) && defined(__AVX512VL__)
         __m128i counts = _mm_popcnt_epi64(this->m128);
         return (_mm_cvtsi128_si64(counts) + _mm_cvtsi128_si64(_mm_unpackhi_epi64(counts, counts)));
+#elif defined(__AVX512_BITALG__) && defined(__AVX512VL__)
+        __m128i popcnt_8 = _mm_popcnt_epi8(this->m128);
+        __m128i popcnt_total = _mm_sad_epu8(popcnt_8, _mm_setzero_si128());
+        int popcnt = _mm_cvtsi128_si32(popcnt_total);
+        return popcnt;
 #else
         // unpackhi_epi64() + cvtsi128_si64() compiles to the same instructions as extract_epi64(),
         // but works on windows where extract_epi64() is missing.
@@ -1117,6 +1122,10 @@ struct BitVec16x16 {
 
     inline void castTo(BitVec16x16 & vec) const {
         vec = *this;
+    }
+
+    inline void castTo(__m256i & avx) const {
+        avx = _mm256_set_m128i(this->high.m128, this->low.m128);
     }
 
     inline void splitTo(BitVec08x16 & _low, BitVec08x16 & _high) const {
@@ -1634,12 +1643,20 @@ struct BitVec16x16 {
     }
 
     inline int popcount() const {
-#if defined(__AVX512VPOPCNTDQ__)
+#if defined(__AVX512VPOPCNTDQ__) && defined(__AVX512VL__)
         __m128i low_counts = _mm_popcnt_epi64(this->low.m128);
         __m128i high_counts = _mm_popcnt_epi64(this->high.m128);
         return (_mm_cvtsi128_si64(low_counts) + _mm_cvtsi128_si64(high_counts) +
                 _mm_cvtsi128_si64(_mm_unpackhi_epi64(low_counts, low_counts)) +
                 _mm_cvtsi128_si64(_mm_unpackhi_epi64(high_counts, high_counts)));
+#elif defined(__AVX512_BITALG__) && defined(__AVX512VL__)
+        __m128i popcnt_8_low  = _mm_popcnt_epi8(this->low.m128);
+        __m128i popcnt_8_high = _mm_popcnt_epi8(this->high.m128);
+        __m128i zeros = _mm_setzero_si128();
+        __m128i popcnt_total_low  = _mm_sad_epu8(popcnt_8_low, zeros);
+        __m128i popcnt_total_high = _mm_sad_epu8(popcnt_8_high, zeros);
+        int popcnt = _mm_cvtsi128_si32(popcnt_total_low) + _mm_cvtsi128_si32(popcnt_total_high);
+        return popcnt;
 #else
         // unpackhi_epi64() + cvtsi128_si64() compiles to the same instructions as extract_epi64(),
         // but works on windows where extract_epi64() is missing.
@@ -2612,9 +2629,28 @@ struct BitVec16x16_AVX {
 
     inline int popcount() const {
 #if 1
-        BitVec16x16 vec;
-        this->castTo(vec);
-        return vec.popcount();
+#if defined(__AVX512_BITALG__) && defined(__AVX512VL__)
+        __m256i popcnt_8 = _mm256_popcnt_epi8(this->m256);
+        __m256i popcnt_total = _mm256_sad_epu8(popcnt_8, _mm256_setzero_si256());
+        int popcnt = _mm256_cvtsi256_si32(popcnt_total);
+        return popcnt;
+#elif defined(__AVX512VPOPCNTDQ__) && defined(__AVX512VL__)
+        __m256i counts_64 = _mm256_popcnt_epi64(this->m256);
+        BitVec16x16 counts;
+        counts_64.castTo(counts);
+        return (_mm_cvtsi128_si64(counts.low.m128) + _mm_cvtsi128_si64(counts.high.m128) +
+                _mm_cvtsi128_si64(_mm_unpackhi_epi64(counts.low.m128, counts.low.m128)) +
+                _mm_cvtsi128_si64(_mm_unpackhi_epi64(counts.high.m128, counts.high.m128)));
+#else
+        BitVec16x16 counts;
+        this->castTo(counts);
+        // unpackhi_epi64() + cvtsi128_si64() compiles to the same instructions as extract_epi64(),
+        // but works on windows where extract_epi64() is missing.
+        return (BitUtils::popcnt64((uint64_t) _mm_cvtsi128_si64(counts.low.m128)) +
+                BitUtils::popcnt64((uint64_t) _mm_cvtsi128_si64(counts.high.m128)) +
+                BitUtils::popcnt64((uint64_t) _mm_cvtsi128_si64(_mm_unpackhi_epi64(counts.low.m128, counts.low.m128))) +
+                BitUtils::popcnt64((uint64_t) _mm_cvtsi128_si64(_mm_unpackhi_epi64(counts.high.m128, counts.high.m128))));
+#endif
 #else
         __m256i lookup = _mm256_setr_epi8(
             0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
