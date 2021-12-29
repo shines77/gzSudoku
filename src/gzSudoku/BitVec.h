@@ -1124,8 +1124,8 @@ struct BitVec16x16 {
         vec = *this;
     }
 
-    inline void castTo(__m256i & avx) const {
-        avx = _mm256_set_m128i(this->high.m128, this->low.m128);
+    inline void mergeTo(__m256i & m256) const {
+        m256 = _mm256_set_m128i(this->high.m128, this->low.m128);
     }
 
     inline void splitTo(BitVec08x16 & _low, BitVec08x16 & _high) const {
@@ -2123,6 +2123,10 @@ struct BitVec16x16_AVX {
         xmm.high = _mm256_extracti128_si256(this->m256, 1);
         xmm.low = _mm256_castsi256_si128(this->m256);
 #endif
+    }
+
+    inline void mergeTo(__m256i & m256) const {
+        m256 = this->m256;
     }
 
     inline void splitTo(BitVec08x16 & low, BitVec08x16 & high) const {
