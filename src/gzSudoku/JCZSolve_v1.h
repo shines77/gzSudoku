@@ -453,10 +453,14 @@ private:
                 unsigned char val = board.cells[pos];
                 if (val != '.') {
                     size_t num = val - '1';
+#if 0
                     if (num >= (Sudoku::kMinNumber - 1) && num <= (Sudoku::kMaxNumber - 1))
                         this->update_peer_cells(this->init_state_, pos, num);
                     else
                         return false;
+#else
+                    this->update_peer_cells(this->init_state_, pos, num);
+#endif
                 }
                 pos++;
             }
