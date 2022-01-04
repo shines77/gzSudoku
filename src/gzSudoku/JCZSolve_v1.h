@@ -418,7 +418,7 @@ private:
         init_flip_mask();
     }
 
-    void init_board(Board & board) {
+    bool init_board(Board & board) {
 #if JCZ_USE_SIMD_INIT
         BitVec16x16_AVX full_mask;
         full_mask.fill_u16(kAllColBits);
@@ -453,12 +453,16 @@ private:
                 unsigned char val = board.cells[pos];
                 if (val != '.') {
                     size_t num = val - '1';
-                    this->update_peer_cells(this->init_state_, pos, num);
+                    if (num >= (Sudoku::kMinNumber - 1) && num <= (Sudoku::kMaxNumber - 1))
+                        this->update_peer_cells(this->init_state_, pos, num);
+                    else
+                        return false;
                 }
                 pos++;
             }
         }
         assert(pos == BoardSize);
+        return true;
     }
 
     inline void update_peer_cells(InitState & init_state, size_t fill_pos, size_t fill_num) {
@@ -1258,16 +1262,19 @@ Next_Search:
     }
 
     bool solve(Board & board) {
-        this->init_board(board);
+        bool success = this->init_board(board);
+        if (success) {
+            ptrdiff_t empties = this->calc_empties(board);
+            if (empties >= (ptrdiff_t)Sudoku::kMinInitCandidates) {
+                empties = find_all_unique_candidates(board, empties);
 
-        ptrdiff_t empties = this->calc_empties(board);
-        if (empties < Sudoku::kMinInitCandidates)
-            return false;
-
-        empties = find_all_unique_candidates(board, empties);
-
-        LiteralInfoEx last_literal;
-        bool success = this->search(board, empties, last_literal);
+                LiteralInfoEx last_literal;
+                success = this->search(board, empties, last_literal);
+            }
+            else {
+                success = false;
+            }
+        }
         return success;
     }
 
