@@ -696,32 +696,139 @@ private:
 
     #define JCZ_V1_ENABLE_R1_COUNT     0
 
+    int fast_find_unique_candidate_cells(Board & board) {
+        BitVec16x16_AVX R1, R2;
+
+        void * pCells16 = (void *)&this->init_state_.num_row_cols[0];
+        R1.loadAligned(pCells16);
+        R2.setAllZeros();
+
+        for (size_t num = 1; num < Numbers; num++) {
+            BitVec16x16_AVX row_bits;
+            pCells16 = (void *)&this->init_state_.num_row_cols[num];
+            row_bits.loadAligned(pCells16);
+
+            R2 |= R1 & row_bits;
+            R1 |= row_bits;
+        }
+
+        BitVec16x16_AVX full_mask;
+        full_mask.fill_u16(kAllNumberBits);
+        bool is_legal = R1.isEqual(full_mask);
+        assert(is_legal);
+
+        BitVec16x16_AVX solved_bits;
+        solved_bits.loadAligned((void *)&this->init_state_.row_solved);
+
+        R1.and_not(R2);
+        R1.and_not(solved_bits);
+
+        int cell_count = 0;
+        if (R1.isNotAllZeros()) {
+#if 0
+            BitVec16x16_AVX zeros;
+            BitVec16x16_AVX neg_R1, low_bit;
+            zeros.setAllZeros();
+            neg_R1 = _mm256_sub_epi64(zeros.m256, R1.m256);
+            low_bit = R1 & neg_R1;
+            R1 ^= low_bit;
+#endif
+#if JCZ_V1_ENABLE_R1_COUNT
+            int R1_count = R1.popcount();
+            assert(R1_count > 0);
+#endif
+            for (size_t num = 0; num < Numbers; num++) {
+                BitVec16x16_AVX row_bits;
+                void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
+                row_bits.loadAligned(pCells16);
+
+                row_bits &= R1;
+                if (row_bits.isNotAllZeros()) {
+                    // Find the position of low bit, and fill the num.
+                    IntVec256 row_vec;
+                    row_bits.saveAligned((void *)&row_vec);
+
+ #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+                    for (size_t i = 0; i < 3; i++) {
+                        uint64_t bits64 = row_vec.u64[i];
+                        while (bits64 != 0) {
+                            size_t bit_pos = BitUtils::bsf64(bits64);
+                            size_t row = bit_pos / Cols16 + i * 4;
+                            size_t col = bit_pos % Cols16;
+
+                            size_t pos = row * Cols + col;
+
+                            assert(board.cells[pos] == '.');
+                            board.cells[pos] = (char)(num + '1');
+
+                            this->update_peer_cells(this->init_state_, pos, num);
+                            cell_count++;
+
+                            uint64_t bit = BitUtils::ls1b64(bits64);
+                            bits64 ^= bit;
+                        }
+                    }
+#else
+                    for (size_t i = 0; i < 5; i++) {
+                        uint32_t bits32 = row_vec.u32[i];
+                        while (bits32 != 0) {
+                            size_t bit_pos = BitUtils::bsf32(bits32);
+                            size_t row = bit_pos / Cols16 + i * 2;
+                            size_t col = bit_pos % Cols16;
+
+                            size_t pos = row * Cols + col;
+
+                            assert(board.cells[pos] == '.');
+                            board.cells[pos] = (char)(num + '1');
+
+                            this->update_peer_cells(this->init_state_, pos, num);
+                            cell_count++;
+
+                            uint32_t bit = BitUtils::ls1b32(bits32);
+                            bits32 ^= bit;
+                        }
+                    }
+#endif
+#if JCZ_V1_ENABLE_R1_COUNT
+                    if (cell_count >= R1_count) {
+                        assert(cell_count > 0);
+                        break;
+                    }
+#endif
+                }
+            }
+            assert(cell_count > 0);
+        }
+
+        return cell_count;
+    }
+
     int find_unique_candidate_cells(Board & board) {
         BitVec16x16_AVX R1, R2, R3;
-        R1.setAllZeros();
+
+        void * pCells16 = (void *)&this->init_state_.num_row_cols[0];
+        R1.loadAligned(pCells16);
         R2.setAllZeros();
         R3.setAllZeros();
-#if 1
-        for (size_t num = 0; num < Numbers; num++) {
+
+        for (size_t num = 1; num < Numbers; num++) {
             BitVec16x16_AVX row_bits;
-            void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
+            pCells16 = (void *)&this->init_state_.num_row_cols[num];
             row_bits.loadAligned(pCells16);
 
             R3 |= R2 & row_bits;
             R2 |= R1 & row_bits;
             R1 |= row_bits;
         }
-#else
-        //
-#endif
+
         BitVec16x16_AVX full_mask;
         full_mask.fill_u16(kAllNumberBits);
         bool is_legal = R1.isEqual(full_mask);
         if (!is_legal) return -1;
 
-        BitVec16x16_AVX solved_bits, zeros;
+        BitVec16x16_AVX solved_bits;
         solved_bits.loadAligned((void *)&this->init_state_.row_solved);
-        zeros.setAllZeros();
 
         R1.and_not(R2);
         R2.and_not(R3);
@@ -730,7 +837,9 @@ private:
         int cell_count = 0;
         if (R1.isNotAllZeros()) {
 #if 0
+            BitVec16x16_AVX zeros;
             BitVec16x16_AVX neg_R1, low_bit;
+            zeros.setAllZeros();
             neg_R1 = _mm256_sub_epi64(zeros.m256, R1.m256);
             low_bit = R1 & neg_R1;
             R1 ^= low_bit;
@@ -1106,7 +1215,7 @@ public:
 Next_Search:
             literalInfo = this->find_hidden_single_literal();
             if (!literalInfo.isValid()) {
-                int single_cells = find_unique_candidate_cells(board);
+                int single_cells = fast_find_unique_candidate_cells(board);
                 if (single_cells <= 0)
                     break;
                 empties -= single_cells;
@@ -1127,7 +1236,7 @@ Next_Search:
 Next_Search:
                 literalInfo = this->find_hidden_single_literal();
                 if (!literalInfo.isValid()) {
-                    int single_cells = find_unique_candidate_cells(board);
+                    int single_cells = fast_find_unique_candidate_cells(board);
                     if (single_cells <= 0)
                         break;
                     empties -= single_cells;
