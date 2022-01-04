@@ -418,7 +418,7 @@ private:
         init_flip_mask();
     }
 
-    bool init_board(Board & board) {
+    void init_board(Board & board) {
 #if JCZ_USE_SIMD_INIT
         BitVec16x16_AVX full_mask;
         full_mask.fill_u16(kAllColBits);
@@ -453,23 +453,19 @@ private:
                 unsigned char val = board.cells[pos];
                 if (val != '.') {
                     size_t num = val - '1';
-#if 0
-                    if (num >= (Sudoku::kMinNumber - 1) && num <= (Sudoku::kMaxNumber - 1))
-                        this->update_peer_cells(this->init_state_, pos, num);
-                    else
-                        return false;
-#else
+                    assert(num >= (Sudoku::kMinNumber - 1) && num <= (Sudoku::kMaxNumber - 1));
                     this->update_peer_cells(this->init_state_, pos, num);
-#endif
                 }
                 pos++;
             }
         }
         assert(pos == BoardSize);
-        return true;
     }
 
     inline void update_peer_cells(InitState & init_state, size_t fill_pos, size_t fill_num) {
+        assert(fill_pos <= Sudoku::kBoardSize);
+        assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
+
         size_t row = fill_pos / Cols;
         size_t col = fill_pos % Cols;
         assert(init_state.num_row_cols[fill_num][row].test(col));
@@ -562,6 +558,9 @@ private:
     }
 
     inline void update_peer_cells_mode2(InitState & init_state, size_t fill_pos, size_t fill_num) {
+        assert(fill_pos <= Sudoku::kBoardSize);
+        assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
+
         size_t row = fill_pos / Cols;
         size_t col = fill_pos % Cols;
         assert(init_state.num_row_cols[fill_num][row].test(col));
@@ -1266,18 +1265,18 @@ Next_Search:
     }
 
     bool solve(Board & board) {
-        bool success = this->init_board(board);
-        if (success) {
-            ptrdiff_t empties = this->calc_empties(board);
-            if (empties >= (ptrdiff_t)Sudoku::kMinInitCandidates) {
-                empties = find_all_unique_candidates(board, empties);
+        bool success;
+        this->init_board(board);
 
-                LiteralInfoEx last_literal;
-                success = this->search(board, empties, last_literal);
-            }
-            else {
-                success = false;
-            }
+        ptrdiff_t empties = this->calc_empties(board);
+        if (empties >= (ptrdiff_t)Sudoku::kMinInitCandidates) {
+            empties = find_all_unique_candidates(board, empties);
+
+            LiteralInfoEx last_literal;
+            success = this->search(board, empties, last_literal);
+        }
+        else {
+            success = false;
         }
         return success;
     }
