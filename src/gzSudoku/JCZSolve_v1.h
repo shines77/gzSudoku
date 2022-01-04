@@ -553,7 +553,7 @@ private:
         }
     }
 
-    inline void update_peer_cells_2(InitState & init_state, size_t fill_pos, size_t fill_num) {
+    inline void update_peer_cells_mode2(InitState & init_state, size_t fill_pos, size_t fill_num) {
         size_t row = fill_pos / Cols;
         size_t col = fill_pos % Cols;
         assert(init_state.num_row_cols[fill_num][row].test(col));
@@ -621,7 +621,7 @@ private:
         }
     }
 
-    LiteralInfo find_single_literal() {
+    LiteralInfo find_hidden_single_literal() {
         BitVec16x16_AVX unique_mask;
         unique_mask.fill_u16(1);
 
@@ -696,7 +696,7 @@ private:
 
     #define JCZ_V1_ENABLE_R1_COUNT     0
 
-    int find_single_candidate_cells(Board & board) {
+    int find_unique_candidate_cells(Board & board) {
         BitVec16x16_AVX R1, R2, R3;
         R1.setAllZeros();
         R2.setAllZeros();
@@ -806,7 +806,7 @@ private:
         return cell_count;
     }
 
-    void do_single_literal(InitState & init_state, Board & board, LiteralInfo literalInfo) {
+    void do_hidden_single_literal(InitState & init_state, Board & board, LiteralInfo literalInfo) {
         size_t pos, row, col, box, cell, num;
 
         switch (literalInfo.literal_type) {
@@ -881,7 +881,7 @@ private:
         }
     }
 
-    bool check_and_do_single_literal(InitState & init_state, Board & board, LiteralInfo literalInfo) {
+    bool do_hidden_single_literal_and_check(InitState & init_state, Board & board, LiteralInfo literalInfo) {
         size_t pos, row, col, box, cell, num;
 
         switch (literalInfo.literal_type) {
@@ -970,9 +970,9 @@ private:
         return false;
     }
 
-    size_t search_single_literal(InitState & init_state,
-                                 Board & board, size_t empties,
-                                 LiteralInfo literalInfo) {
+    size_t search_hidden_single_literal(InitState & init_state,
+                                        Board & board, size_t empties,
+                                        LiteralInfo literalInfo) {
         size_t pos, row, col, box, cell, num;
 
         switch (literalInfo.literal_type) {
@@ -997,9 +997,9 @@ private:
                 if (empties > 0) {
                     this->update_peer_cells(init_state, pos, num);
 
-                    LiteralInfo nextLI = this->find_single_literal();
+                    LiteralInfo nextLI = this->find_hidden_single_literal();
                     if (nextLI.isValid()) {
-                        return this->search_single_literal(init_state, board, empties, nextLI);
+                        return this->search_hidden_single_literal(init_state, board, empties, nextLI);
                     }
                 }
 
@@ -1027,9 +1027,9 @@ private:
                 if (empties > 0) {
                     this->update_peer_cells(init_state, pos, num);
 
-                    LiteralInfo nextLI = this->find_single_literal();
+                    LiteralInfo nextLI = this->find_hidden_single_literal();
                     if (nextLI.isValid()) {
-                        return this->search_single_literal(init_state, board, empties, nextLI);
+                        return this->search_hidden_single_literal(init_state, board, empties, nextLI);
                     }
                 }
 
@@ -1059,9 +1059,9 @@ private:
                 if (empties > 0) {
                     this->update_peer_cells(init_state, pos, num);
 
-                    LiteralInfo nextLI = this->find_single_literal();
+                    LiteralInfo nextLI = this->find_hidden_single_literal();
                     if (nextLI.isValid()) {
-                        return this->search_single_literal(init_state, board, empties, nextLI);
+                        return this->search_hidden_single_literal(init_state, board, empties, nextLI);
                     }
                 }
 
@@ -1077,7 +1077,7 @@ private:
     }
 
 public:
-    bool search(Board & board, ptrdiff_t empties, const LiteralInfoEx & literalInfo) {
+    bool search(Board & board, ptrdiff_t empties, const LiteralInfoEx & last_literal) {
         if (empties <= 0) {
             if (kSearchMode > SearchMode::OneAnswer) {
                 this->answers_.push_back(board);
@@ -1094,23 +1094,19 @@ public:
         return false;
     }
 
-    bool solve(Board & board) {
-        this->init_board(board);
-
-        ptrdiff_t empties = this->calc_empties(board);
-        assert(empties >= Sudoku::kMinInitCandidates);
+    ptrdiff_t find_all_unique_candidates(Board & board, ptrdiff_t empties) {
 #if 1
-        LiteralInfo literalInfo = this->find_single_literal();
+        LiteralInfo literalInfo = this->find_hidden_single_literal();
 
         while (literalInfo.isValid()) {
-            this->do_single_literal(this->init_state_, board, literalInfo);
+            this->do_hidden_single_literal(this->init_state_, board, literalInfo);
             empties--;
             if (empties <= 0)
                 break;
 Next_Search:
-            literalInfo = this->find_single_literal();
+            literalInfo = this->find_hidden_single_literal();
             if (!literalInfo.isValid()) {
-                int single_cells = find_single_candidate_cells(board);
+                int single_cells = find_unique_candidate_cells(board);
                 if (single_cells <= 0)
                     break;
                 empties -= single_cells;
@@ -1120,32 +1116,49 @@ Next_Search:
             }
         }
 #elif 0
-        LiteralInfo literalInfo = this->find_single_literal();
+        LiteralInfo literalInfo = this->find_hidden_single_literal();
 
         while (literalInfo.isValid()) {
-            bool is_legal = this->check_and_do_single_literal(this->init_state_, board, literalInfo);
+            bool is_legal = this->do_hidden_single_literal_and_check(this->init_state_, board, literalInfo);
             if (is_legal) {
-                literalInfo = this->find_single_literal();
-                if (!literalInfo.isValid()) {
-                    int has_single_cells = find_single_candidate_cells(board);
-                    if (has_single_cells != 1)
-                        break;
-                }
                 empties--;
                 if (empties <= 0)
                     break;
+Next_Search:
+                literalInfo = this->find_hidden_single_literal();
+                if (!literalInfo.isValid()) {
+                    int single_cells = find_unique_candidate_cells(board);
+                    if (single_cells <= 0)
+                        break;
+                    empties -= single_cells;
+                    if (empties <= 0)
+                        break;
+                    goto Next_Search;
+                }
             }
             else break;
         }
-#elif 0
-        LiteralInfo literalInfo = this->find_single_literal();
+#else
+        LiteralInfo literalInfo = this->find_hidden_single_literal();
 
         if (literalInfo.isValid()) {
-            empties = this->search_single_literal(this->init_state_, board, empties, literalInfo);
+            empties = this->search_hidden_single_literal(this->init_state_, board, empties, literalInfo);
         }
 #endif
-        LiteralInfoEx LI = literalInfo.toLiteralInfoEx(1);
-        bool success = this->search(board, empties, LI);
+        return empties;
+    }
+
+    bool solve(Board & board) {
+        this->init_board(board);
+
+        ptrdiff_t empties = this->calc_empties(board);
+        if (empties < Sudoku::kMinInitCandidates)
+            return false;
+
+        empties = find_all_unique_candidates(board, empties);
+
+        LiteralInfoEx last_literal;
+        bool success = this->search(board, empties, last_literal);
         return success;
     }
 
