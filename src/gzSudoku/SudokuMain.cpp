@@ -53,6 +53,7 @@
 #include "SudokuSolver_v4b.h"
 #include "SudokuSolver_v5.h"
 #include "JCZSolve_v1.h"
+#include "JCZSolve_v2.h"
 
 #include "CPUWarmUp.h"
 #include "StopWatch.h"
@@ -329,10 +330,12 @@ void run_all_benchmark(const char * filename)
     run_sudoku_test<v4a::Solver,     false>(bm_puzzles, bm_puzzleTotal, "dfs::v4a");
     run_sudoku_test<v4b::Solver,     false>(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
     run_sudoku_test<v5::Solver,      false>(bm_puzzles, bm_puzzleTotal, "dfs::v5");
-    run_sudoku_test<JCZ::v1::Solver, false>(bm_puzzles, bm_puzzleTotal, "dfs::JCZ::v1");
+    run_sudoku_test<JCZ::v1::Solver, false>(bm_puzzles, bm_puzzleTotal, "JCZ::v1");
+    //run_sudoku_test<JCZ::v2::Solver, false>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
 #else
 //  run_sudoku_test<v4b::Solver,     false>(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
-    run_sudoku_test<JCZ::v1::Solver, false>(bm_puzzles, bm_puzzleTotal, "dfs::JCZ::v1");
+//  run_sudoku_test<JCZ::v1::Solver, false>(bm_puzzles, bm_puzzleTotal, "JCZ::v1");
+    run_sudoku_test<JCZ::v2::Solver, false>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
 #endif
 }
 

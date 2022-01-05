@@ -1,6 +1,6 @@
 
-#ifndef GZ_SUDOKU_JCZSOLVE_V1_H
-#define GZ_SUDOKU_JCZSOLVE_V1_H
+#ifndef GZ_SUDOKU_JCZSOLVE_V2_H
+#define GZ_SUDOKU_JCZSOLVE_V2_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -28,11 +28,11 @@
 #include "BitArray.h"
 #include "BitVec.h"
 
-#define JCZ_V1_USE_SIMD_INIT   1
+#define JCZ_V2_USE_SIMD_INIT   1
 
 namespace gzSudoku {
 namespace JCZ {
-namespace v1 {
+namespace v2 {
 
 static const size_t kSearchMode = SearchMode::OneAnswer;
 
@@ -112,6 +112,10 @@ public:
 
     static const bool kAllDimIsSame = Sudoku::kAllDimIsSame;
 
+    // all pencil marks set - 27 bits per band
+    static const uint32_t kBitSet27     = 0x07FFFFFFUL;
+    static const uint64_t kBitSet27_64  = 0x07FFFFFF07FFFFFFULL;
+
 private:
     enum LiteralType {
         NumRowCols,
@@ -121,11 +125,40 @@ private:
         Unknown
     };
 
-private:
-
 #pragma pack(push, 1)
 
+    union alignas(16) BandBoard {
+        uint32_t bands[4];
+        uint64_t bands64[2];
+
+        void reset() {
+            this->bands64[0] = 0;
+            this->bands64[1] = 0;
+        }
+
+        void set() {
+            this->bands64[0] = kBitSet27_64;
+            this->bands64[1] = kBitSet27;
+        }
+    };
+
     struct alignas(32) State {
+        BandBoard candidates[Numbers10];
+        BandBoard prevCandidates[Numbers10];
+        BandBoard solvedCells;
+        BandBoard pairs;
+
+        void init() {
+            for (size_t num = 0; num < Numbers10; num++) {
+                this->candidates[num].set();
+                this->prevCandidates[num].reset();
+            }
+            this->solvedCells.reset();
+            this->pairs.reset();
+        }
+    };
+
+    struct alignas(32) InitState {
         PackedBitSet3D<Numbers, Rows16, Cols16>     num_row_cols;     // [num][row][col]
         PackedBitSet3D<Numbers, Cols16, Rows16>     num_col_rows;     // [num][col][row]
         PackedBitSet3D<Numbers, Boxes16, BoxSize16> num_box_cells;    // [num][box][cell]
@@ -198,6 +231,9 @@ private:
     typedef PeerBoxes<BoxCountX, BoxCountY>     peer_boxes_t;
 
     struct alignas(32) StaticData {
+        BandBoard flip_mask[BoardSize + 1];
+        BandBoard fill_mask[BoardSize + 1];
+
         PackedBitSet3D<BoardSize, Rows16, Cols16>       num_row_mask;
         PackedBitSet3D<BoardSize, Cols16, Rows16>       num_col_mask;
         PackedBitSet3D<BoardSize, Boxes16, BoxSize16>   num_box_mask;
@@ -220,7 +256,8 @@ private:
 
 #pragma pack(pop)
 
-    State state_;
+    State       state_;
+    InitState   init_state_;
 
     static StaticData Static;
 
@@ -376,6 +413,24 @@ private:
         }
     }
 
+    static void transformToBandBoard(const PackedBitSet2D<Rows16, Cols16> & bit_mask,
+                                     BandBoard & band_mask) {
+        static const uint32_t kBoxCountY32 = (uint32_t)BoxCountY;
+        static const uint32_t kBoxCellsY32 = (uint32_t)BoxCellsY;
+        uint32_t band;
+        for (band = 0; band < kBoxCountY32; band++) {
+            uint32_t band_bits = 0;
+            uint32_t row = band * kBoxCellsY32;
+            for (uint32_t cellY = 0; cellY < kBoxCellsY32; cellY++) {
+                uint32_t row_bits = bit_mask[row].value();
+                row++;
+                band_bits |= row_bits << (cellY * 9);
+            }
+            band_mask.bands[band] = band_bits;
+        }
+        band_mask.bands[band] = 0;
+    }
+
     static void init_flip_mask() {
         Static.num_row_mask.reset();
         Static.num_col_mask.reset();
@@ -389,46 +444,50 @@ private:
         for (size_t row = 0; row < Rows; row++) {
             for (size_t col = 0; col < Cols; col++) {
                 make_flip_mask(fill_pos, row, col);
+                transformToBandBoard(Static.num_row_mask[fill_pos], Static.flip_mask[fill_pos]);
+                transformToBandBoard(Static.row_fill_mask[fill_pos], Static.fill_mask[fill_pos]);
                 fill_pos++;
             }
         }
     }
 
     static void init_mask() {
-        printf("JCZ::v1::Solve::StaticData::init_mask()\n");
+        printf("JCZ::v2::Solve::StaticData::init_mask()\n");
 
         init_peer_boxes();
         init_flip_mask();
     }
 
     void init_board(Board & board) {
-#if JCZ_V1_USE_SIMD_INIT
+#if JCZ_V2_USE_SIMD_INIT
         BitVec16x16_AVX full_mask;
         full_mask.fill_u16(kAllColBits);
 
         for (size_t num = 0; num < Numbers; num++) {
-            full_mask.saveAligned((void *)&this->state_.num_row_cols[num]);
-            full_mask.saveAligned((void *)&this->state_.num_col_rows[num]);
-            full_mask.saveAligned((void *)&this->state_.num_box_cells[num]);
+            full_mask.saveAligned((void *)&this->init_state_.num_row_cols[num]);
+            full_mask.saveAligned((void *)&this->init_state_.num_col_rows[num]);
+            full_mask.saveAligned((void *)&this->init_state_.num_box_cells[num]);
         }
 
         BitVec16x16_AVX zeros;
         zeros.setAllZeros();
-        zeros.saveAligned((void *)&this->state_.row_solved);
-        zeros.saveAligned((void *)&this->state_.col_solved);
-        zeros.saveAligned((void *)&this->state_.box_solved);
+        zeros.saveAligned((void *)&this->init_state_.row_solved);
+        zeros.saveAligned((void *)&this->init_state_.col_solved);
+        zeros.saveAligned((void *)&this->init_state_.box_solved);
 #else
-        this->state_.num_row_cols.fill(kAllColBits);
-        this->state_.num_col_rows.fill(kAllRowBits);
-        this->state_.num_box_cells.fill(kAllBoxCellBits);
+        this->init_state_.num_row_cols.fill(kAllColBits);
+        this->init_state_.num_col_rows.fill(kAllRowBits);
+        this->init_state_.num_box_cells.fill(kAllBoxCellBits);
 
-        this->state_.row_solved.reset();
-        this->state_.col_solved.reset();
-        this->state_.box_solved.reset();
+        this->init_state_.row_solved.reset();
+        this->init_state_.col_solved.reset();
+        this->init_state_.box_solved.reset();
 #endif
         if (kSearchMode > SearchMode::OneAnswer) {
             this->answers_.clear();
         }
+
+        this->state_.init();
 
         size_t pos = 0;
         for (size_t row = 0; row < Rows; row++) {
@@ -438,6 +497,7 @@ private:
                     size_t num = val - '1';
                     assert(num >= (Sudoku::kMinNumber - 1) && num <= (Sudoku::kMaxNumber - 1));
                     this->update_peer_cells(this->state_, pos, num);
+                    this->update_peer_cells(this->init_state_, pos, num);
                 }
                 pos++;
             }
@@ -445,7 +505,38 @@ private:
         assert(pos == BoardSize);
     }
 
-    inline void update_peer_cells(State & init_state, size_t fill_pos, size_t fill_num) {
+    inline void update_peer_cells(State & state, size_t fill_pos, size_t fill_num) {
+        assert(fill_pos < Sudoku::kBoardSize);
+        assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
+
+        BitVec08x16 cells16, mask16;
+        void * pCells16, * pMask16;
+
+        BitVec08x16 fill_mask, solved_cells;
+        pCells16 = (void *)&state.solvedCells;
+        pMask16 = (void *)&Static.fill_mask[fill_pos];
+        solved_cells.loadAligned(pCells16);
+        fill_mask.loadAligned(pMask16);
+        solved_cells |= fill_mask;
+        solved_cells.saveAligned(pCells16);
+
+        for (size_t num = 0; num < Numbers; num++) {
+            pCells16 = (void *)&state.candidates[num];
+            cells16.loadAligned(pCells16);
+            cells16.and_not(fill_mask);
+            cells16.saveAligned(pCells16);
+        }
+
+        pCells16 = (void *)&state.candidates[fill_num];
+        pMask16 = (void *)&Static.flip_mask[fill_pos];
+        cells16.loadAligned(pCells16);
+        mask16.loadAligned(pMask16);
+        cells16.and_not(mask16);
+        cells16._or(fill_mask);
+        cells16.saveAligned(pCells16);
+    }
+
+    inline void update_peer_cells(InitState & init_state, size_t fill_pos, size_t fill_num) {
         assert(fill_pos < Sudoku::kBoardSize);
         assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
 
@@ -540,89 +631,18 @@ private:
         }
     }
 
-    inline void update_peer_cells_mode2(State & init_state, size_t fill_pos, size_t fill_num) {
-        assert(fill_pos < Sudoku::kBoardSize);
-        assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
-
-        size_t row = tables.div9[fill_pos];
-        size_t col = tables.mod9[fill_pos];
-        assert(init_state.num_row_cols[fill_num][row].test(col));
-        assert(init_state.num_col_rows[fill_num][col].test(row));
-
-        BitVec16x16_AVX cells16, mask16;
-        void * pCells16, * pMask16;
-
-        BitVec16x16_AVX row_mask, col_mask;
-        row_mask.loadAligned((void *)&Static.row_fill_mask[fill_pos]);
-        col_mask.loadAligned((void *)&Static.col_fill_mask[fill_pos]);
-
-        BitVec16x16_AVX row_solved_bits, col_solved_bits;
-        pCells16 = (void *)&init_state.row_solved;
-        row_solved_bits.loadAligned(pCells16);
-        row_solved_bits |= row_mask;
-        row_solved_bits.saveAligned(pCells16);
-
-        pCells16 = (void *)&init_state.col_solved;
-        col_solved_bits.loadAligned(pCells16);
-        col_solved_bits |= col_mask;
-        col_solved_bits.saveAligned(pCells16);
-
-        for (size_t num = 0; num < Numbers; num++) {
-            if (num != fill_num) {
-                //init_state.num_row_cols[num][row].reset(col);
-                //init_state.num_col_rows[num][col].reset(row);
-
-                pCells16 = (void *)&init_state.num_row_cols[num];
-                cells16.loadAligned(pCells16);
-                cells16.and_not(row_mask);
-                cells16.saveAligned(pCells16);
-
-                pCells16 = (void *)&init_state.num_col_rows[num];
-                cells16.loadAligned(pCells16);
-                cells16.and_not(col_mask);
-                cells16.saveAligned(pCells16);
-            }
-            else {
-                //init_state.num_row_cols[num] &= Static.num_row_mask[fill_pos];
-                //init_state.num_col_rows[num] &= Static.num_col_mask[fill_pos];
-
-                // LiteralType::NumRowCols
-                {
-                    pCells16 = (void *)&init_state.num_row_cols[num];
-                    pMask16 = (void *)&Static.num_row_mask[fill_pos];
-                    cells16.loadAligned(pCells16);
-                    mask16.loadAligned(pMask16);
-                    cells16.and_not(mask16);
-                    cells16._or(row_mask);
-                    cells16.saveAligned(pCells16);
-                }
-
-                // LiteralType::NumColRows
-                {
-                    pCells16 = (void *)&init_state.num_col_rows[num];
-                    pMask16 = (void *)&Static.num_col_mask[fill_pos];
-                    cells16.loadAligned(pCells16);
-                    mask16.loadAligned(pMask16);
-                    cells16.and_not(mask16);
-                    cells16._or(col_mask);
-                    cells16.saveAligned(pCells16);
-                }
-            }
-        }
-    }
-
     LiteralInfo find_hidden_single_literal() {
         BitVec16x16_AVX unique_mask;
         unique_mask.fill_u16(1);
 
         BitVec16x16_AVX row_solved;
-        void * pCells16 = (void *)&this->state_.row_solved;
+        void * pCells16 = (void *)&this->init_state_.row_solved;
         row_solved.loadAligned(pCells16);
 
         // Row literal
         for (size_t num = 0; num < Numbers; num++) {
             BitVec16x16_AVX num_row_bits;
-            pCells16 = (void *)&this->state_.num_row_cols[num];
+            pCells16 = (void *)&this->init_state_.num_row_cols[num];
             num_row_bits.loadAligned(pCells16);
             num_row_bits.and_not(row_solved);
 
@@ -638,13 +658,13 @@ private:
         }
 
         BitVec16x16_AVX col_solved;
-        pCells16 = (void *)&this->state_.col_solved;
+        pCells16 = (void *)&this->init_state_.col_solved;
         col_solved.loadAligned(pCells16);
 
         // Col literal
         for (size_t num = 0; num < Numbers; num++) {
             BitVec16x16_AVX num_col_bits;
-            pCells16 = (void *)&this->state_.num_col_rows[num];
+            pCells16 = (void *)&this->init_state_.num_col_rows[num];
             num_col_bits.loadAligned(pCells16);
             num_col_bits.and_not(col_solved);
 
@@ -660,13 +680,13 @@ private:
         }
 
         BitVec16x16_AVX box_solved;
-        pCells16 = (void *)&this->state_.box_solved;
+        pCells16 = (void *)&this->init_state_.box_solved;
         box_solved.loadAligned(pCells16);
 
         // Box literal
         for (size_t num = 0; num < Numbers; num++) {
             BitVec16x16_AVX num_box_bits;
-            pCells16 = (void *)&this->state_.num_box_cells[num];
+            pCells16 = (void *)&this->init_state_.num_box_cells[num];
             num_box_bits.loadAligned(pCells16);
             num_box_bits.and_not(box_solved);
 
@@ -684,18 +704,18 @@ private:
         return LiteralInfo(-1);
     }
 
-    #define JCZ_V1_ENABLE_R1_COUNT     0
+    #define JCZ_V2_ENABLE_R1_COUNT     0
 
     int fast_find_unique_candidate_cells(Board & board) {
         BitVec16x16_AVX R1, R2;
 
-        void * pCells16 = (void *)&this->state_.num_row_cols[0];
+        void * pCells16 = (void *)&this->init_state_.num_row_cols[0];
         R1.loadAligned(pCells16);
         R2.setAllZeros();
 
         for (size_t num = 1; num < Numbers; num++) {
             BitVec16x16_AVX row_bits;
-            pCells16 = (void *)&this->state_.num_row_cols[num];
+            pCells16 = (void *)&this->init_state_.num_row_cols[num];
             row_bits.loadAligned(pCells16);
 
             R2 |= R1 & row_bits;
@@ -708,7 +728,7 @@ private:
         assert(is_legal);
 
         BitVec16x16_AVX solved_bits;
-        solved_bits.loadAligned((void *)&this->state_.row_solved);
+        solved_bits.loadAligned((void *)&this->init_state_.row_solved);
 
         R1.and_not(R2);
         R1.and_not(solved_bits);
@@ -723,13 +743,13 @@ private:
             low_bit = R1 & neg_R1;
             R1 ^= low_bit;
 #endif
-#if JCZ_V1_ENABLE_R1_COUNT
+#if JCZ_V2_ENABLE_R1_COUNT
             int R1_count = R1.popcount();
             assert(R1_count > 0);
 #endif
             for (size_t num = 0; num < Numbers; num++) {
                 BitVec16x16_AVX row_bits;
-                void * pCells16 = (void *)&this->state_.num_row_cols[num];
+                void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
                 row_bits.loadAligned(pCells16);
 
                 row_bits &= R1;
@@ -752,7 +772,7 @@ private:
                             assert(board.cells[pos] == '.');
                             board.cells[pos] = (char)(num + '1');
 
-                            this->update_peer_cells(this->state_, pos, num);
+                            this->update_peer_cells(this->init_state_, pos, num);
                             cell_count++;
 
                             uint64_t bit = BitUtils::ls1b64(bits64);
@@ -772,7 +792,7 @@ private:
                             assert(board.cells[pos] == '.');
                             board.cells[pos] = (char)(num + '1');
 
-                            this->update_peer_cells(this->state_, pos, num);
+                            this->update_peer_cells(this->init_state_, pos, num);
                             cell_count++;
 
                             uint32_t bit = BitUtils::ls1b32(bits32);
@@ -780,7 +800,7 @@ private:
                         }
                     }
 #endif
-#if JCZ_V1_ENABLE_R1_COUNT
+#if JCZ_V2_ENABLE_R1_COUNT
                     if (cell_count >= R1_count) {
                         assert(cell_count > 0);
                         break;
@@ -797,14 +817,14 @@ private:
     int find_unique_candidate_cells(Board & board) {
         BitVec16x16_AVX R1, R2, R3;
 
-        void * pCells16 = (void *)&this->state_.num_row_cols[0];
+        void * pCells16 = (void *)&this->init_state_.num_row_cols[0];
         R1.loadAligned(pCells16);
         R2.setAllZeros();
         R3.setAllZeros();
 
         for (size_t num = 1; num < Numbers; num++) {
             BitVec16x16_AVX row_bits;
-            pCells16 = (void *)&this->state_.num_row_cols[num];
+            pCells16 = (void *)&this->init_state_.num_row_cols[num];
             row_bits.loadAligned(pCells16);
 
             R3 |= R2 & row_bits;
@@ -818,7 +838,7 @@ private:
         if (!is_legal) return -1;
 
         BitVec16x16_AVX solved_bits;
-        solved_bits.loadAligned((void *)&this->state_.row_solved);
+        solved_bits.loadAligned((void *)&this->init_state_.row_solved);
 
         R1.and_not(R2);
         R2.and_not(R3);
@@ -834,13 +854,13 @@ private:
             low_bit = R1 & neg_R1;
             R1 ^= low_bit;
 #endif
-#if JCZ_V1_ENABLE_R1_COUNT
+#if JCZ_V2_ENABLE_R1_COUNT
             int R1_count = R1.popcount();
             assert(R1_count > 0);
 #endif
             for (size_t num = 0; num < Numbers; num++) {
                 BitVec16x16_AVX row_bits;
-                void * pCells16 = (void *)&this->state_.num_row_cols[num];
+                void * pCells16 = (void *)&this->init_state_.num_row_cols[num];
                 row_bits.loadAligned(pCells16);
 
                 row_bits &= R1;
@@ -863,7 +883,7 @@ private:
                             assert(board.cells[pos] == '.');
                             board.cells[pos] = (char)(num + '1');
 
-                            this->update_peer_cells(this->state_, pos, num);
+                            this->update_peer_cells(this->init_state_, pos, num);
                             cell_count++;
 
                             uint64_t bit = BitUtils::ls1b64(bits64);
@@ -883,7 +903,7 @@ private:
                             assert(board.cells[pos] == '.');
                             board.cells[pos] = (char)(num + '1');
 
-                            this->update_peer_cells(this->state_, pos, num);
+                            this->update_peer_cells(this->init_state_, pos, num);
                             cell_count++;
 
                             uint32_t bit = BitUtils::ls1b32(bits32);
@@ -891,7 +911,7 @@ private:
                         }
                     }
 #endif
-#if JCZ_V1_ENABLE_R1_COUNT
+#if JCZ_V2_ENABLE_R1_COUNT
                     if (cell_count >= R1_count) {
                         assert(cell_count > 0);
                         break;
@@ -905,7 +925,7 @@ private:
         return cell_count;
     }
 
-    void do_hidden_single_literal(State & init_state, Board & board, LiteralInfo literalInfo) {
+    void do_hidden_single_literal(InitState & init_state, Board & board, LiteralInfo literalInfo) {
         size_t pos, row, col, box, cell, num;
 
         switch (literalInfo.literal_type) {
@@ -980,7 +1000,7 @@ private:
         }
     }
 
-    bool do_hidden_single_literal_and_check(State & init_state, Board & board, LiteralInfo literalInfo) {
+    bool do_hidden_single_literal_and_check(InitState & init_state, Board & board, LiteralInfo literalInfo) {
         size_t pos, row, col, box, cell, num;
 
         switch (literalInfo.literal_type) {
@@ -1069,7 +1089,7 @@ private:
         return false;
     }
 
-    size_t search_hidden_single_literal(State & init_state,
+    size_t search_hidden_single_literal(InitState & init_state,
                                         Board & board, size_t empties,
                                         LiteralInfo literalInfo) {
         size_t pos, row, col, box, cell, num;
@@ -1198,7 +1218,7 @@ public:
         LiteralInfo literalInfo = this->find_hidden_single_literal();
 
         while (literalInfo.isValid()) {
-            this->do_hidden_single_literal(this->state_, board, literalInfo);
+            this->do_hidden_single_literal(this->init_state_, board, literalInfo);
             empties--;
             if (empties <= 0)
                 break;
@@ -1218,7 +1238,7 @@ Next_Search:
         LiteralInfo literalInfo = this->find_hidden_single_literal();
 
         while (literalInfo.isValid()) {
-            bool is_legal = this->do_hidden_single_literal_and_check(this->state_, board, literalInfo);
+            bool is_legal = this->do_hidden_single_literal_and_check(this->init_state_, board, literalInfo);
             if (is_legal) {
                 empties--;
                 if (empties <= 0)
@@ -1241,7 +1261,7 @@ Next_Search:
         LiteralInfo literalInfo = this->find_hidden_single_literal();
 
         if (literalInfo.isValid()) {
-            empties = this->search_hidden_single_literal(this->state_, board, empties, literalInfo);
+            empties = this->search_hidden_single_literal(this->init_state_, board, empties, literalInfo);
         }
 #endif
         return empties;
@@ -1273,8 +1293,8 @@ Next_Search:
 
 Solver::StaticData Solver::Static;
 
-} // namespace v1
+} // namespace v2
 } // namespace JCZ
 } // namespace gzSudoku
 
-#endif // GZ_SUDOKU_JCZSOLVE_V1_H
+#endif // GZ_SUDOKU_JCZSOLVE_V2_H

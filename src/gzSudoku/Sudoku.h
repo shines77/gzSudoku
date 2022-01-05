@@ -420,6 +420,7 @@ struct Sudoku {
 
     static const size_t kRows16 = AlignedTo<kRows, 16>::value;
     static const size_t kCols16 = AlignedTo<kCols, 16>::value;
+    static const size_t kNumbers10 = AlignedTo<kNumbers, 2>::value;
     static const size_t kNumbers16 = AlignedTo<kNumbers, 16>::value;
     static const size_t kBoxes16 = AlignedTo<kBoxes, 16>::value;
     static const size_t kBoxSize16 = AlignedTo<kBoxSize, 16>::value;

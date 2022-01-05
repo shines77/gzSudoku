@@ -65,15 +65,14 @@ public:
     static const size_t BoardSize = Sudoku::kBoardSize;
     static const size_t TotalSize = Sudoku::kTotalSize;
     static const size_t Neighbors = Sudoku::kNeighbors;
-    static const size_t MaxConfig = 6;
 
-    static const size_t Config8 = AlignedTo<MaxConfig, 8>::value;
-    static const size_t Rows16 = AlignedTo<Rows, 16>::value;
-    static const size_t Cols16 = AlignedTo<Cols, 16>::value;
-    static const size_t Numbers16 = AlignedTo<Numbers, 16>::value;
-    static const size_t Boxes16 = AlignedTo<Boxes, 16>::value;
-    static const size_t BoxSize16 = AlignedTo<BoxSize, 16>::value;
-    static const size_t BoardSize16 = Boxes16 * BoxSize16;
+    static const size_t Rows16 = Sudoku::kRows16;
+    static const size_t Cols16 = Sudoku::kCols16;
+    static const size_t Numbers10 = Sudoku::kNumbers10;
+    static const size_t Numbers16 = Sudoku::kNumbers16;
+    static const size_t Boxes16 = Sudoku::kBoxes16;
+    static const size_t BoxSize16 = Sudoku::kBoxSize16;
+    static const size_t BoardSize16 = Sudoku::kBoardSize16;
 
     static const size_t Rows32 = Rows16 * 2;
     static const size_t Cols32 = Cols16 * 2;
@@ -81,6 +80,9 @@ public:
     static const size_t Boxes32 = Boxes16 * 2;
     static const size_t BoxSize32 = BoxSize16 * 2;
     static const size_t BoardSize32 = Boxes32 * BoxSize32;
+
+    static const size_t MaxConfig = 6;
+    static const size_t Config8 = AlignedTo<MaxConfig, 8>::value;
 
     static const size_t TotalCellLiterals = Boxes16 * BoxSize16;
     static const size_t TotalRowLiterals = Rows16 * Numbers16;
