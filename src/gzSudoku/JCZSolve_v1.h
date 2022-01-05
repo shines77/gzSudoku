@@ -1205,7 +1205,7 @@ public:
 Next_Search:
             literalInfo = this->find_hidden_single_literal();
             if (!literalInfo.isValid()) {
-                int single_cells = fast_find_unique_candidate_cells(board);
+                int single_cells = this->fast_find_unique_candidate_cells(board);
                 if (single_cells <= 0)
                     break;
                 empties -= single_cells;
@@ -1226,7 +1226,7 @@ Next_Search:
 Next_Search:
                 literalInfo = this->find_hidden_single_literal();
                 if (!literalInfo.isValid()) {
-                    int single_cells = fast_find_unique_candidate_cells(board);
+                    int single_cells = this->fast_find_unique_candidate_cells(board);
                     if (single_cells <= 0)
                         break;
                     empties -= single_cells;
@@ -1253,7 +1253,7 @@ Next_Search:
         bool success;
         ptrdiff_t empties = this->calc_empties(board);
         if (empties >= (ptrdiff_t)Sudoku::kMinInitCandidates) {
-            empties = find_all_unique_candidates(board, empties);
+            empties = this->find_all_unique_candidates(board, empties);
 
             LiteralInfoEx last_literal;
             success = this->search(board, empties, last_literal);
