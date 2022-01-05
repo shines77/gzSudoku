@@ -735,12 +735,12 @@ private:
         band &= lockedCandidates;
         if (band != 0) {
             uint32_t colCombBits = (band | (band >> 9U) | (band >> 18U)) & kFullRowBits;
-            //if (colCombBits != state.colCombBits[digit].bands[self]) {
-                //state.colCombBits[digit].bands[self] = colCombBits;
+            if (colCombBits != state.colCombBits[digit].bands[self]) {
+                state.colCombBits[digit].bands[self] = colCombBits;
                 uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
                 state.candidates[digit].bands[peer1] &= colLockedSingleMask;
                 state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-            //}
+            }
             state.candidates[digit].bands[self] = band;
             state.prevCandidates[digit].bands[self] = band;
             uint32_t newSolvedRows = rowHiddenSingleMaskTbl[rowTriadsSingleMaskTbl[rowTriadsMask] &
