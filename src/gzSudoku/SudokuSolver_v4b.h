@@ -590,7 +590,7 @@ private:
     }
 
     static void init_mask() {
-        printf("v4b::StaticData::init_mask()\n");
+        printf("v4b::Solver::StaticData::init_mask()\n");
 
         init_peer_boxes();
         init_flip_mask();

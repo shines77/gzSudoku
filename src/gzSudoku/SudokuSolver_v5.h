@@ -501,7 +501,7 @@ private:
     }
 
     static void init_mask() {
-        printf("v5::StaticData::init_mask()\n");
+        printf("v5::Solver::StaticData::init_mask()\n");
 
         init_peer_boxes();
         init_flip_mask();

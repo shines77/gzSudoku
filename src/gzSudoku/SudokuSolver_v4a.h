@@ -593,7 +593,7 @@ private:
     }
 
     static void init_mask() {
-        printf("v4a::StaticData::init_mask()\n");
+        printf("v4a::Solver::StaticData::init_mask()\n");
 
         init_peer_boxes();
         init_flip_mask();

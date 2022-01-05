@@ -395,7 +395,7 @@ private:
     }
 
     static void init_mask() {
-        printf("JCZ::v1::Solve::StaticData::init_mask()\n");
+        printf("JCZ::v1::Solver::StaticData::init_mask()\n");
 
         init_peer_boxes();
         init_flip_mask();
