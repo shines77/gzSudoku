@@ -280,8 +280,13 @@ static const int rowHiddenSingleReverseMaskTbl[512] = {
     1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0
 };
 
-// rows where single  found  000 to 111
+// Rows where single found  000 to 111
 static const unsigned int solvedRowsBitMaskTbl[8] = {
+    00, 0777, 0777000, 0777777, 0777000000, 0777000777, 0777777000, 0777777777
+};
+
+// Rows where single found  000 to 111
+static const unsigned int solvedRowsReverseBitMaskTbl[8] = {
     0777777777, 0777777000, 0777000777, 0777000000, 0777777, 0777000, 0777, 00
 };
 
@@ -689,6 +694,11 @@ private:
         assert(fill_pos < Sudoku::kBoardSize);
         assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
 
+        size_t rowBit = fill_num * Rows + tables.div9[fill_pos];
+        uint32_t band = tables.div27[rowBit];
+        uint32_t shift = tables.mod27[rowBit];
+        state.solvedRows.bands[band] |= 1U << shift;
+
         BitVec08x16 cells16, mask16;
         void * pCells16, * pMask16;
 
@@ -699,9 +709,6 @@ private:
         fill_mask.loadAligned(pMask16);
         solved_cells |= fill_mask;
         solved_cells.saveAligned(pCells16);
-
-        size_t rowBit = fill_num * Rows + tables.div9[fill_pos];
-        state.solvedRows.bands[tables.div27[rowBit]] |= (1 << (tables.mod27[rowBit]));
 
         for (size_t num = 0; num < Numbers; num++) {
             pCells16 = (void *)&state.candidates[num];
@@ -1214,10 +1221,10 @@ private:
             R1 |= row_bits;
         }
 
-        BitVec08x16 full_mask;
-        full_mask.fill_u16(kAllNumberBits);
+        BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
         bool is_legal = R1.isEqual(full_mask);
-        assert(is_legal);
+        //assert(is_legal);
+        if (!is_legal) return -1;
 
         BitVec08x16 solved_bits;
         solved_bits.loadAligned((void *)&state.solvedCells);
@@ -1257,6 +1264,7 @@ private:
                         while (bits64 != 0) {
                             size_t bit_pos = BitUtils::bsf64(bits64);
                             size_t pos = bandBitPosToPos64[i][bit_pos];
+                            assert(pos != size_t(-1));
 
                             //assert(board.cells[pos] == '.');
                             //board.cells[pos] = (char)(num + '1');
@@ -1274,6 +1282,7 @@ private:
                         while (bits32 != 0) {
                             size_t bit_pos = BitUtils::bsf32(bits32);
                             size_t pos = bandBitPosToPos32[i][bit_pos];
+                            assert(pos != size_t(-1));
 
                             //assert(board.cells[pos] == '.');
                             //board.cells[pos] = (char)(num + '1');
