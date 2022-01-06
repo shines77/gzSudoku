@@ -21,6 +21,7 @@
 #include <type_traits>
 #include <algorithm>    // For std::sort()
 
+#include "stddef.h"
 #include "BitSet.h"
 #include "BitArray.h"
 

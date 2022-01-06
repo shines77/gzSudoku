@@ -28,7 +28,15 @@
 #include "BitArray.h"
 #include "BitVec.h"
 
-#define JCZ_V2_ENABLE_R1_COUNT     0
+//
+// Whether use R1 counter and compare ? Disable it maybe faster.
+//
+#define JCZ_V2_ENABLE_R1_COUNT      0
+
+//
+// Whether enable compare colCombBits ? Disable it maybe faster.
+//
+#define JCZ_V2_COMP_COLCOMBBITS     0
 
 namespace gzSudoku {
 namespace JCZ {
@@ -417,7 +425,9 @@ private:
     struct alignas(32) State {
         BandBoard candidates[Numbers10];
         BandBoard prevCandidates[Numbers10];
+#if JCZ_V2_COMP_COLCOMBBITS
         BandBoard colCombBits[Numbers10];
+#endif
         BandBoard solvedCells;
         BandBoard solvedRows;
         BandBoard pairs;
@@ -427,7 +437,9 @@ private:
             for (size_t num = 0; num < Numbers10; num++) {
                 this->candidates[num].set();
                 this->prevCandidates[num].reset();
+#if JCZ_V2_COMP_COLCOMBBITS
                 this->colCombBits[num].reset();
+#endif
             }            
             this->solvedCells.reset();
             this->solvedRows.reset();
@@ -727,7 +739,8 @@ private:
     }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2>
-    inline uint32_t update_up_down_cells(State & state, uint32_t & band) {
+    JSTD_FORCE_INLINE
+    uint32_t update_up_down_cells(State & state, uint32_t & band) {
         uint32_t rowTriadsMask = rowTriadsMaskTbl[band & kFullRowBits] |
                                 (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
                                 (rowTriadsMaskTbl[(band >> 18U) & kFullRowBits] << 6U);
@@ -735,12 +748,18 @@ private:
         band &= lockedCandidates;
         if (band != 0) {
             uint32_t colCombBits = (band | (band >> 9U) | (band >> 18U)) & kFullRowBits;
+#if JCZ_V2_COMP_COLCOMBBITS
             if (colCombBits != state.colCombBits[digit].bands[self]) {
                 state.colCombBits[digit].bands[self] = colCombBits;
                 uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
                 state.candidates[digit].bands[peer1] &= colLockedSingleMask;
                 state.candidates[digit].bands[peer2] &= colLockedSingleMask;
             }
+#else
+            uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
+            state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+            state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+#endif
             state.candidates[digit].bands[self] = band;
             state.prevCandidates[digit].bands[self] = band;
             uint32_t newSolvedRows = rowHiddenSingleMaskTbl[rowTriadsSingleMaskTbl[rowTriadsMask] &
@@ -753,7 +772,8 @@ private:
     }
 
     template <uint32_t digit, uint32_t band_id>
-    inline void update_solved_rows(State & state, uint32_t band, uint32_t bandSolvedRows) {
+    JSTD_FORCE_INLINE
+    void update_solved_rows(State & state, uint32_t band, uint32_t bandSolvedRows) {
         uint32_t solvedCells = band & solvedRowsBitMaskTbl[bandSolvedRows];
         assert(solvedCells != 0);
         state.solvedCells.bands[band_id] |= solvedCells;
