@@ -1263,6 +1263,7 @@ private:
         {
  #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
   || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+#if 0
             for (size_t band = 0; band < 2; band++) {
                 register uint64_t bits64 = R1_bits.bands64[band];
                 while (bits64 != 0) {
@@ -1283,6 +1284,45 @@ private:
                     }
                 }
             }
+#else
+            register uint64_t bits64 = R1_bits.bands64[0];
+            while (bits64 != 0) {
+                size_t bit_pos = BitUtils::bsf64(bits64);
+                uint64_t bit = BitUtils::ls1b64(bits64);
+                bits64 ^= bit;
+
+                size_t pos = bandBitPosToPos64[0][bit_pos];
+                assert(pos != size_t(-1));
+
+                for (size_t num = 0; num < Numbers; num++) {
+                    uint64_t row_bits = state.candidates[num].bands64[0];
+                    if ((row_bits & bit) != 0) {
+                        this->update_peer_cells(this->state_, pos, num);
+                        cell_count++;
+                        break;
+                    }
+                }
+            }
+
+            bits64 = R1_bits.bands64[1];
+            while (bits64 != 0) {
+                size_t bit_pos = BitUtils::bsf64(bits64);
+                uint64_t bit = BitUtils::ls1b64(bits64);
+                bits64 ^= bit;
+
+                size_t pos = bandBitPosToPos64[1][bit_pos];
+                assert(pos != size_t(-1));
+
+                for (size_t num = 0; num < Numbers; num++) {
+                    uint64_t row_bits = state.candidates[num].bands64[1];
+                    if ((row_bits & bit) != 0) {
+                        this->update_peer_cells(this->state_, pos, num);
+                        cell_count++;
+                        break;
+                    }
+                }
+            }
+#endif
 #else // !__amd64__
             for (size_t band = 0; band < 3; band++) {
                 register uint32_t bits32 = R1_bits.bands[band];
