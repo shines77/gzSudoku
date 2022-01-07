@@ -1768,8 +1768,8 @@ private:
         if ((state->solvedCells.bands64[0] == kBitSet27_64) &&
             (state->solvedCells.bands64[1] == kBitSet27)) {
             if (kSearchMode > SearchMode::OneSolution) {
-                //this->extract_solution(state, board);
-                //this->answers_.push_back(board);
+                this->extract_solution(state, board);
+                this->answers_.push_back(board);
                 this->numSolutions_++;
                 if (kSearchMode == SearchMode::MoreThanOneSolution) {
                     if (this->answers_.size() > 1)
@@ -1777,7 +1777,8 @@ private:
                 }
             }
             else {
-                //this->extract_solution(state, board);
+                if (this->numSolutions_ == 0)
+                    this->extract_solution(state, board);
                 this->numSolutions_++;
                 return Status::Solved;
             }
