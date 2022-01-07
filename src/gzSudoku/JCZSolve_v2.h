@@ -735,6 +735,9 @@ private:
 
         this->state_.init();
 
+        register BitVec08x16 solved_cells;
+        solved_cells.setAllZeros();
+
         size_t pos = 0;
         for (size_t row = 0; row < Rows; row++) {
             for (size_t col = 0; col < Cols; col++) {
@@ -742,12 +745,48 @@ private:
                 if (val != '.') {
                     size_t num = val - '1';
                     assert(num >= (Sudoku::kMinNumber - 1) && num <= (Sudoku::kMaxNumber - 1));
-                    this->update_peer_cells(this->state_, pos, num);
+                    this->update_peer_cells(this->state_, solved_cells, pos, num);
                 }
                 pos++;
             }
         }
         assert(pos == BoardSize);
+
+        void * pCells16 = (void *)&this->state_.solvedCells;
+        solved_cells.saveAligned(pCells16);
+    }
+
+    inline void update_peer_cells(State & state, BitVec08x16 & solved_cells, size_t fill_pos, size_t fill_num) {
+        assert(fill_pos < Sudoku::kBoardSize);
+        assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
+
+        size_t rowBit = fill_num * Rows + tables.div9[fill_pos];
+        uint32_t band = tables.div27[rowBit];
+        uint32_t shift = tables.mod27[rowBit];
+        state.solvedRows.bands[band] |= 1U << shift;
+
+        BitVec08x16 cells16, mask16;
+        void * pCells16, * pMask16;
+
+        BitVec08x16 fill_mask;
+        pMask16 = (void *)&Static.fill_mask[fill_pos];
+        fill_mask.loadAligned(pMask16);
+        solved_cells |= fill_mask;
+
+        for (size_t num = 0; num < Numbers; num++) {
+            pCells16 = (void *)&state.candidates[num];
+            cells16.loadAligned(pCells16);
+            cells16.and_not(fill_mask);
+            cells16.saveAligned(pCells16);
+        }
+
+        pCells16 = (void *)&state.candidates[fill_num];
+        pMask16 = (void *)&Static.flip_mask[fill_pos];
+        cells16.loadAligned(pCells16);
+        mask16.loadAligned(pMask16);
+        cells16.and_not(mask16);
+        cells16._or(fill_mask);
+        cells16.saveAligned(pCells16);
     }
 
     inline void update_peer_cells(State & state, size_t fill_pos, size_t fill_num) {
