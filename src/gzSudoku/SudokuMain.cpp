@@ -224,7 +224,7 @@ void run_a_testcase(size_t index)
     printf("------------------------------------------\n\n");
 }
 
-template <typename SudokuSolver, bool TestOutput = false>
+template <typename SudokuSolver>
 void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const char * name)
 {
     typedef typename SudokuSolver::basic_solver_t   BasicSolverTy;
@@ -242,53 +242,35 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
     size_t puzzleSolved = 0;
     double total_time = 0.0;
 
-    std::ofstream ofs;
-    try {
-        if (TestOutput) {
-            ofs.open("noguess_output.txt", std::ios::out | std::ios::trunc);
-        }
+    Board board;
+    SudokuSolver solver;
+    BasicSolver basicSolver;
+    jtest::StopWatch sw;
+    sw.start();
 
-        Board board;
-        SudokuSolver solver;
-        BasicSolver basicSolver;
-        jtest::StopWatch sw;
-        sw.start();
+    for (size_t i = 0; i < puzzleTotal; i++) {
+        board = puzzles[i];
+        int status = solver.solve(board);
+        if (status == Status::Solved || status == Status::UniqueSolution) {
+            total_guesses += BasicSolverTy::num_guesses;
+            total_unique_candidate += BasicSolverTy::num_unique_candidate;
+            total_failed_return += BasicSolverTy::num_failed_return;
 
-        for (size_t i = 0; i < puzzleTotal; i++) {
-            board = puzzles[i];
-            int status = solver.solve(board);
-            if (status == Status::Solved || status == Status::UniqueSolution) {
-                total_guesses += BasicSolverTy::num_guesses;
-                total_unique_candidate += BasicSolverTy::num_unique_candidate;
-                total_failed_return += BasicSolverTy::num_failed_return;
-
-                if (BasicSolverTy::num_guesses == 0) {
-                    total_no_guess++;
-                }
-
-                puzzleSolved++;
+            if (BasicSolverTy::num_guesses == 0) {
+                total_no_guess++;
             }
-            puzzleCount++;
+
+            puzzleSolved++;
+        }
+        puzzleCount++;
 #ifndef NDEBUG
-            if (puzzleCount > 100000)
-                break;
+        if (puzzleCount > 100000)
+            break;
 #endif
-            if (TestOutput) {
-                ofs << "#" << puzzleCount << ", " << basicSolver.calc_empties(board)
-                    << " empties" << std::endl;
-            }
-        }
-
-        sw.stop();
-        total_time = sw.getElapsedMillisec();
-
-        if (TestOutput) {
-            ofs.close();
-        }
     }
-    catch (std::exception & ex) {
-        std::cout << "Exception info: " << ex.what() << std::endl << std::endl;
-    }
+
+    sw.stop();
+    total_time = sw.getElapsedMillisec();
 
     size_t total_recur_counter = total_guesses + total_unique_candidate + total_failed_return;
     double unique_candidate_percent = calc_percent(total_unique_candidate, total_recur_counter);
