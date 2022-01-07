@@ -1246,8 +1246,8 @@ private:
 
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
         bool is_legal = R1.isEqual(full_mask);
-        //assert(is_legal);
-        if (!is_legal) return -1;
+        assert(is_legal);
+        //if (!is_legal) return -1;
 
         BitVec08x16 solved_bits;
         solved_bits.loadAligned((void *)&state.solvedCells);
