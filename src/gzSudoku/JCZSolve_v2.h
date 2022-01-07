@@ -1255,69 +1255,55 @@ private:
         R1.and_not(R2);
         R1.and_not(solved_bits);
 
-        int cell_count = 0;
-        if (R1.isNotAllZeros()) {
-#if JCZ_V2_ENABLE_R1_COUNT
-            int R1_count = R1.popcount();
-            assert(R1_count > 0);
-#endif
-            for (size_t num = 0; num < Numbers; num++) {
-                BitVec08x16 row_bits;
-                void * pCells16 = (void *)&state.candidates[num];
-                row_bits.loadAligned(pCells16);
+        register BandBoard R1_bits;
+        R1.saveAligned((void *)&R1_bits);
 
-                row_bits &= R1;
-                if (row_bits.isNotAllZeros()) {
-                    // Find the position of low bit, and fill the num.
-                    BandBoard board;
-                    row_bits.saveAligned((void *)&board);
-
+        register int cell_count = 0;
+        while (R1_bits.bands64[0] != 0 || R1_bits.bands64[1] != 0) {
  #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
   || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
-                    for (size_t i = 0; i < 2; i++) {
-                        uint64_t bits64 = board.bands64[i];
-                        while (bits64 != 0) {
-                            size_t bit_pos = BitUtils::bsf64(bits64);
-                            size_t pos = bandBitPosToPos64[i][bit_pos];
-                            assert(pos != size_t(-1));
+            for (size_t band = 0; band < 2; band++) {
+                uint64_t bits64 = R1_bits.bands64[band];
+                while (bits64 != 0) {
+                    size_t bit_pos = BitUtils::bsf64(bits64);
+                    uint64_t bit = BitUtils::ls1b64(bits64);
+                    bits64 ^= bit;
 
-                            //assert(board.cells[pos] == '.');
-                            //board.cells[pos] = (char)(num + '1');
+                    size_t pos = bandBitPosToPos64[band][bit_pos];
+                    assert(pos != size_t(-1));
 
+                    for (size_t num = 0; num < Numbers; num++) {
+                        uint64_t row_bits = state.candidates[num].bands64[band];
+                        if ((row_bits & bit) != 0) {
                             this->update_peer_cells(this->state_, pos, num);
                             cell_count++;
-
-                            uint64_t bit = BitUtils::ls1b64(bits64);
-                            bits64 ^= bit;
+                            break;
                         }
                     }
-#else
-                    for (size_t i = 0; i < 3; i++) {
-                        uint32_t bits32 = row_vec.u32[i];
-                        while (bits32 != 0) {
-                            size_t bit_pos = BitUtils::bsf32(bits32);
-                            size_t pos = bandBitPosToPos32[i][bit_pos];
-                            assert(pos != size_t(-1));
-
-                            //assert(board.cells[pos] == '.');
-                            //board.cells[pos] = (char)(num + '1');
-
-                            this->update_peer_cells(this->state_, pos, num);
-                            cell_count++;
-
-                            uint32_t bit = BitUtils::ls1b32(bits32);
-                            bits32 ^= bit;
-                        }
-                    }
-#endif
-#if JCZ_V2_ENABLE_R1_COUNT
-                    if (cell_count >= R1_count) {
-                        assert(cell_count > 0);
-                        break;
-                    }
-#endif
                 }
             }
+#else // !__amd64__
+            for (size_t band = 0; band < 3; band++) {
+                uint32_t bits32 = R1_bits.bands[band];
+                while (bits32 != 0) {
+                    size_t bit_pos = BitUtils::bsf32(bits32);
+                    uint32_t bit = BitUtils::ls1b32(bits32);
+                    bits32 ^= bit;
+
+                    size_t pos = bandBitPosToPos32[band][bit_pos];
+                    assert(pos != size_t(-1));
+
+                    for (size_t num = 0; num < Numbers; num++) {
+                        uint32_t row_bits = state.candidates[num].bands[band];
+                        if ((row_bits & bit) != 0) {
+                            this->update_peer_cells(this->state_, pos, num);
+                            cell_count++;
+                            break;
+                        }
+                    }
+                }
+            }
+#endif // __amd64__
             assert(cell_count > 0);
         }
 
