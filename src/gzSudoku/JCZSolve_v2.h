@@ -1259,7 +1259,8 @@ private:
         R1.saveAligned((void *)&R1_bits);
 
         register int cell_count = 0;
-        if (R1_bits.bands64[0] != 0 || R1_bits.bands64[1] != 0) {
+        //if (R1_bits.bands64[0] != 0 || R1_bits.bands64[1] != 0)
+        {
  #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
   || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
             for (size_t band = 0; band < 2; band++) {
