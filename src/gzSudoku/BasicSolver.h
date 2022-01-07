@@ -97,12 +97,12 @@ public:
         Sudoku::display_board(board, true);
     }
 
-    template <size_t nSearchMode = SearchMode::OneAnswer>
+    template <size_t nSearchMode = SearchMode::OneSolution>
     void display_result(Board & board, double elapsed_time,
                         bool print_answer = true,
                         bool print_all_answers = true) {
         if (print_answer) {
-            if (nSearchMode == SearchMode::OneAnswer)
+            if (nSearchMode == SearchMode::OneSolution)
                 Sudoku::display_board(board);
             else
                 Sudoku::display_board(this->answers_);

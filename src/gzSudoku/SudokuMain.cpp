@@ -194,7 +194,7 @@ void run_solver_testcase(size_t index)
 
     jtest::StopWatch sw;
     sw.start();
-    bool success = solver.solve(board);
+    int success = solver.solve(board);
     sw.stop();
 
     double elapsed_time = sw.getElapsedMillisec();
@@ -256,8 +256,8 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
 
         for (size_t i = 0; i < puzzleTotal; i++) {
             board = puzzles[i];
-            bool success = solver.solve(board);
-            if (success) {
+            int status = solver.solve(board);
+            if (status == Status::Solved || status == Status::UniqueSolution) {
                 total_guesses += BasicSolverTy::num_guesses;
                 total_unique_candidate += BasicSolverTy::num_unique_candidate;
                 total_failed_return += BasicSolverTy::num_failed_return;

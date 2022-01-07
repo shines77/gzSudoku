@@ -34,7 +34,7 @@ namespace gzSudoku {
 namespace JCZ {
 namespace v1 {
 
-static const size_t kSearchMode = SearchMode::OneAnswer;
+static const size_t kSearchMode = SearchMode::OneSolution;
 
 class Solver : public BasicSolver {
 public:
@@ -401,7 +401,7 @@ private:
         init_flip_mask();
     }
 
-    void init_board(Board & board) {
+    size_t init_board(Board & board) {
 #if JCZ_V1_USE_SIMD_INIT
         BitVec16x16_AVX full_mask;
         full_mask.fill_u16(kAllColBits);
@@ -426,23 +426,22 @@ private:
         this->state_.col_solved.reset();
         this->state_.box_solved.reset();
 #endif
-        if (kSearchMode > SearchMode::OneAnswer) {
+        if (kSearchMode > SearchMode::OneSolution) {
             this->answers_.clear();
         }
 
-        size_t pos = 0;
-        for (size_t row = 0; row < Rows; row++) {
-            for (size_t col = 0; col < Cols; col++) {
-                unsigned char val = board.cells[pos];
-                if (val != '.') {
-                    size_t num = val - '1';
-                    assert(num >= (Sudoku::kMinNumber - 1) && num <= (Sudoku::kMaxNumber - 1));
-                    this->update_peer_cells(this->state_, pos, num);
-                }
-                pos++;
+        size_t candidates = 0;
+        for (size_t pos = 0; pos < BoardSize; pos++) {
+            unsigned char val = board.cells[pos];
+            if (val != '.') {
+                size_t num = val - '1';
+                assert(num >= (Sudoku::kMinNumber - 1) && num <= (Sudoku::kMaxNumber - 1));
+                this->update_peer_cells(this->state_, pos, num);
+                candidates++;
             }
         }
-        assert(pos == BoardSize);
+
+        return candidates;
     }
 
     inline void update_peer_cells(State & init_state, size_t fill_pos, size_t fill_num) {
@@ -1178,9 +1177,9 @@ private:
 public:
     bool search(Board & board, ptrdiff_t empties, const LiteralInfoEx & last_literal) {
         if (empties <= 0) {
-            if (kSearchMode > SearchMode::OneAnswer) {
+            if (kSearchMode > SearchMode::OneSolution) {
                 this->answers_.push_back(board);
-                if (kSearchMode == SearchMode::MoreThanOneAnswer) {
+                if (kSearchMode == SearchMode::MoreThanOneSolution) {
                     if (this->answers_.size() > 1)
                         return true;
                 }
@@ -1247,21 +1246,17 @@ Next_Search:
         return empties;
     }
 
-    bool solve(Board & board) {
-        this->init_board(board);
+    int solve(Board & board) {
+        size_t candidates = this->init_board(board);
+        if (candidates < (ptrdiff_t)Sudoku::kMinInitCandidates)
+            return Status::Invalid;
 
-        bool success;
-        ptrdiff_t empties = this->calc_empties(board);
-        if (empties >= (ptrdiff_t)Sudoku::kMinInitCandidates) {
-            empties = this->find_all_unique_candidates(board, empties);
+        ptrdiff_t empties = (ptrdiff_t)(BoardSize - candidates);
+        empties = this->find_all_unique_candidates(board, empties);
 
-            LiteralInfoEx last_literal;
-            success = this->search(board, empties, last_literal);
-        }
-        else {
-            success = false;
-        }
-        return success;
+        LiteralInfoEx last_literal;
+        bool success = this->search(board, empties, last_literal);
+        return (success) ? Status::Solved : Status::Invalid;
     }
 
     void display_result(Board & board, double elapsed_time,

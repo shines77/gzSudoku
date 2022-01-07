@@ -49,11 +49,24 @@
 
 namespace gzSudoku {
 
-enum SearchMode {
-    OneAnswer = 0,
-    MoreThanOneAnswer = 1,
-    AllAnswers = 2,
-    MaxSearchMode
+struct Status {
+    enum {
+        Failed = -2,
+        Invalid = -1,
+        Success = 0,
+        Solved = 1,
+        UniqueSolution = 2,
+        MoreThanOneSolution = 3
+    };
+};
+
+struct SearchMode {
+    enum {
+        OneSolution = 0,
+        MoreThanOneSolution = 1,
+        AllSolutions = 2,
+        MaxSearchMode
+    };
 };
 
 #pragma pack(push, 1)

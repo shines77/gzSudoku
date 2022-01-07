@@ -34,7 +34,7 @@
 namespace gzSudoku {
 namespace v4 {
 
-static const size_t kSearchMode = SearchMode::OneAnswer;
+static const size_t kSearchMode = SearchMode::OneSolution;
 
 class Solver : public BasicSolver {
 public:
@@ -902,7 +902,7 @@ private:
             }
         }
 
-        if (kSearchMode > SearchMode::OneAnswer) {
+        if (kSearchMode > SearchMode::OneSolution) {
             this->answers_.clear();
         }
 
@@ -938,9 +938,9 @@ private:
 public:
     bool search(Board & board, size_t empties, const LiteralInfo & literalInfo) {
         if (empties == 0) {
-            if (kSearchMode > SearchMode::OneAnswer) {
+            if (kSearchMode > SearchMode::OneSolution) {
                 this->answers_.push_back(board);
-                if (kSearchMode == SearchMode::MoreThanOneAnswer) {
+                if (kSearchMode == SearchMode::MoreThanOneSolution) {
                     if (this->answers_.size() > 1)
                         return true;
                 }
@@ -953,10 +953,10 @@ public:
         return false;
     }
 
-    bool solve(Board & board) {
+    int solve(Board & board) {
         this->init_board(board);
         bool success = this->search(board, this->empties_, this->min_info_);
-        return success;
+        return (success) ? Status::Solved : Status::Invalid;
     }
 
     void display_result(Board & board, double elapsed_time,

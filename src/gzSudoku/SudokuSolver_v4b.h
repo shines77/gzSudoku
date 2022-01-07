@@ -35,7 +35,7 @@
 namespace gzSudoku {
 namespace v4b {
 
-static const size_t kSearchMode = SearchMode::OneAnswer;
+static const size_t kSearchMode = SearchMode::OneSolution;
 
 static const size_t TableLs2b[16] = {
     0xFFFFFFFC, 0xFFFFFFF0, 0xFFFFFFC0, 0xFFFFFF00,
@@ -736,7 +736,7 @@ private:
         this->init_state_.changed.literal[LiteralType::BoxCellNums] = kAllNumberBits;
 #endif
 
-        if (kSearchMode > SearchMode::OneAnswer) {
+        if (kSearchMode > SearchMode::OneSolution) {
             this->answers_.clear();
         }
 
@@ -1963,9 +1963,9 @@ private:
 public:
     bool search(Board & board, ptrdiff_t empties, const LiteralInfoEx & literalInfo) {
         if (empties <= 0) {
-            if (kSearchMode > SearchMode::OneAnswer) {
+            if (kSearchMode > SearchMode::OneSolution) {
                 this->answers_.push_back(board);
-                if (kSearchMode == SearchMode::MoreThanOneAnswer) {
+                if (kSearchMode == SearchMode::MoreThanOneSolution) {
                     if (this->answers_.size() > 1)
                         return true;
                 }
@@ -1978,7 +1978,7 @@ public:
         return false;
     }
 
-    bool solve(Board & board) {
+    int solve(Board & board) {
         this->init_board(board);
 
         ptrdiff_t empties = this->calc_empties(board);
@@ -2043,7 +2043,7 @@ public:
         }
 #endif
         bool success = this->search(board, empties, this->last_literal_);
-        return success;
+        return (success) ? Status::Solved : Status::Invalid;
     }
 
     void display_result(Board & board, double elapsed_time,
