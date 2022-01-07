@@ -515,7 +515,8 @@ private:
 
 #pragma pack(pop)
 
-    State       state_;
+    size_t numSolutions_;
+    State states_[BoardSize];
 
     static StaticData Static;
 
@@ -627,12 +628,29 @@ private:
         //print_rowHiddenSingleMaskTbl();
     }
 
-    size_t init_board(State & state, Board & board) {
+    void extract_solution(State * state, Board & board) {
+        assert(state != nullptr);
+        for (size_t pos = 0; pos < BoardSize; pos++) {
+            if (board.cells[pos] == '.') {
+                uint32_t mask = tables.posToMask[pos];
+                uint32_t band = tables.div27[pos];
+                for (size_t num = 0; num < Numbers; num++) {
+                    if ((state->candidates[num].bands[band] & mask) != 0) {
+                        board.cells[pos] = (char)('1' + num);
+                        break;
+                    }
+                }
+            }
+        }
+        //board.cells[BoardSize] = 0;
+    }
+
+    size_t init_board(State * state, Board & board) {
         if (kSearchMode > SearchMode::OneSolution) {
             this->answers_.clear();
         }
 
-        state.init();
+        state->init();
 
         register BitVec08x16 solved_cells;
         solved_cells.setAllZeros();
@@ -648,20 +666,20 @@ private:
             }
         }
 
-        void * pCells16 = (void *)&state.solvedCells;
+        void * pCells16 = (void *)&state->solvedCells;
         solved_cells.saveAligned(pCells16);
 
         return candidates;
     }
 
-    inline void update_peer_cells(State & state, BitVec08x16 & solved_cells, size_t fill_pos, size_t fill_num) {
+    inline void update_peer_cells(State * state, BitVec08x16 & solved_cells, size_t fill_pos, size_t fill_num) {
         assert(fill_pos < Sudoku::kBoardSize);
         assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
 
         size_t rowBit = fill_num * Rows + tables.div9[fill_pos];
         uint32_t band = tables.div27[rowBit];
         uint32_t shift = tables.mod27[rowBit];
-        state.solvedRows.bands[band] |= 1U << shift;
+        state->solvedRows.bands[band] |= 1U << shift;
 
         BitVec08x16 cells16, mask16;
         void * pCells16, * pMask16;
@@ -672,13 +690,13 @@ private:
         solved_cells |= fill_mask;
 
         for (size_t num = 0; num < Numbers; num++) {
-            pCells16 = (void *)&state.candidates[num];
+            pCells16 = (void *)&state->candidates[num];
             cells16.loadAligned(pCells16);
             cells16.and_not(fill_mask);
             cells16.saveAligned(pCells16);
         }
 
-        pCells16 = (void *)&state.candidates[fill_num];
+        pCells16 = (void *)&state->candidates[fill_num];
         pMask16 = (void *)&Static.flip_mask[fill_pos];
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
@@ -687,20 +705,20 @@ private:
         cells16.saveAligned(pCells16);
     }
 
-    inline void update_peer_cells(State & state, size_t fill_pos, size_t fill_num) {
+    inline void update_peer_cells(State * state, size_t fill_pos, size_t fill_num) {
         assert(fill_pos < Sudoku::kBoardSize);
         assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
 
         size_t rowBit = fill_num * Rows + tables.div9[fill_pos];
         uint32_t band = tables.div27[rowBit];
         uint32_t shift = tables.mod27[rowBit];
-        state.solvedRows.bands[band] |= 1U << shift;
+        state->solvedRows.bands[band] |= 1U << shift;
 
         BitVec08x16 cells16, mask16;
         void * pCells16, * pMask16;
 
         BitVec08x16 fill_mask, solved_cells;
-        pCells16 = (void *)&state.solvedCells;
+        pCells16 = (void *)&state->solvedCells;
         pMask16 = (void *)&Static.fill_mask[fill_pos];
         solved_cells.loadAligned(pCells16);
         fill_mask.loadAligned(pMask16);
@@ -708,13 +726,13 @@ private:
         solved_cells.saveAligned(pCells16);
 
         for (size_t num = 0; num < Numbers; num++) {
-            pCells16 = (void *)&state.candidates[num];
+            pCells16 = (void *)&state->candidates[num];
             cells16.loadAligned(pCells16);
             cells16.and_not(fill_mask);
             cells16.saveAligned(pCells16);
         }
 
-        pCells16 = (void *)&state.candidates[fill_num];
+        pCells16 = (void *)&state->candidates[fill_num];
         pMask16 = (void *)&Static.flip_mask[fill_pos];
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
@@ -724,18 +742,32 @@ private:
     }
 
     JSTD_FORCE_INLINE
-    void update_band_solved_mask32(State & state, size_t band, size_t fill_pos, size_t fill_num) {
-        state.candidates[fill_num].bands[band] &= bandUnsolvedBitsTbl32[fill_pos];
+    void update_band_solved_mask32(State * state, size_t band, size_t pos, size_t num) {
+        state->candidates[num].bands[band] &= bandUnsolvedBitsTbl32[pos];
     }
 
     JSTD_FORCE_INLINE
-    void update_band_solved_mask64(State & state, size_t band, size_t fill_pos, size_t fill_num) {
-        state.candidates[fill_num].bands64[band] &= bandUnsolvedBitsTbl64[fill_pos];
+    void update_band_solved_mask64(State * state, size_t band, size_t pos, size_t num) {
+        state->candidates[num].bands64[band] &= bandUnsolvedBitsTbl64[pos];
+    }
+
+    JSTD_FORCE_INLINE
+    void update_band_solved_mask32(State * state, size_t band, size_t pos, size_t num, uint32_t mask) {
+        if ((state->candidates[num].bands[band] & mask) != 0) {
+            state->candidates[num].bands[band] &= bandUnsolvedBitsTbl32[pos];
+        }
+    }
+
+    JSTD_FORCE_INLINE
+    void update_band_solved_mask64(State * state, size_t band, size_t pos, size_t num, uint64_t mask) {
+        if ((state->candidates[num].bands64[band] & mask) != 0) {
+            state->candidates[num].bands64[band] &= bandUnsolvedBitsTbl64[pos];
+        }
     }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, bool fast_mode>
     JSTD_FORCE_INLINE
-    uint32_t update_up_down_cells(State & state, uint32_t & band) {
+    uint32_t update_up_down_cells(State * state, uint32_t & band) {
         uint32_t rowTriadsMask = rowTriadsMaskTbl[band & kFullRowBits] |
                                 (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
                                 (rowTriadsMaskTbl[(band >> 18U) & kFullRowBits] << 6U);
@@ -745,19 +777,19 @@ private:
             assert(band != 0);
             uint32_t colCombBits = (band | (band >> 9U) | (band >> 18U)) & kFullRowBits;
 #if JCZ_V2_COMP_COLCOMBBITS
-            if (colCombBits != state.colCombBits[digit].bands[self]) {
-                state.colCombBits[digit].bands[self] = colCombBits;
+            if (colCombBits != state->colCombBits[digit].bands[self]) {
+                state->colCombBits[digit].bands[self] = colCombBits;
                 uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
-                state.candidates[digit].bands[peer1] &= colLockedSingleMask;
-                state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                state->candidates[digit].bands[peer1] &= colLockedSingleMask;
+                state->candidates[digit].bands[peer2] &= colLockedSingleMask;
             }
 #else
             uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
-            state.candidates[digit].bands[peer1] &= colLockedSingleMask;
-            state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+            state->candidates[digit].bands[peer1] &= colLockedSingleMask;
+            state->candidates[digit].bands[peer2] &= colLockedSingleMask;
 #endif
-            state.candidates[digit].bands[self] = band;
-            state.prevCandidates[digit].bands[self] = band;
+            state->candidates[digit].bands[self] = band;
+            state->prevCandidates[digit].bands[self] = band;
             uint32_t newSolvedRows = rowHiddenSingleMaskTbl[rowTriadsSingleMaskTbl[rowTriadsMask] &
                                                             combColumnSingleMaskTbl[colCombBits]];
             return newSolvedRows;
@@ -769,33 +801,33 @@ private:
 
     template <uint32_t digit, uint32_t band_id>
     JSTD_FORCE_INLINE
-    void update_solved_rows(State & state, uint32_t band, uint32_t bandSolvedRows) {
+    void update_solved_rows(State * state, uint32_t band, uint32_t bandSolvedRows) {
         uint32_t solvedCells = band & solvedRowsBitMaskTbl[bandSolvedRows];
-        assert(solvedCells != 0);
-        state.solvedCells.bands[band_id] |= solvedCells;
+        //assert(solvedCells != 0);
+        state->solvedCells.bands[band_id] |= solvedCells;
         uint32_t unsolvedCells = ~solvedCells;
         if (digit != 0)
-            state.candidates[0].bands[band_id] &= unsolvedCells;
+            state->candidates[0].bands[band_id] &= unsolvedCells;
         if (digit != 1)
-            state.candidates[1].bands[band_id] &= unsolvedCells;
+            state->candidates[1].bands[band_id] &= unsolvedCells;
         if (digit != 2)
-            state.candidates[2].bands[band_id] &= unsolvedCells;
+            state->candidates[2].bands[band_id] &= unsolvedCells;
         if (digit != 3)
-            state.candidates[3].bands[band_id] &= unsolvedCells;
+            state->candidates[3].bands[band_id] &= unsolvedCells;
         if (digit != 4)
-            state.candidates[4].bands[band_id] &= unsolvedCells;
+            state->candidates[4].bands[band_id] &= unsolvedCells;
         if (digit != 5)
-            state.candidates[5].bands[band_id] &= unsolvedCells;
+            state->candidates[5].bands[band_id] &= unsolvedCells;
         if (digit != 6)
-            state.candidates[6].bands[band_id] &= unsolvedCells;
+            state->candidates[6].bands[band_id] &= unsolvedCells;
         if (digit != 7)
-            state.candidates[7].bands[band_id] &= unsolvedCells;
+            state->candidates[7].bands[band_id] &= unsolvedCells;
         if (digit != 8)
-            state.candidates[8].bands[band_id] &= unsolvedCells;
+            state->candidates[8].bands[band_id] &= unsolvedCells;
     }
 
     template <bool fast_mode = false>
-    int find_hidden_single_literal(State & state) {
+    int find_hidden_single_literal(State * state) {
         register uint32_t solvedRows;
         register uint32_t bandSolvedRows;
 
@@ -805,13 +837,13 @@ private:
             /********* Number 1-3 Start *********/
         
             // Number 1
-            solvedRows = state.solvedRows.bands[0];        
+            solvedRows = state->solvedRows.bands[0];        
             if ((solvedRows & kFullRowBits) != kFullRowBits) {
                 static const uint32_t digit = 0;
 
                 // Number 1 - band 0
-                register uint32_t band = state.candidates[digit].bands[0];
-                if (band != state.prevCandidates[digit].bands[0]) {
+                register uint32_t band = state->candidates[digit].bands[0];
+                if (band != state->prevCandidates[digit].bands[0]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 0, 1, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -823,8 +855,8 @@ private:
                 }
 
                 // Number 1 - band 1
-                band = state.candidates[digit].bands[1];
-                if (band != state.prevCandidates[digit].bands[1]) {
+                band = state->candidates[digit].bands[1];
+                if (band != state->prevCandidates[digit].bands[1]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 1, 0, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -836,8 +868,8 @@ private:
                 }
 
                 // Number 1 - band 2
-                band = state.candidates[digit].bands[2];
-                if (band != state.prevCandidates[digit].bands[2]) {
+                band = state->candidates[digit].bands[2];
+                if (band != state->prevCandidates[digit].bands[2]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 2, 0, 1, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -854,8 +886,8 @@ private:
                 static const uint32_t digit = 1;
 
                 // Number 2 - band 0
-                register uint32_t band = state.candidates[digit].bands[0];
-                if (band != state.prevCandidates[digit].bands[0]) {
+                register uint32_t band = state->candidates[digit].bands[0];
+                if (band != state->prevCandidates[digit].bands[0]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 0, 1, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -867,8 +899,8 @@ private:
                 }
 
                 // Number 2 - band 1
-                band = state.candidates[digit].bands[1];
-                if (band != state.prevCandidates[digit].bands[1]) {
+                band = state->candidates[digit].bands[1];
+                if (band != state->prevCandidates[digit].bands[1]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 1, 0, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -880,8 +912,8 @@ private:
                 }
 
                 // Number 2 - band 2
-                band = state.candidates[digit].bands[2];
-                if (band != state.prevCandidates[digit].bands[2]) {
+                band = state->candidates[digit].bands[2];
+                if (band != state->prevCandidates[digit].bands[2]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 2, 0, 1, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -898,8 +930,8 @@ private:
                 static const uint32_t digit = 2;
 
                 // Number 3 - band 0
-                register uint32_t band = state.candidates[digit].bands[0];
-                if (band != state.prevCandidates[digit].bands[0]) {
+                register uint32_t band = state->candidates[digit].bands[0];
+                if (band != state->prevCandidates[digit].bands[0]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 0, 1, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -911,8 +943,8 @@ private:
                 }
 
                 // Number 3 - band 1
-                band = state.candidates[digit].bands[1];
-                if (band != state.prevCandidates[digit].bands[1]) {
+                band = state->candidates[digit].bands[1];
+                if (band != state->prevCandidates[digit].bands[1]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 1, 0, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -924,8 +956,8 @@ private:
                 }
 
                 // Number 3 - band 2
-                band = state.candidates[digit].bands[2];
-                if (band != state.prevCandidates[digit].bands[2]) {
+                band = state->candidates[digit].bands[2];
+                if (band != state->prevCandidates[digit].bands[2]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 2, 0, 1, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -937,20 +969,20 @@ private:
                 }
             }
 
-            state.solvedRows.bands[0] = solvedRows;
+            state->solvedRows.bands[0] = solvedRows;
 
             /********* Number 1-3 End *********/
 
             /********* Number 4-6 Start *********/
         
             // Number 4
-            solvedRows = state.solvedRows.bands[1];        
+            solvedRows = state->solvedRows.bands[1];        
             if ((solvedRows & kFullRowBits) != kFullRowBits) {
                 static const uint32_t digit = 3;
 
                 // Number 4 - band 0
-                register uint32_t band = state.candidates[digit].bands[0];
-                if (band != state.prevCandidates[digit].bands[0]) {
+                register uint32_t band = state->candidates[digit].bands[0];
+                if (band != state->prevCandidates[digit].bands[0]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 0, 1, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -962,8 +994,8 @@ private:
                 }
 
                 // Number 4 - band 1
-                band = state.candidates[digit].bands[1];
-                if (band != state.prevCandidates[digit].bands[1]) {
+                band = state->candidates[digit].bands[1];
+                if (band != state->prevCandidates[digit].bands[1]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 1, 0, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -975,8 +1007,8 @@ private:
                 }
 
                 // Number 4 - band 2
-                band = state.candidates[digit].bands[2];
-                if (band != state.prevCandidates[digit].bands[2]) {
+                band = state->candidates[digit].bands[2];
+                if (band != state->prevCandidates[digit].bands[2]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 2, 0, 1, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -993,8 +1025,8 @@ private:
                 static const uint32_t digit = 4;
 
                 // Number 5 - band 0
-                register uint32_t band = state.candidates[digit].bands[0];
-                if (band != state.prevCandidates[digit].bands[0]) {
+                register uint32_t band = state->candidates[digit].bands[0];
+                if (band != state->prevCandidates[digit].bands[0]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 0, 1, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1006,8 +1038,8 @@ private:
                 }
 
                 // Number 5 - band 1
-                band = state.candidates[digit].bands[1];
-                if (band != state.prevCandidates[digit].bands[1]) {
+                band = state->candidates[digit].bands[1];
+                if (band != state->prevCandidates[digit].bands[1]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 1, 0, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1019,8 +1051,8 @@ private:
                 }
 
                 // Number 5 - band 2
-                band = state.candidates[digit].bands[2];
-                if (band != state.prevCandidates[digit].bands[2]) {
+                band = state->candidates[digit].bands[2];
+                if (band != state->prevCandidates[digit].bands[2]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 2, 0, 1, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1037,8 +1069,8 @@ private:
                 static const uint32_t digit = 5;
 
                 // Number 6 - band 0
-                register uint32_t band = state.candidates[digit].bands[0];
-                if (band != state.prevCandidates[digit].bands[0]) {
+                register uint32_t band = state->candidates[digit].bands[0];
+                if (band != state->prevCandidates[digit].bands[0]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 0, 1, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1050,8 +1082,8 @@ private:
                 }
 
                 // Number 6 - band 1
-                band = state.candidates[digit].bands[1];
-                if (band != state.prevCandidates[digit].bands[1]) {
+                band = state->candidates[digit].bands[1];
+                if (band != state->prevCandidates[digit].bands[1]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 1, 0, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1063,8 +1095,8 @@ private:
                 }
 
                 // Number 6 - band 2
-                band = state.candidates[digit].bands[2];
-                if (band != state.prevCandidates[digit].bands[2]) {
+                band = state->candidates[digit].bands[2];
+                if (band != state->prevCandidates[digit].bands[2]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 2, 0, 1, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1076,20 +1108,20 @@ private:
                 }
             }
 
-            state.solvedRows.bands[1] = solvedRows;
+            state->solvedRows.bands[1] = solvedRows;
 
             /********* Number 4-6 End *********/
 
             /********* Number 7-9 Start *********/
         
             // Number 7
-            solvedRows = state.solvedRows.bands[2];        
+            solvedRows = state->solvedRows.bands[2];        
             if ((solvedRows & kFullRowBits) != kFullRowBits) {
                 static const uint32_t digit = 6;
 
                 // Number 7 - band 0
-                register uint32_t band = state.candidates[digit].bands[0];
-                if (band != state.prevCandidates[digit].bands[0]) {
+                register uint32_t band = state->candidates[digit].bands[0];
+                if (band != state->prevCandidates[digit].bands[0]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 0, 1, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1101,8 +1133,8 @@ private:
                 }
 
                 // Number 7 - band 1
-                band = state.candidates[digit].bands[1];
-                if (band != state.prevCandidates[digit].bands[1]) {
+                band = state->candidates[digit].bands[1];
+                if (band != state->prevCandidates[digit].bands[1]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 1, 0, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1114,8 +1146,8 @@ private:
                 }
 
                 // Number 7 - band 2
-                band = state.candidates[digit].bands[2];
-                if (band != state.prevCandidates[digit].bands[2]) {
+                band = state->candidates[digit].bands[2];
+                if (band != state->prevCandidates[digit].bands[2]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 2, 0, 1, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1132,8 +1164,8 @@ private:
                 static const uint32_t digit = 7;
 
                 // Number 8 - band 0
-                register uint32_t band = state.candidates[digit].bands[0];
-                if (band != state.prevCandidates[digit].bands[0]) {
+                register uint32_t band = state->candidates[digit].bands[0];
+                if (band != state->prevCandidates[digit].bands[0]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 0, 1, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1145,8 +1177,8 @@ private:
                 }
 
                 // Number 8 - band 1
-                band = state.candidates[digit].bands[1];
-                if (band != state.prevCandidates[digit].bands[1]) {
+                band = state->candidates[digit].bands[1];
+                if (band != state->prevCandidates[digit].bands[1]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 1, 0, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1158,8 +1190,8 @@ private:
                 }
 
                 // Number 8 - band 2
-                band = state.candidates[digit].bands[2];
-                if (band != state.prevCandidates[digit].bands[2]) {
+                band = state->candidates[digit].bands[2];
+                if (band != state->prevCandidates[digit].bands[2]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 2, 0, 1, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1176,8 +1208,8 @@ private:
                 static const uint32_t digit = 8;
 
                 // Number 9 - band 0
-                register uint32_t band = state.candidates[digit].bands[0];
-                if (band != state.prevCandidates[digit].bands[0]) {
+                register uint32_t band = state->candidates[digit].bands[0];
+                if (band != state->prevCandidates[digit].bands[0]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 0, 1, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1189,8 +1221,8 @@ private:
                 }
 
                 // Number 9 - band 1
-                band = state.candidates[digit].bands[1];
-                if (band != state.prevCandidates[digit].bands[1]) {
+                band = state->candidates[digit].bands[1];
+                if (band != state->prevCandidates[digit].bands[1]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 1, 0, 2, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1202,8 +1234,8 @@ private:
                 }
 
                 // Number 9 - band 2
-                band = state.candidates[digit].bands[2];
-                if (band != state.prevCandidates[digit].bands[2]) {
+                band = state->candidates[digit].bands[2];
+                if (band != state->prevCandidates[digit].bands[2]) {
                     bandSolvedRows = this->update_up_down_cells<digit, 2, 0, 1, fast_mode>(state, band);
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
@@ -1215,7 +1247,7 @@ private:
                 }
             }
 
-            state.solvedRows.bands[2] = solvedRows;
+            state->solvedRows.bands[2] = solvedRows;
 
             /********* Number 7-9 End *********/
         } while (bandSolvedRows != uint32_t(-1));
@@ -1223,16 +1255,16 @@ private:
         return Status::Success;
     }
 
-    int fast_find_unique_candidate_cells(State & state) {
+    int fast_find_unique_candidate_cells(State * state) {
         BitVec08x16 R1, R2;
 
-        void * pCells16 = (void *)&state.candidates[0];
+        void * pCells16 = (void *)&state->candidates[0];
         R1.loadAligned(pCells16);
         R2.setAllZeros();
 
         for (size_t num = 1; num < Numbers; num++) {
             BitVec08x16 row_bits;
-            pCells16 = (void *)&state.candidates[num];
+            pCells16 = (void *)&state->candidates[num];
             row_bits.loadAligned(pCells16);
 
             R2 |= R1 & row_bits;
@@ -1245,7 +1277,7 @@ private:
         //if (!is_legal) return -1;
 
         BitVec08x16 solved_bits;
-        solved_bits.loadAligned((void *)&state.solvedCells);
+        solved_bits.loadAligned((void *)&state->solvedCells);
 
         R1.and_not(R2);
         R1.and_not(solved_bits);
@@ -1270,9 +1302,9 @@ private:
                     assert(pos != size_t(-1));
 
                     for (size_t num = 0; num < Numbers; num++) {
-                        uint64_t row_bits = state.candidates[num].bands64[band];
+                        uint64_t row_bits = state->candidates[num].bands64[band];
                         if ((row_bits & bit) != 0) {
-                            this->update_band_solved_mask64(this->state_, band, pos, num);
+                            this->update_band_solved_mask64(state, band, pos, num);
                             cell_count++;
                             break;
                         }
@@ -1290,9 +1322,9 @@ private:
                 assert(pos != size_t(-1));
 
                 for (size_t num = 0; num < Numbers; num++) {
-                    uint64_t row_bits = state.candidates[num].bands64[0];
+                    uint64_t row_bits = state->candidates[num].bands64[0];
                     if ((row_bits & bit) != 0) {
-                        this->update_band_solved_mask64(this->state_, 0, pos, num);
+                        this->update_band_solved_mask64(state, 0, pos, num);
                         cell_count++;
                         break;
                     }
@@ -1309,9 +1341,9 @@ private:
                 assert(pos != size_t(-1));
 
                 for (size_t num = 0; num < Numbers; num++) {
-                    uint64_t row_bits = state.candidates[num].bands64[1];
+                    uint64_t row_bits = state->candidates[num].bands64[1];
                     if ((row_bits & bit) != 0) {
-                        this->update_band_solved_mask64(this->state_, 1, pos, num);
+                        this->update_band_solved_mask64(state, 1, pos, num);
                         cell_count++;
                         break;
                     }
@@ -1330,9 +1362,9 @@ private:
                     assert(pos != size_t(-1));
 
                     for (size_t num = 0; num < Numbers; num++) {
-                        uint32_t row_bits = state.candidates[num].bands[band];
+                        uint32_t row_bits = state->candidates[num].bands[band];
                         if ((row_bits & bit) != 0) {
-                            this->update_solved_cells32(this->state_, pos, num);
+                            this->update_band_solved_mask32(state, pos, num);
                             cell_count++;
                             break;
                         }
@@ -1340,22 +1372,22 @@ private:
                 }
             }
 #endif // __amd64__
-            assert(cell_count > 0);
+            //assert(cell_count > 0);
         }
 
         return cell_count;
     }
 
-    int fast_find_unique_candidate_cells_v2(State & state) {
+    int fast_find_unique_candidate_cells_v2(State * state) {
         BitVec08x16 R1, R2;
 
-        void * pCells16 = (void *)&state.candidates[0];
+        void * pCells16 = (void *)&state->candidates[0];
         R1.loadAligned(pCells16);
         R2.setAllZeros();
 
         for (size_t num = 1; num < Numbers; num++) {
             BitVec08x16 row_bits;
-            pCells16 = (void *)&state.candidates[num];
+            pCells16 = (void *)&state->candidates[num];
             row_bits.loadAligned(pCells16);
 
             R2 |= R1 & row_bits;
@@ -1368,7 +1400,7 @@ private:
         if (!is_legal) return -1;
 
         BitVec08x16 solved_bits;
-        solved_bits.loadAligned((void *)&state.solvedCells);
+        solved_bits.loadAligned((void *)&state->solvedCells);
 
         R1.and_not(R2);
         R1.and_not(solved_bits);
@@ -1389,7 +1421,7 @@ private:
 #endif
             for (size_t num = 0; num < Numbers; num++) {
                 BitVec08x16 row_bits;
-                void * pCells16 = (void *)&state.candidates[num];
+                void * pCells16 = (void *)&state->candidates[num];
                 row_bits.loadAligned(pCells16);
 
                 row_bits &= R1;
@@ -1410,7 +1442,7 @@ private:
                             //assert(board.cells[pos] == '.');
                             //board.cells[pos] = (char)(num + '1');
 
-                            this->update_peer_cells(this->state_, pos, num);
+                            this->update_peer_cells(state, pos, num);
                             cell_count++;
 
                             uint64_t bit = BitUtils::ls1b64(bits64);
@@ -1428,7 +1460,7 @@ private:
                             //assert(board.cells[pos] == '.');
                             //board.cells[pos] = (char)(num + '1');
 
-                            this->update_peer_cells(this->state_, pos, num);
+                            this->update_peer_cells(state, pos, num);
                             cell_count++;
 
                             uint32_t bit = BitUtils::ls1b32(bits32);
@@ -1450,17 +1482,17 @@ private:
         return cell_count;
     }
 
-    int find_unique_candidate_cells(State & state) {
+    int find_unique_candidate_cells(State * state) {
         BitVec08x16 R1, R2, R3;
 
-        void * pCells16 = (void *)&state.candidates[0];
+        void * pCells16 = (void *)&state->candidates[0];
         R1.loadAligned(pCells16);
         R2.setAllZeros();
         R3.setAllZeros();
 
         for (size_t num = 1; num < Numbers; num++) {
             BitVec08x16 row_bits;
-            pCells16 = (void *)&state.candidates[num];
+            pCells16 = (void *)&state->candidates[num];
             row_bits.loadAligned(pCells16);
 
             R3 |= R2 & row_bits;
@@ -1473,11 +1505,13 @@ private:
         if (!is_legal) return -1;
 
         BitVec08x16 solved_bits;
-        solved_bits.loadAligned((void *)&state.solvedCells);
+        solved_bits.loadAligned((void *)&state->solvedCells);
 
-        R2.and_not(R3);
         R1.and_not(R2);
+        R2.and_not(R3);
         R1.and_not(solved_bits);
+
+        R2.saveAligned((void *)&state->pairs);
 
         register BandBoard R1_bits;
         R1.saveAligned((void *)&R1_bits);
@@ -1499,9 +1533,9 @@ private:
                     assert(pos != size_t(-1));
 
                     for (size_t num = 0; num < Numbers; num++) {
-                        uint64_t row_bits = state.candidates[num].bands64[band];
+                        uint64_t row_bits = state->candidates[num].bands64[band];
                         if ((row_bits & bit) != 0) {
-                            this->update_band_solved_mask64(this->state_, band, pos, num);
+                            this->update_band_solved_mask64(state, band, pos, num);
                             cell_count++;
                             break;
                         }
@@ -1519,9 +1553,9 @@ private:
                 assert(pos != size_t(-1));
 
                 for (size_t num = 0; num < Numbers; num++) {
-                    uint64_t row_bits = state.candidates[num].bands64[0];
+                    uint64_t row_bits = state->candidates[num].bands64[0];
                     if ((row_bits & bit) != 0) {
-                        this->update_band_solved_mask64(this->state_, 0, pos, num);
+                        this->update_band_solved_mask64(state, 0, pos, num);
                         cell_count++;
                         break;
                     }
@@ -1538,9 +1572,9 @@ private:
                 assert(pos != size_t(-1));
 
                 for (size_t num = 0; num < Numbers; num++) {
-                    uint64_t row_bits = state.candidates[num].bands64[1];
+                    uint64_t row_bits = state->candidates[num].bands64[1];
                     if ((row_bits & bit) != 0) {
-                        this->update_band_solved_mask64(this->state_, 1, pos, num);
+                        this->update_band_solved_mask64(state, 1, pos, num);
                         cell_count++;
                         break;
                     }
@@ -1559,9 +1593,9 @@ private:
                     assert(pos != size_t(-1));
 
                     for (size_t num = 0; num < Numbers; num++) {
-                        uint32_t row_bits = state.candidates[num].bands[band];
+                        uint32_t row_bits = state->candidates[num].bands[band];
                         if ((row_bits & bit) != 0) {
-                            this->update_solved_cells32(this->state_, pos, num);
+                            this->update_band_solved_mask32(state, pos, num);
                             cell_count++;
                             break;
                         }
@@ -1569,22 +1603,206 @@ private:
                 }
             }
 #endif // __amd64__
-            assert(cell_count > 0);
+            //assert(cell_count > 0);
         }
 
         return cell_count;
     }
 
+    int guess_BiValue_cells(State *& state, Board & board) {
+        assert(state != nullptr);
+ #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+        for (size_t band = 0; band < 2; band++) {
+            uint64_t pairs = state->pairs.bands64[band];
+            if (pairs) {
+                size_t bit_pos = BitUtils::bsf64(pairs);
+                uint64_t mask = BitUtils::ls1b64(pairs);
+
+                size_t pos = bandBitPosToPos64[band][bit_pos];
+                assert(pos != size_t(-1));
+
+                int tries = 2;
+                for (size_t num = 0; num < Numbers; num++) {
+                    if ((state->candidates[num].bands64[band] & mask) != 0) {
+                        if (--tries) {
+                            // First of pair
+                            std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
+                            state->candidates[num].bands64[band] ^= mask;
+                            ++state;
+                            basic_solver_t::num_guesses++;
+
+                            this->update_band_solved_mask64(state, band, pos, num, mask);
+
+                            if (this->find_all_unique_candidates<false>(state) != Status::Invalid) {
+                                this->guess_next_cells(state, board);
+                            }
+                            --state;
+                        }
+                        else {
+                            // Second of pair
+                            this->update_band_solved_mask64(state, band, pos, num, mask);
+
+                            if (this->find_all_unique_candidates<false>(state) != Status::Invalid) {
+                                this->guess_next_cells(state, board);
+                            }
+                            return Status::Success;
+                        }
+                    }
+                }
+            }
+        }
+#else // !__amd64__
+        for (size_t band = 0; band < 3; band++) {
+            uint32_t pairs = state->pairs.bands[band];
+            if (pairs) {
+                size_t bit_pos = BitUtils::bsf32(pairs);
+                uint32_t mask = BitUtils::ls1b32(pairs);
+
+                size_t pos = bandBitPosToPos32[band][bit_pos];
+                assert(pos != size_t(-1));
+
+                int tries = 2;
+                for (size_t num = 0; num < Numbers; num++) {
+                    if ((state->candidates[num].bands[band] & mask) != 0) {
+                        if (--tries) {
+                            // First of pair
+                            std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
+                            state->candidates[num].bands[band] ^= mask;
+                            ++state;
+                            basic_solver_t::num_guesses++;
+
+                            this->update_band_solved_mask32(state, band, pos, num);
+
+                            if (this->find_all_unique_candidates<false>(state) != Status::Invalid) {
+                                this->guess_next_cells(state, board);
+                            }
+                            --state;
+                        }
+                        else {
+                            // Second of pair
+                            this->update_band_solved_mask32(state, band, pos, num);
+
+                            if (this->find_all_unique_candidates<false>(state) != Status::Invalid) {
+                                this->guess_next_cells(state, board);
+                            }
+                            return Status::Success;
+                        }
+                    }
+                }
+            }
+        }
+#endif // __amd64__
+        return Status::Failed;
+    }
+
+    int guess_first_cell(State *& state, Board & board) {
+        assert(state != nullptr);
+ #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+        for (size_t band = 0; band < 2; band++) {
+            uint64_t unsolvedCells = state->solvedCells.bands64[band] ^ kBitSet27_64;
+            if (unsolvedCells == 0)
+                continue;
+
+            size_t bit_pos = BitUtils::bsf64(unsolvedCells);
+            uint64_t mask = BitUtils::ls1b64(unsolvedCells);
+
+            size_t pos = bandBitPosToPos64[band][bit_pos];
+            assert(pos != size_t(-1));
+
+            for (size_t num = 0; num < Numbers; num++) {
+                if ((state->candidates[num].bands64[band] & mask) != 0) {
+                    std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
+                    state->candidates[num].bands64[band] ^= mask;
+                    ++state;
+                    basic_solver_t::num_guesses++;
+
+                    this->update_band_solved_mask64(state, band, pos, num);
+
+                    if (this->find_all_unique_candidates<false>(state) != Status::Invalid) {
+                        this->guess_next_cells(state, board);
+                    }
+                    --state;
+                }
+            }
+
+            return Status::Success;
+        }
+#else
+        for (size_t band = 0; band < 3; band++) {
+            uint32_t unsolvedCells = state->solvedCells.bands[band] ^ kBitSet27;
+            if (unsolvedCells == 0)
+                continue;
+
+            size_t bit_pos = BitUtils::bsf32(unsolvedCells);
+            uint32_t mask = BitUtils::ls1b32(unsolvedCells);
+
+            size_t pos = bandBitPosToPos32[band][bit_pos];
+            assert(pos != size_t(-1));
+
+            for (size_t num = 0; num < Numbers; num++) {
+                if ((state->candidates[num].bands[band] & mask) != 0) {
+                    std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
+                    state->candidates[num].bands[band] ^= mask;
+                    ++state;
+                    basic_solver_t::num_guesses++;
+
+                    this->update_band_solved_mask32(state, band, pos, num);
+
+                    if (this->find_all_unique_candidates<false>(state) != Status::Invalid) {
+                        this->guess_next_cells(state, board);
+                    }
+                    --state;
+                }
+            }
+
+            return Status::Success;
+        }
+#endif
+        return Status::Failed;
+    }
+
+    int guess_next_cells(State *& state, Board & board) {
+        assert(state != nullptr);
+        if ((state->solvedCells.bands64[0] == kBitSet27_64) &&
+            (state->solvedCells.bands64[1] == kBitSet27)) {
+            if (kSearchMode > SearchMode::OneSolution) {
+                this->extract_solution(state, board);
+                this->answers_.push_back(board);
+                this->numSolutions_++;
+                if (kSearchMode == SearchMode::MoreThanOneSolution) {
+                    if (this->answers_.size() > 1)
+                        return Status::Solved;
+                }
+            }
+            else {
+                this->extract_solution(state, board);
+                this->numSolutions_++;
+                return Status::Solved;
+            }
+        }
+
+        if (this->guess_BiValue_cells(state, board) == Status::Failed) {
+            this->guess_first_cell(state, board);
+        }
+
+        return Status::Success;
+    }
+
 public:
     template <bool fast_mode>
-    int find_all_unique_candidates(State & state) {
+    int find_all_unique_candidates(State * state) {
+        if (!fast_mode && (this->numSolutions_ >= 2))
+            return Status::Invalid;
+
         do {
             int status = this->find_hidden_single_literal<fast_mode>(state);
             if (!fast_mode && (status == Status::Invalid))
                 return status;
 
-            if ((this->state_.solvedCells.bands64[0] == kBitSet27_64) &&
-                (this->state_.solvedCells.bands64[1] == kBitSet27)) {
+            if ((state->solvedCells.bands64[0] == kBitSet27_64) &&
+                (state->solvedCells.bands64[1] == kBitSet27)) {
                 return Status::Solved;
             }
 
@@ -1593,45 +1811,46 @@ public:
                 unique_cells = this->fast_find_unique_candidate_cells(state);
             else
                 unique_cells = this->find_unique_candidate_cells(state);
-            if (unique_cells <= 0)
+            if (unique_cells == 0)
                 break;
+            if (unique_cells < 0)
+                return Status::Invalid;
         } while (1);
 
         return Status::Success;
     }
 
-    int search(State & state) {
-        if ((state.solvedCells.bands64[0] == kBitSet27_64) &&
-            (state.solvedCells.bands64[1] == kBitSet27)) {
-            if (kSearchMode > SearchMode::OneSolution) {
-                Board board;
-                this->answers_.push_back(board);
-                if (kSearchMode == SearchMode::MoreThanOneSolution) {
-                    if (this->answers_.size() > 1)
-                        return Status::Solved;
-                }
-            }
-            else {
-                return Status::Solved;
-            }
+    int search(State *& state, Board & board) {
+        int status = Status::Invalid;
+        int unique_cells = this->find_unique_candidate_cells(state);
+        if (unique_cells > 0) {
+            status = this->find_all_unique_candidates<false>(state);
+            if (status == Status::Invalid)
+                return status;
         }
-
-        return Status::Invalid;
+        status = this->guess_next_cells(state, board);
+        return status;
     }
 
     int solve(Board & board) {
-        size_t candidates = this->init_board(this->state_, board);
+        this->numSolutions_ = 0;
+        basic_solver_t::num_guesses = 0;
+
+        State * state = &this->states_[0];
+        size_t candidates = this->init_board(state, board);
         if (candidates < Sudoku::kMinInitCandidates)
             return Status::Invalid;
 
-        int status = this->find_all_unique_candidates<true>(this->state_);
-        if (status == Status::Solved)
+        int status = this->find_all_unique_candidates<true>(state);
+        if (status == Status::Solved) {
+            //this->extract_solution(state, board);
             return Status::UniqueSolution;
+        }
         else if (status == Status::Invalid)
             return status;
 
-        status = this->search(this->state_);
-        return status;
+        status = this->search(state, board);
+        return (int)this->numSolutions_;
     }
 
     void display_result(Board & board, double elapsed_time,
