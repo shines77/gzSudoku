@@ -298,6 +298,54 @@ static const unsigned int solvedRowsReverseBitMaskTbl[8] = {
     0777777777, 0777777000, 0777000777, 0777000000, 0777777, 0777000, 0777, 00
 };
 
+static const uint32_t bandUnsolvedBitsTbl32[81] = {
+    0x37E3F001, 0x37E3F002, 0x37E3F004, 0x371F8E08, 0x371F8E10, 0x371F8E20, 0x30FC7E40, 0x30FC7E80,
+    0x30FC7F00, 0x2FE003F8, 0x2FE005F8, 0x2FE009F8, 0x2F1C11C7, 0x2F1C21C7, 0x2F1C41C7, 0x28FC803F,
+    0x28FD003F, 0x28FE003F, 0x1807F1F8, 0x180BF1F8, 0x1813F1F8, 0x18238FC7, 0x18438FC7, 0x18838FC7,
+    0x19007E3F, 0x1A007E3F, 0x1C007E3F, 0x37E3F001, 0x37E3F002, 0x37E3F004, 0x371F8E08, 0x371F8E10,
+    0x371F8E20, 0x30FC7E40, 0x30FC7E80, 0x30FC7F00, 0x2FE003F8, 0x2FE005F8, 0x2FE009F8, 0x2F1C11C7,
+    0x2F1C21C7, 0x2F1C41C7, 0x28FC803F, 0x28FD003F, 0x28FE003F, 0x1807F1F8, 0x180BF1F8, 0x1813F1F8,
+    0x18238FC7, 0x18438FC7, 0x18838FC7, 0x19007E3F, 0x1A007E3F, 0x1C007E3F, 0x37E3F001, 0x37E3F002,
+    0x37E3F004, 0x371F8E08, 0x371F8E10, 0x371F8E20, 0x30FC7E40, 0x30FC7E80, 0x30FC7F00, 0x2FE003F8,
+    0x2FE005F8, 0x2FE009F8, 0x2F1C11C7, 0x2F1C21C7, 0x2F1C41C7, 0x28FC803F, 0x28FD003F, 0x28FE003F,
+    0x1807F1F8, 0x180BF1F8, 0x1813F1F8, 0x18238FC7, 0x18438FC7, 0x18838FC7, 0x19007E3F, 0x1A007E3F,
+    0x1C007E3F
+};
+
+static const uint64_t bandUnsolvedBitsTbl64[81] = {
+    0xFFFFFFFF37E3F001, 0xFFFFFFFF37E3F002, 0xFFFFFFFF37E3F004, 0xFFFFFFFF371F8E08,
+    0xFFFFFFFF371F8E10, 0xFFFFFFFF371F8E20, 0xFFFFFFFF30FC7E40, 0xFFFFFFFF30FC7E80,
+
+    0xFFFFFFFF30FC7F00, 0xFFFFFFFF2FE003F8, 0xFFFFFFFF2FE005F8, 0xFFFFFFFF2FE009F8,
+    0xFFFFFFFF2F1C11C7, 0xFFFFFFFF2F1C21C7, 0xFFFFFFFF2F1C41C7, 0xFFFFFFFF28FC803F,
+
+    0xFFFFFFFF28FD003F, 0xFFFFFFFF28FE003F, 0xFFFFFFFF1807F1F8, 0xFFFFFFFF180BF1F8,
+    0xFFFFFFFF1813F1F8, 0xFFFFFFFF18238FC7, 0xFFFFFFFF18438FC7, 0xFFFFFFFF18838FC7,
+
+    0xFFFFFFFF19007E3F, 0xFFFFFFFF1A007E3F, 0xFFFFFFFF1C007E3F, 0x37E3F001FFFFFFFF,  // 28 (27 + 1)
+    0x37E3F002FFFFFFFF, 0x37E3F004FFFFFFFF, 0x371F8E08FFFFFFFF, 0x371F8E10FFFFFFFF,
+
+    0x371F8E20FFFFFFFF, 0x30FC7E40FFFFFFFF, 0x30FC7E80FFFFFFFF, 0x30FC7F00FFFFFFFF,
+    0x2FE003F8FFFFFFFF, 0x2FE005F8FFFFFFFF, 0x2FE009F8FFFFFFFF, 0x2F1C11C7FFFFFFFF,
+
+    0x2F1C21C7FFFFFFFF, 0x2F1C41C7FFFFFFFF, 0x28FC803FFFFFFFFF, 0x28FD003FFFFFFFFF,
+    0x28FE003FFFFFFFFF, 0x1807F1F8FFFFFFFF, 0x180BF1F8FFFFFFFF, 0x1813F1F8FFFFFFFF,
+
+    0x18238FC7FFFFFFFF, 0x18438FC7FFFFFFFF, 0x18838FC7FFFFFFFF, 0x19007E3FFFFFFFFF,
+    0x1A007E3FFFFFFFFF, 0x1C007E3FFFFFFFFF, 0xFFFFFFFF37E3F001, 0xFFFFFFFF37E3F002,  // 56 (54 + 2)
+
+    0xFFFFFFFF37E3F004, 0xFFFFFFFF371F8E08, 0xFFFFFFFF371F8E10, 0xFFFFFFFF371F8E20,
+    0xFFFFFFFF30FC7E40, 0xFFFFFFFF30FC7E80, 0xFFFFFFFF30FC7F00, 0xFFFFFFFF2FE003F8,
+
+    0xFFFFFFFF2FE005F8, 0xFFFFFFFF2FE009F8, 0xFFFFFFFF2F1C11C7, 0xFFFFFFFF2F1C21C7,
+    0xFFFFFFFF2F1C41C7, 0xFFFFFFFF28FC803F, 0xFFFFFFFF28FD003F, 0xFFFFFFFF28FE003F,
+
+    0xFFFFFFFF1807F1F8, 0xFFFFFFFF180BF1F8, 0xFFFFFFFF1813F1F8, 0xFFFFFFFF18238FC7,
+    0xFFFFFFFF18438FC7, 0xFFFFFFFF18838FC7, 0xFFFFFFFF19007E3F, 0xFFFFFFFF1A007E3F,
+
+    0xFFFFFFFF1C007E3F
+};
+
 static const int8_t bandBitPosToPos64[2][64] = {
     // bit64[0]
     {
@@ -736,6 +784,16 @@ private:
         cells16.and_not(mask16);
         cells16._or(fill_mask);
         cells16.saveAligned(pCells16);
+    }
+
+    JSTD_FORCE_INLINE
+    void update_band_solved_mask32(State & state, size_t band, size_t fill_pos, size_t fill_num) {
+        state.candidates[fill_num].bands[band] &= bandUnsolvedBitsTbl32[fill_pos];
+    }
+
+    JSTD_FORCE_INLINE
+    void update_band_solved_mask64(State & state, size_t band, size_t fill_pos, size_t fill_num) {
+        state.candidates[fill_num].bands64[band] &= bandUnsolvedBitsTbl64[fill_pos];
     }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, bool fast_mode>
@@ -1277,7 +1335,7 @@ private:
                     for (size_t num = 0; num < Numbers; num++) {
                         uint64_t row_bits = state.candidates[num].bands64[band];
                         if ((row_bits & bit) != 0) {
-                            this->update_peer_cells(this->state_, pos, num);
+                            this->update_band_solved_mask64(this->state_, band, pos, num);
                             cell_count++;
                             break;
                         }
@@ -1297,7 +1355,7 @@ private:
                 for (size_t num = 0; num < Numbers; num++) {
                     uint64_t row_bits = state.candidates[num].bands64[0];
                     if ((row_bits & bit) != 0) {
-                        this->update_peer_cells(this->state_, pos, num);
+                        this->update_band_solved_mask64(this->state_, 0, pos, num);
                         cell_count++;
                         break;
                     }
@@ -1316,7 +1374,7 @@ private:
                 for (size_t num = 0; num < Numbers; num++) {
                     uint64_t row_bits = state.candidates[num].bands64[1];
                     if ((row_bits & bit) != 0) {
-                        this->update_peer_cells(this->state_, pos, num);
+                        this->update_band_solved_mask64(this->state_, 1, pos, num);
                         cell_count++;
                         break;
                     }
@@ -1337,7 +1395,7 @@ private:
                     for (size_t num = 0; num < Numbers; num++) {
                         uint32_t row_bits = state.candidates[num].bands[band];
                         if ((row_bits & bit) != 0) {
-                            this->update_peer_cells(this->state_, pos, num);
+                            this->update_solved_cells32(this->state_, pos, num);
                             cell_count++;
                             break;
                         }
