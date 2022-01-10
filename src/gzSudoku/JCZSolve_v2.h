@@ -444,6 +444,8 @@ public:
     static const uint32_t kFullRowBits_1 = 0x01FFUL << 9U;
     static const uint32_t kFullRowBits_2 = 0x01FFUL << 18U;
 
+    static const size_t kLimitSolutions = 1;
+
 private:
     enum LiteralType {
         NumRowCols,
@@ -1794,7 +1796,7 @@ private:
 public:
     template <bool fast_mode>
     int find_all_unique_candidates(State * state) {
-        if (!fast_mode && (this->numSolutions_ >= 2))
+        if (!fast_mode && (this->numSolutions_ >= kLimitSolutions))
             return Status::Invalid;
 
         do {
