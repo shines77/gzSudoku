@@ -1636,7 +1636,7 @@ private:
 
                             this->update_band_solved_mask64(state, band, pos, num, mask);
 
-                            if (this->find_all_unique_candidates<false>(state) != Status::Invalid) {
+                            if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cells(state, board);
                             }
                             --state;
@@ -1645,7 +1645,7 @@ private:
                             // Second of pair
                             this->update_band_solved_mask64(state, band, pos, num, mask);
 
-                            if (this->find_all_unique_candidates<false>(state) != Status::Invalid) {
+                            if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cells(state, board);
                             }
                             return Status::Success;
@@ -1676,7 +1676,7 @@ private:
 
                             this->update_band_solved_mask32(state, band, pos, num);
 
-                            if (this->find_all_unique_candidates<false>(state) != Status::Invalid) {
+                            if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cells(state, board);
                             }
                             --state;
@@ -1685,7 +1685,7 @@ private:
                             // Second of pair
                             this->update_band_solved_mask32(state, band, pos, num);
 
-                            if (this->find_all_unique_candidates<false>(state) != Status::Invalid) {
+                            if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cells(state, board);
                             }
                             return Status::Success;
@@ -1722,7 +1722,7 @@ private:
 
                     this->update_band_solved_mask64(state, band, pos, num);
 
-                    if (this->find_all_unique_candidates<false>(state) != Status::Invalid) {
+                    if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cells(state, board);
                     }
                     --state;
@@ -1752,7 +1752,7 @@ private:
 
                     this->update_band_solved_mask32(state, band, pos, num);
 
-                    if (this->find_all_unique_candidates<false>(state) != Status::Invalid) {
+                    if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cells(state, board);
                     }
                     --state;
@@ -1795,7 +1795,7 @@ private:
 
 public:
     template <bool fast_mode>
-    int find_all_unique_candidates(State * state) {
+    int find_all_single_literals(State * state) {
         if (!fast_mode && (this->numSolutions_ >= kLimitSolutions))
             return Status::Invalid;
 
@@ -1827,7 +1827,7 @@ public:
         int status = Status::Invalid;
         int unique_cells = this->find_unique_candidate_cells(state);
         if (unique_cells > 0) {
-            status = this->find_all_unique_candidates<false>(state);
+            status = this->find_all_single_literals<false>(state);
             if (status == Status::Invalid)
                 return status;
         }
@@ -1844,7 +1844,7 @@ public:
         if (candidates < Sudoku::kMinInitCandidates)
             return Status::Invalid;
 
-        int status = this->find_all_unique_candidates<true>(state);
+        int status = this->find_all_single_literals<true>(state);
         if (status == Status::Solved) {
             //this->extract_solution(state, board);
             return Status::UniqueSolution;
