@@ -437,8 +437,9 @@ public:
     static const bool kAllDimIsSame = Sudoku::kAllDimIsSame;
 
     // all pencil marks set - 27 bits per band
-    static const uint32_t kBitSet27     = 0x07FFFFFFUL;
-    static const uint64_t kBitSet27_64  = 0x07FFFFFF07FFFFFFULL;
+    static const uint32_t kBitSet27          = 0x07FFFFFFUL;
+    static const uint64_t kBitSet27_Single64 = 0x0000000007FFFFFFULL;
+    static const uint64_t kBitSet27_Double64 = 0x07FFFFFF07FFFFFFULL;
 
     static const uint32_t kFullRowBits   = 0x01FFUL;
     static const uint32_t kFullRowBits_1 = 0x01FFUL << 9U;
@@ -467,8 +468,8 @@ private:
         }
 
         void set() {
-            this->bands64[0] = kBitSet27_64;
-            this->bands64[1] = kBitSet27;
+            this->bands64[0] = kBitSet27_Double64;
+            this->bands64[1] = kBitSet27_Single64;
         }
     };
 
@@ -829,7 +830,7 @@ private:
     }
 
     template <bool fast_mode = false>
-    int find_hidden_single_literal(State * state) {
+    int find_hidden_singles(State * state) {
         register uint32_t solvedRows;
         register uint32_t bandSolvedRows;
 
@@ -1257,7 +1258,7 @@ private:
         return Status::Success;
     }
 
-    int fast_find_unique_candidate_cells(State * state) {
+    int fast_find_naked_singles(State * state) {
         BitVec08x16 R1, R2;
 
         void * pCells16 = (void *)&state->candidates[0];
@@ -1380,7 +1381,7 @@ private:
         return cell_count;
     }
 
-    int fast_find_unique_candidate_cells_v2(State * state) {
+    int fast_find_naked_singles_v2(State * state) {
         BitVec08x16 R1, R2;
 
         void * pCells16 = (void *)&state->candidates[0];
@@ -1484,7 +1485,7 @@ private:
         return cell_count;
     }
 
-    int find_unique_candidate_cells(State * state) {
+    int normal_find_naked_singles(State * state) {
         BitVec08x16 R1, R2, R3;
 
         void * pCells16 = (void *)&state->candidates[0];
@@ -1611,7 +1612,7 @@ private:
         return cell_count;
     }
 
-    int guess_BiValue_cells(State *& state, Board & board) {
+    int guess_bivalue_cells(State *& state, Board & board) {
         assert(state != nullptr);
  #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
   || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -1637,7 +1638,7 @@ private:
                             this->update_band_solved_mask64(state, band, pos, num, mask);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
-                                this->guess_next_cells(state, board);
+                                this->guess_next_cell(state, board);
                             }
                             --state;
                         }
@@ -1646,7 +1647,7 @@ private:
                             this->update_band_solved_mask64(state, band, pos, num, mask);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
-                                this->guess_next_cells(state, board);
+                                this->guess_next_cell(state, board);
                             }
                             return Status::Success;
                         }
@@ -1677,7 +1678,7 @@ private:
                             this->update_band_solved_mask32(state, band, pos, num);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
-                                this->guess_next_cells(state, board);
+                                this->guess_next_cell(state, board);
                             }
                             --state;
                         }
@@ -1686,7 +1687,7 @@ private:
                             this->update_band_solved_mask32(state, band, pos, num);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
-                                this->guess_next_cells(state, board);
+                                this->guess_next_cell(state, board);
                             }
                             return Status::Success;
                         }
@@ -1702,28 +1703,29 @@ private:
         assert(state != nullptr);
  #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
   || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
-        for (size_t band = 0; band < 2; band++) {
-            uint64_t unsolvedCells = state->solvedCells.bands64[band] ^ kBitSet27_64;
+        // Band64: 0
+        {
+            uint64_t unsolvedCells = state->solvedCells.bands64[0] ^ kBitSet27_Double64;
             if (unsolvedCells == 0)
-                continue;
+                goto Band64_1;
 
             size_t bit_pos = BitUtils::bsf64(unsolvedCells);
             uint64_t mask = BitUtils::ls1b64(unsolvedCells);
 
-            size_t pos = bandBitPosToPos64[band][bit_pos];
+            size_t pos = bandBitPosToPos64[0][bit_pos];
             assert(pos != size_t(-1));
 
             for (size_t num = 0; num < Numbers; num++) {
-                if ((state->candidates[num].bands64[band] & mask) != 0) {
+                if ((state->candidates[num].bands64[0] & mask) != 0) {
                     std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
-                    state->candidates[num].bands64[band] ^= mask;
+                    state->candidates[num].bands64[0] ^= mask;
                     ++state;
                     basic_solver_t::num_guesses++;
 
-                    this->update_band_solved_mask64(state, band, pos, num);
+                    this->update_band_solved_mask64(state, 0, pos, num);
 
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
-                        this->guess_next_cells(state, board);
+                        this->guess_next_cell(state, board);
                     }
                     --state;
                 }
@@ -1731,6 +1733,39 @@ private:
 
             return Status::Success;
         }
+
+Band64_1:
+        // Band64: 1
+        {
+            uint64_t unsolvedCells = state->solvedCells.bands64[1] ^ kBitSet27_Single64;
+            if (unsolvedCells == 0)
+                goto Band64_1;
+
+            size_t bit_pos = BitUtils::bsf64(unsolvedCells);
+            uint64_t mask = BitUtils::ls1b64(unsolvedCells);
+
+            size_t pos = bandBitPosToPos64[1][bit_pos];
+            assert(pos != size_t(-1));
+
+            for (size_t num = 0; num < Numbers; num++) {
+                if ((state->candidates[num].bands64[1] & mask) != 0) {
+                    std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
+                    state->candidates[num].bands64[1] ^= mask;
+                    ++state;
+                    basic_solver_t::num_guesses++;
+
+                    this->update_band_solved_mask64(state, 1, pos, num);
+
+                    if (this->find_all_single_literals<false>(state) != Status::Invalid) {
+                        this->guess_next_cell(state, board);
+                    }
+                    --state;
+                }
+            }
+
+            return Status::Success;
+        }
+
 #else
         for (size_t band = 0; band < 3; band++) {
             uint32_t unsolvedCells = state->solvedCells.bands[band] ^ kBitSet27;
@@ -1753,7 +1788,7 @@ private:
                     this->update_band_solved_mask32(state, band, pos, num);
 
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
-                        this->guess_next_cells(state, board);
+                        this->guess_next_cell(state, board);
                     }
                     --state;
                 }
@@ -1765,10 +1800,10 @@ private:
         return Status::Failed;
     }
 
-    int guess_next_cells(State *& state, Board & board) {
+    int guess_next_cell(State *& state, Board & board) {
         assert(state != nullptr);
-        if ((state->solvedCells.bands64[0] == kBitSet27_64) &&
-            (state->solvedCells.bands64[1] == kBitSet27)) {
+        if ((state->solvedCells.bands64[0] == kBitSet27_Double64) &&
+            (state->solvedCells.bands64[1] == kBitSet27_Single64)) {
             if (kSearchMode > SearchMode::OneSolution) {
                 this->extract_solution(state, board);
                 this->answers_.push_back(board);
@@ -1786,34 +1821,39 @@ private:
             }
         }
 
-        if (this->guess_BiValue_cells(state, board) == Status::Failed) {
+        if (this->guess_bivalue_cells(state, board) == Status::Failed) {
             this->guess_first_cell(state, board);
         }
 
         return Status::Success;
     }
 
-public:
+    template <bool fast_mode>
+    int find_naked_singles(State * state) {
+        int unique_cells;
+        if (fast_mode)
+            unique_cells = this->fast_find_naked_singles(state);
+        else
+            unique_cells = this->normal_find_naked_singles(state);
+        return unique_cells;
+    }
+
     template <bool fast_mode>
     int find_all_single_literals(State * state) {
         if (!fast_mode && (this->numSolutions_ >= kLimitSolutions))
-            return Status::Invalid;
+            return Status::Solved;
 
         do {
-            int status = this->find_hidden_single_literal<fast_mode>(state);
+            int status = this->find_hidden_singles<fast_mode>(state);
             if (!fast_mode && (status == Status::Invalid))
                 return status;
 
-            if ((state->solvedCells.bands64[0] == kBitSet27_64) &&
-                (state->solvedCells.bands64[1] == kBitSet27)) {
+            if ((state->solvedCells.bands64[0] == kBitSet27_Double64) &&
+                (state->solvedCells.bands64[1] == kBitSet27_Single64)) {
                 return Status::Solved;
             }
 
-            int unique_cells;
-            if (fast_mode)
-                unique_cells = this->fast_find_unique_candidate_cells(state);
-            else
-                unique_cells = this->find_unique_candidate_cells(state);
+            int unique_cells = this->find_naked_singles<fast_mode>(state);
             if (unique_cells == 0)
                 break;
             if (unique_cells < 0)
@@ -1823,15 +1863,16 @@ public:
         return Status::Success;
     }
 
+public:
     int search(State *& state, Board & board) {
         int status = Status::Invalid;
-        int unique_cells = this->find_unique_candidate_cells(state);
+        int unique_cells = this->normal_find_naked_singles(state);
         if (unique_cells > 0) {
             status = this->find_all_single_literals<false>(state);
             if (status == Status::Invalid)
                 return status;
         }
-        status = this->guess_next_cells(state, board);
+        status = this->guess_next_cell(state, board);
         return status;
     }
 
