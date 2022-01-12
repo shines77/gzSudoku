@@ -1739,7 +1739,7 @@ Band64_1:
         {
             uint64_t unsolvedCells = state->solvedCells.bands64[1] ^ kBitSet27_Single64;
             if (unsolvedCells == 0)
-                goto Band64_1;
+                goto Band64_End;
 
             size_t bit_pos = BitUtils::bsf64(unsolvedCells);
             uint64_t mask = BitUtils::ls1b64(unsolvedCells);
@@ -1797,6 +1797,7 @@ Band64_1:
             return Status::Success;
         }
 #endif
+Band64_End:
         return Status::Failed;
     }
 
