@@ -1704,11 +1704,8 @@ private:
  #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
   || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
         // Band64: 0
-        {
-            uint64_t unsolvedCells = state->solvedCells.bands64[0] ^ kBitSet27_Double64;
-            if (unsolvedCells == 0)
-                goto Band64_1;
-
+        uint64_t unsolvedCells = state->solvedCells.bands64[0] ^ kBitSet27_Double64;
+        if (unsolvedCells != 0) {
             size_t bit_pos = BitUtils::bsf64(unsolvedCells);
             uint64_t mask = BitUtils::ls1b64(unsolvedCells);
 
@@ -1734,13 +1731,8 @@ private:
             return Status::Success;
         }
 
-Band64_1:
-        // Band64: 1
-        {
-            uint64_t unsolvedCells = state->solvedCells.bands64[1] ^ kBitSet27_Single64;
-            if (unsolvedCells == 0)
-                goto Band64_End;
-
+        unsolvedCells = state->solvedCells.bands64[1] ^ kBitSet27_Single64;
+        if (unsolvedCells != 0) {
             size_t bit_pos = BitUtils::bsf64(unsolvedCells);
             uint64_t mask = BitUtils::ls1b64(unsolvedCells);
 
@@ -1797,7 +1789,7 @@ Band64_1:
             return Status::Success;
         }
 #endif
-Band64_End:
+
         return Status::Failed;
     }
 
@@ -1842,7 +1834,7 @@ Band64_End:
     template <bool fast_mode>
     int find_all_single_literals(State * state) {
         if (!fast_mode && (this->numSolutions_ >= kLimitSolutions))
-            return Status::Solved;
+            return Status::Invalid;
 
         do {
             int status = this->find_hidden_singles<fast_mode>(state);
