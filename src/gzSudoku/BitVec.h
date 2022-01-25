@@ -21,6 +21,8 @@
 
 #include "BitUtils.h"
 
+#if defined(_MSC_VER)
+
 #define __MMX__
 #define __SSE__
 #define __SSE2__
@@ -39,6 +41,8 @@
 
 #undef __AVX512VL__
 #undef __AVX512F__
+
+#endif //_MSC_VER
 
 // For SSE2, SSE3, SSSE3, SSE 4.1, AVX, AVX2
 #if defined(_MSC_VER)
