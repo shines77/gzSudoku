@@ -1276,12 +1276,12 @@ private:
         R2.setAllZeros();
 
         for (size_t num = 1; num < Numbers; num++) {
-            BitVec08x16 row_bits;
+            BitVec08x16 band_bits;
             pCells16 = (void *)&state->candidates[num];
-            row_bits.loadAligned(pCells16);
+            band_bits.loadAligned(pCells16);
 
-            R2 |= R1 & row_bits;
-            R1 |= row_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
         }
 
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
@@ -1399,12 +1399,12 @@ private:
         R2.setAllZeros();
 
         for (size_t num = 1; num < Numbers; num++) {
-            BitVec08x16 row_bits;
+            BitVec08x16 band_bits;
             pCells16 = (void *)&state->candidates[num];
-            row_bits.loadAligned(pCells16);
+            band_bits.loadAligned(pCells16);
 
-            R2 |= R1 & row_bits;
-            R1 |= row_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
         }
 
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
@@ -1504,13 +1504,13 @@ private:
         R3.setAllZeros();
 
         for (size_t num = 1; num < Numbers; num++) {
-            BitVec08x16 row_bits;
+            BitVec08x16 band_bits;
             pCells16 = (void *)&state->candidates[num];
-            row_bits.loadAligned(pCells16);
+            band_bits.loadAligned(pCells16);
 
-            R3 |= R2 & row_bits;
-            R2 |= R1 & row_bits;
-            R1 |= row_bits;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
         }
 
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);

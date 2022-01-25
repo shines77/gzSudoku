@@ -2129,18 +2129,18 @@ struct BitVec16x16_AVX {
 #endif
     }
 
+    inline void castTo(BitVec08x16 & low, BitVec08x16 & high) const {
+        high = _mm256_extracti128_si256(this->m256, 1);
+        low = _mm256_castsi256_si128(this->m256);
+    }
+
     inline void mergeTo(__m256i & m256) const {
         m256 = this->m256;
     }
 
     inline void splitTo(BitVec08x16 & low, BitVec08x16 & high) const {
-#if 1
         low = _mm256_extracti128_si256(this->m256, 0);
         high = _mm256_extracti128_si256(this->m256, 1);
-#else
-        high = _mm256_extracti128_si256(this->m256, 1);
-        low = _mm256_castsi256_si128(this->m256);
-#endif
     }
 
     inline BitVec08x16 getLow() const {

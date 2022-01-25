@@ -500,25 +500,70 @@ private:
 #if defined(__AVX__)
             BitVec16x16_AVX bitset27(kBitSet27_Double64, kBitSet27_Single64, kBitSet27_Double64, kBitSet27_Single64);
             BitVec16x16_AVX zeros;
+            BitVec08x16 bitset27_x4(kBitSet27_Double64, kBitSet27_Single64);
+            BitVec08x16 zeros_x4;
             zeros.setAllZeros();
-            for (size_t num = 0; num < Numbers10; num += 2) {
-                bitset27.saveAligned((void *)&this->candidates[num]);
-                zeros.saveAligned((void *)&this->prevCandidates[num]);
+            zeros_x4.setAllZeros();
+            {
+                bitset27.saveAligned((void *)&this->candidates[0]);
+                bitset27.saveAligned((void *)&this->candidates[2]);
+                bitset27.saveAligned((void *)&this->candidates[4]);
+                bitset27.saveAligned((void *)&this->candidates[6]);
+                bitset27_x4.saveAligned((void *)&this->candidates[8]);
+                zeros_x4.saveAligned((void *)&this->candidates[9]);
+
+                zeros.saveAligned((void *)&this->prevCandidates[0]);                
+                zeros.saveAligned((void *)&this->prevCandidates[2]);               
+                zeros.saveAligned((void *)&this->prevCandidates[4]);                
+                zeros.saveAligned((void *)&this->prevCandidates[6]);
+                zeros.saveAligned((void *)&this->prevCandidates[8]);
   #if JCZ_V3_COMP_COLCOMBBITS
-                zeros.saveAligned((void *)&this->colCombBits[num]);
+                zeros.saveAligned((void *)&this->colCombBits[0]);
+                zeros.saveAligned((void *)&this->colCombBits[2]);
+                zeros.saveAligned((void *)&this->colCombBits[4]);
+                zeros.saveAligned((void *)&this->colCombBits[6]);
+                zeros.saveAligned((void *)&this->colCombBits[8]);
   #endif
             }
             zeros.saveAligned((void *)&this->solvedCells);
             zeros.saveAligned((void *)&this->pairs);
 #elif defined(__SSE2__)
-            BitVec16x16 bitset27(kBitSet27_Double64, kBitSet27_Single64, kBitSet27_Double64, kBitSet27_Single64);
-            BitVec16x16 zeros;
+            BitVec08x16 bitset27(kBitSet27_Double64, kBitSet27_Single64);
+            BitVec08x16 zeros;
             zeros.setAllZeros();
-            for (size_t num = 0; num < Numbers10; num += 2) {
-                bitset27.saveAligned((void *)&this->candidates[num]);
-                zeros.saveAligned((void *)&this->prevCandidates[num]);
+            {
+                bitset27.saveAligned((void *)&this->candidates[0]);
+                bitset27.saveAligned((void *)&this->candidates[1]);
+                bitset27.saveAligned((void *)&this->candidates[2]);
+                bitset27.saveAligned((void *)&this->candidates[3]);
+                bitset27.saveAligned((void *)&this->candidates[4]);
+                bitset27.saveAligned((void *)&this->candidates[5]);
+                bitset27.saveAligned((void *)&this->candidates[6]);
+                bitset27.saveAligned((void *)&this->candidates[7]);
+                bitset27.saveAligned((void *)&this->candidates[8]);
+                zeros.saveAligned((void *)&this->candidates[9]);
+
+                zeros.saveAligned((void *)&this->prevCandidates[0]);
+                zeros.saveAligned((void *)&this->prevCandidates[1]);
+                zeros.saveAligned((void *)&this->prevCandidates[2]);
+                zeros.saveAligned((void *)&this->prevCandidates[3]);
+                zeros.saveAligned((void *)&this->prevCandidates[4]);
+                zeros.saveAligned((void *)&this->prevCandidates[5]);
+                zeros.saveAligned((void *)&this->prevCandidates[6]);
+                zeros.saveAligned((void *)&this->prevCandidates[7]);
+                zeros.saveAligned((void *)&this->prevCandidates[8]);
+                zeros.saveAligned((void *)&this->prevCandidates[9]);
   #if JCZ_V3_COMP_COLCOMBBITS
-                zeros.saveAligned((void *)&this->colCombBits[num]);
+                zeros.saveAligned((void *)&this->colCombBits[0]);
+                zeros.saveAligned((void *)&this->colCombBits[1]);
+                zeros.saveAligned((void *)&this->colCombBits[2]);
+                zeros.saveAligned((void *)&this->colCombBits[3]);
+                zeros.saveAligned((void *)&this->colCombBits[4]);
+                zeros.saveAligned((void *)&this->colCombBits[5]);
+                zeros.saveAligned((void *)&this->colCombBits[6]);
+                zeros.saveAligned((void *)&this->colCombBits[7]);
+                zeros.saveAligned((void *)&this->colCombBits[8]);
+                zeros.saveAligned((void *)&this->colCombBits[9]);
   #endif
             }
             zeros.saveAligned((void *)&this->solvedCells);
@@ -539,38 +584,119 @@ private:
 
         void copy(const State & other) {
 #if defined(__AVX__)
-            BitVec16x16_AVX B1, B2;
-            for (size_t num = 0; num < Numbers10; num += 2) {
-                B1.loadAligned((void *)&other.candidates[num]);
-                B2.loadAligned((void *)&other.prevCandidates[num]);
-                B1.saveAligned((void *)&this->candidates[num]);
-                B2.saveAligned((void *)&this->prevCandidates[num]);
-  #if JCZ_V3_COMP_COLCOMBBITS
-                B1.loadAligned((void *)&other.colCombBits[num]);
-                B1.saveAligned((void *)&this->colCombBits[num]);
-  #endif
-            }
-            B1.loadAligned((void *)&other.solvedCells);
-            B2.loadAligned((void *)&other.pairs);
-            B1.saveAligned((void *)&this->solvedCells);
-            B2.saveAligned((void *)&this->pairs);
-#elif defined(__SSE2__)
-            BitVec16x16 B1, B2;
-            for (size_t num = 0; num < Numbers10; num += 2) {
-                B1.loadAligned((void *)&other.candidates[num]);
-                B2.loadAligned((void *)&other.prevCandidates[num]);
-                B1.saveAligned((void *)&this->candidates[num]);
-                B2.saveAligned((void *)&this->prevCandidates[num]);
-  #if JCZ_V3_COMP_COLCOMBBITS
-                B1.loadAligned((void *)&other.colCombBits[num]);
-                B1.saveAligned((void *)&this->colCombBits[num]);
-  #endif
-            }
-            B1.loadAligned((void *)&other.solvedCells);
-            B1.saveAligned((void *)&this->solvedCells);
+            BitVec16x16_AVX B1, B2, B3, B4;
+            BitVec08x16 B5;
+            {
+                B1.loadAligned((void *)&other.candidates[0]);
+                B2.loadAligned((void *)&other.candidates[2]);
+                B3.loadAligned((void *)&other.candidates[4]);
+                B4.loadAligned((void *)&other.candidates[6]);
+                B5.loadAligned((void *)&other.candidates[8]);
+                B1.saveAligned((void *)&this->candidates[0]);
+                B2.saveAligned((void *)&this->candidates[2]);
+                B3.saveAligned((void *)&this->candidates[4]);
+                B4.saveAligned((void *)&this->candidates[6]);
+                B5.saveAligned((void *)&this->candidates[8]);
 
-            BitVec08x16 B3;
+                B1.loadAligned((void *)&other.prevCandidates[0]);
+                B2.loadAligned((void *)&other.prevCandidates[2]);
+                B3.loadAligned((void *)&other.prevCandidates[4]);
+                B4.loadAligned((void *)&other.prevCandidates[6]);
+                B5.loadAligned((void *)&other.prevCandidates[8]);
+                B1.saveAligned((void *)&this->prevCandidates[0]);
+                B2.saveAligned((void *)&this->prevCandidates[2]);
+                B3.saveAligned((void *)&this->prevCandidates[4]);
+                B4.saveAligned((void *)&this->prevCandidates[6]);
+                B5.saveAligned((void *)&this->prevCandidates[8]);
+  #if JCZ_V3_COMP_COLCOMBBITS
+                B1.loadAligned((void *)&other.colCombBits[0]);
+                B2.loadAligned((void *)&other.colCombBits[2]);
+                B3.loadAligned((void *)&other.colCombBits[4]);
+                B4.loadAligned((void *)&other.colCombBits[6]);
+                B5.loadAligned((void *)&other.colCombBits[8]);
+                B1.saveAligned((void *)&this->colCombBits[0]);
+                B2.saveAligned((void *)&this->colCombBits[2]);
+                B3.saveAligned((void *)&this->colCombBits[4]);
+                B4.saveAligned((void *)&this->colCombBits[6]);
+                B5.saveAligned((void *)&this->colCombBits[8]);
+  #endif
+            }
+            B1.loadAligned((void *)&other.solvedCells);
+            B5.loadAligned((void *)&other.pairs);
+            B1.saveAligned((void *)&this->solvedCells);
+            B5.saveAligned((void *)&this->pairs);
+#elif defined(__SSE2__)
+            BitVec08x16 B1, B2, B3, B4;
+            {
+                B1.loadAligned((void *)&other.candidates[0]);
+                B2.loadAligned((void *)&other.candidates[1]);
+                B3.loadAligned((void *)&other.candidates[2]);
+                B4.loadAligned((void *)&other.candidates[3]);
+                B1.saveAligned((void *)&this->candidates[0]);
+                B2.saveAligned((void *)&this->candidates[1]);
+                B3.saveAligned((void *)&this->candidates[2]);
+                B4.saveAligned((void *)&this->candidates[3]);
+
+                B1.loadAligned((void *)&other.candidates[4]);
+                B2.loadAligned((void *)&other.candidates[5]);
+                B3.loadAligned((void *)&other.candidates[6]);
+                B4.loadAligned((void *)&other.candidates[7]);
+                B1.saveAligned((void *)&this->candidates[4]);
+                B2.saveAligned((void *)&this->candidates[5]);
+                B3.saveAligned((void *)&this->candidates[6]);
+                B4.saveAligned((void *)&this->candidates[7]);
+
+                B1.loadAligned((void *)&other.candidates[8]);
+                B1.saveAligned((void *)&this->candidates[8]);
+
+                B1.loadAligned((void *)&other.prevCandidates[0]);
+                B2.loadAligned((void *)&other.prevCandidates[1]);
+                B3.loadAligned((void *)&other.prevCandidates[2]);
+                B4.loadAligned((void *)&other.prevCandidates[3]);
+                B1.saveAligned((void *)&this->prevCandidates[0]);
+                B2.saveAligned((void *)&this->prevCandidates[1]);
+                B3.saveAligned((void *)&this->prevCandidates[2]);
+                B4.saveAligned((void *)&this->prevCandidates[3]);
+
+                B1.loadAligned((void *)&other.prevCandidates[4]);
+                B2.loadAligned((void *)&other.prevCandidates[5]);
+                B3.loadAligned((void *)&other.prevCandidates[6]);
+                B4.loadAligned((void *)&other.prevCandidates[7]);
+                B1.saveAligned((void *)&this->prevCandidates[4]);
+                B2.saveAligned((void *)&this->prevCandidates[5]);
+                B3.saveAligned((void *)&this->prevCandidates[6]);
+                B4.saveAligned((void *)&this->prevCandidates[7]);
+
+                B1.loadAligned((void *)&other.prevCandidates[8]);
+                B1.saveAligned((void *)&this->prevCandidates[8]);
+  #if JCZ_V3_COMP_COLCOMBBITS
+                B1.loadAligned((void *)&other.colCombBits[0]);
+                B2.loadAligned((void *)&other.colCombBits[1]);
+                B3.loadAligned((void *)&other.colCombBits[2]);
+                B4.loadAligned((void *)&other.colCombBits[3]);
+                B1.saveAligned((void *)&this->colCombBits[0]);
+                B2.saveAligned((void *)&this->colCombBits[1]);
+                B3.saveAligned((void *)&this->colCombBits[2]);
+                B4.saveAligned((void *)&this->colCombBits[3]);
+
+                B1.loadAligned((void *)&other.colCombBits[4]);
+                B2.loadAligned((void *)&other.colCombBits[5]);
+                B3.loadAligned((void *)&other.colCombBits[6]);
+                B4.loadAligned((void *)&other.colCombBits[7]);
+                B1.saveAligned((void *)&this->colCombBits[4]);
+                B2.saveAligned((void *)&this->colCombBits[5]);
+                B3.saveAligned((void *)&this->colCombBits[6]);
+                B4.saveAligned((void *)&this->colCombBits[7]);
+
+                B1.loadAligned((void *)&other.colCombBits[8]);
+                B1.saveAligned((void *)&this->colCombBits[8]);
+  #endif
+            }
+            B1.loadAligned((void *)&other.solvedCells);
+            B2.loadAligned((void *)&other.solvedRows);
             B3.loadAligned((void *)&other.pairs);
+            B1.saveAligned((void *)&this->solvedCells);
+            B2.saveAligned((void *)&this->solvedRows);            
             B3.saveAligned((void *)&this->pairs);
 #else
             std::memcpy((void *)this, (const void *)&other, sizeof(State));
@@ -1350,6 +1476,54 @@ private:
     }
 
     int fast_find_naked_singles(State & state) {
+#if 1
+        BitVec08x16 R1, R2;
+        BitVec08x16 band_bits;
+
+        // 0
+        R1.loadAligned((void *)&state.candidates[0]);
+        //R2.setAllZeros();
+
+        // 1
+        band_bits.loadAligned((void *)&state.candidates[1]);
+        R2 = R1 & band_bits;
+        R1 |= band_bits;
+
+        // 2
+        band_bits.loadAligned((void *)&state.candidates[2]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 3
+        band_bits.loadAligned((void *)&state.candidates[3]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 4
+        band_bits.loadAligned((void *)&state.candidates[4]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 5
+        band_bits.loadAligned((void *)&state.candidates[5]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 6
+        band_bits.loadAligned((void *)&state.candidates[6]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 7
+        band_bits.loadAligned((void *)&state.candidates[7]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 8
+        band_bits.loadAligned((void *)&state.candidates[8]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+#else
         BitVec08x16 R1, R2;
 
         void * pCells16 = (void *)&state.candidates[0];
@@ -1357,13 +1531,14 @@ private:
         R2.setAllZeros();
 
         for (size_t num = 1; num < Numbers; num++) {
-            BitVec08x16 row_bits;
+            BitVec08x16 band_bits;
             pCells16 = (void *)&state.candidates[num];
-            row_bits.loadAligned(pCells16);
+            band_bits.loadAligned(pCells16);
 
-            R2 |= R1 & row_bits;
-            R1 |= row_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
         }
+#endif
 
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
         bool is_legal = R1.isEqual(full_mask);
@@ -1473,6 +1648,54 @@ private:
     }
 
     int fast_find_naked_singles_v2(State & state) {
+#if 1
+        BitVec08x16 R1, R2;
+        BitVec08x16 band_bits;
+
+        // 0
+        R1.loadAligned((void *)&state.candidates[0]);
+        //R2.setAllZeros();
+
+        // 1
+        band_bits.loadAligned((void *)&state.candidates[1]);
+        R2 = R1 & band_bits;
+        R1 |= band_bits;
+
+        // 2
+        band_bits.loadAligned((void *)&state.candidates[2]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 3
+        band_bits.loadAligned((void *)&state.candidates[3]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 4
+        band_bits.loadAligned((void *)&state.candidates[4]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 5
+        band_bits.loadAligned((void *)&state.candidates[5]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 6
+        band_bits.loadAligned((void *)&state.candidates[6]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 7
+        band_bits.loadAligned((void *)&state.candidates[7]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 8
+        band_bits.loadAligned((void *)&state.candidates[8]);
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+#else
         BitVec08x16 R1, R2;
 
         void * pCells16 = (void *)&state.candidates[0];
@@ -1480,13 +1703,14 @@ private:
         R2.setAllZeros();
 
         for (size_t num = 1; num < Numbers; num++) {
-            BitVec08x16 row_bits;
+            BitVec08x16 band_bits;
             pCells16 = (void *)&state.candidates[num];
-            row_bits.loadAligned(pCells16);
+            band_bits.loadAligned(pCells16);
 
             R2 |= R1 & row_bits;
-            R1 |= row_bits;
+            R1 |= band_bits;
         }
+#endif
 
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
         bool is_legal = R1.isEqual(full_mask);
@@ -1577,23 +1801,117 @@ private:
     }
 
     int normal_find_naked_singles(State & state) {
+#if defined(__AVX__) && 0
+        BitVec16x16_AVX A1, A2, A3;
+        BitVec16x16_AVX band_bits;
+
+        // 0
+        A1.loadAligned((void *)&state.candidates[0]);
+        //A2.setAllZeros();
+        //A3.setAllZeros();
+
+        // 2
+        band_bits.loadAligned((void *)&state.candidates[2]);
+        A2 = A1 & band_bits;
+        A1 |= band_bits;
+
+        // 4
+        band_bits.loadAligned((void *)&state.candidates[4]);
+        A3 = A2 & band_bits;
+        A2 |= A1 & band_bits;
+        A1 |= band_bits;
+
+        // 6
+        band_bits.loadAligned((void *)&state.candidates[6]);
+        A3 |= A2 & band_bits;
+        A2 |= A1 & band_bits;
+        A1 |= band_bits;
+
+        // 8
+        band_bits.loadAligned((void *)&state.candidates[8]);
+        A3 |= A2 & band_bits;
+        A2 |= A1 & band_bits;
+        A1 |= band_bits;
+
+        BitVec08x16 R1, R2, R3, R1h, R2h, R3h;
+        A3.castTo(R3, R3h);
+        A2.castTo(R2, R2h);
+        A1.castTo(R1, R1h);
+
+        R3 |= R3h;
+        R2 |= R2h;
+        R1 |= R1h;
+#elif defined(__SSE2__) || 1
+        BitVec08x16 R1, R2, R3;
+        BitVec08x16 band_bits;
+
+        // 0
+        R1.loadAligned((void *)&state.candidates[0]);
+        //R2.setAllZeros();
+        //R3.setAllZeros();
+
+        // 1
+        band_bits.loadAligned((void *)&state.candidates[1]);
+        R2 = R1 & band_bits;
+        R1 |= band_bits;
+
+        // 2
+        band_bits.loadAligned((void *)&state.candidates[2]);
+        R3 = R2 & band_bits;
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 3
+        band_bits.loadAligned((void *)&state.candidates[3]);
+        R3 |= R2 & band_bits;
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 4
+        band_bits.loadAligned((void *)&state.candidates[4]);
+        R3 |= R2 & band_bits;
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 5
+        band_bits.loadAligned((void *)&state.candidates[5]);
+        R3 |= R2 & band_bits;
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 6
+        band_bits.loadAligned((void *)&state.candidates[6]);
+        R3 |= R2 & band_bits;
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 7
+        band_bits.loadAligned((void *)&state.candidates[7]);
+        R3 |= R2 & band_bits;
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        // 8
+        band_bits.loadAligned((void *)&state.candidates[8]);
+        R3 |= R2 & band_bits;
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+#else
         BitVec08x16 R1, R2, R3;
 
-        void * pCells16 = (void *)&state.candidates[0];
-        R1.loadAligned(pCells16);
+        R1.loadAligned((void *)&state.candidates[0]);
         R2.setAllZeros();
         R3.setAllZeros();
 
         for (size_t num = 1; num < Numbers; num++) {
-            BitVec08x16 row_bits;
-            pCells16 = (void *)&state.candidates[num];
-            row_bits.loadAligned(pCells16);
+            BitVec08x16 band_bits;
+            band_bits.loadAligned((void *)&state.candidates[num]);
 
-            R3 |= R2 & row_bits;
-            R2 |= R1 & row_bits;
-            R1 |= row_bits;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
         }
-
+#endif
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
         bool is_legal = R1.isEqual(full_mask);
         if (!is_legal) return -1;
