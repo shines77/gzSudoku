@@ -285,7 +285,7 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
     double guesses_percent = calc_percent(total_guesses, total_recur_counter);
     double no_guess_percent = calc_percent(total_no_guess, puzzleCount);
 
-    printf("Total puzzle(s): %u, %u solved, %u invalid, %u multi-solution.\n\n"
+    printf("Total puzzle(s): %u / (%u solved, %u invalid, %u multi-solution).\n\n"
            "total_no_guess: %" PRIuPTR ", no_guess %%: %0.1f %%\n\n",
            (uint32_t)puzzleCount, (uint32_t)puzzleSolved, (uint32_t)puzzleInvalid, (uint32_t)puzzleMultiSolution,
            total_no_guess, no_guess_percent);
