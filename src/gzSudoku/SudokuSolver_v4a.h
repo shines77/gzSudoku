@@ -707,7 +707,7 @@ private:
         }
     }
 
-    void init_board(Board & board) {
+    void init_board(const Board & board) {
         init_literal_info();
 
 #if V4A_USE_SIMD_INIT
@@ -3161,16 +3161,18 @@ public:
         return false;
     }
 
-    int solve(Board & board) {
+    int solve(const Board & board, Board & solution, int limitSolutions = 1) {
         this->init_board(board);
 
         size_t empties = this->calc_empties(board);
-        assert(empties >= Sudoku::kMinInitCandidates);
+        assert((ptrdiff_t)empties <= (Sudoku::kBoardSize - Sudoku::kMinInitCandidates));
+
+        solution = board;
 #if 1
         LiteralInfo literalInfo = this->find_single_literal();
 
         while (literalInfo.isValid()) {
-            this->do_single_literal(this->init_state_, board, literalInfo);
+            this->do_single_literal(this->init_state_, solution, literalInfo);
             literalInfo = this->find_single_literal();
             empties--;
             if (empties == 0)
@@ -3183,7 +3185,7 @@ public:
         LiteralInfo literalInfo = this->find_single_literal();
 
         if (literalInfo.isValid()) {
-            empties = this->search_single_literal(this->init_state_, board, empties, literalInfo);
+            empties = this->search_single_literal(this->init_state_, solution, empties, literalInfo);
         }
 
         //this->last_literal_ = literalInfo.toLiteralInfoEx(255);
@@ -3198,7 +3200,7 @@ public:
         while (single_literal_list.size() > 0) {
             std::vector<LiteralInfo> next_single_literal_list;
             if (true && (single_literal_list.size() == 1)) {
-                new_literal_count = this->update_and_find_all_single_literal(this->init_state_, board,
+                new_literal_count = this->update_and_find_all_single_literal(this->init_state_, solution,
                                                         single_literal_list[0], next_single_literal_list);
                 empties--;
                 if (empties < kFullSearchThreshold || empties == 0)
@@ -3207,7 +3209,7 @@ public:
             else {
                 literal_total = single_literal_list.size();
                 for (size_t i = 0; i < literal_total; i++) {
-                    bool is_legal = this->check_and_do_single_literal(this->init_state_, board, single_literal_list[i]);
+                    bool is_legal = this->check_and_do_single_literal(this->init_state_, solution, single_literal_list[i]);
                     if (is_legal) {
                         empties--;
                         if (empties == 0)
@@ -3231,7 +3233,7 @@ public:
         LiteralInfo literalInfo = this->find_single_literal();
 
         while (literalInfo.isValid()) {
-            this->do_single_literal(this->init_state_, board, literalInfo);
+            this->do_single_literal(this->init_state_, solution, literalInfo);
             literalInfo = this->find_single_literal();
             empties--;
             if (empties == 0)
@@ -3240,7 +3242,7 @@ public:
 
         //this->last_literal_ = literalInfo.toLiteralInfoEx(255);
 #endif
-        bool success = this->search(board, empties, this->last_literal_);
+        bool success = this->search(solution, empties, this->last_literal_);
         return (success) ? Status::Solved : Status::Invalid;
     }
 

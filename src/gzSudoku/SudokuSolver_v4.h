@@ -866,7 +866,7 @@ private:
         return literalInfo;
     }
 
-    void init_board(Board & board) {
+    void init_board(const Board & board) {
         init_literal_info();
         /*
         this->init_state_.box_cell_nums.fill(kAllNumberBits);
@@ -953,9 +953,10 @@ public:
         return false;
     }
 
-    int solve(Board & board) {
+    int solve(const Board & board, Board & solution, int limitSolutions = 1) {
         this->init_board(board);
-        bool success = this->search(board, this->empties_, this->min_info_);
+        solution = board;
+        bool success = this->search(solution, this->empties_, this->min_info_);
         return (success) ? Status::Solved : Status::Invalid;
     }
 

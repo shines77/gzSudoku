@@ -82,7 +82,7 @@ private:
     }
 
 public:
-    size_t calc_empties(Board & board) {
+    size_t calc_empties(const Board & board) {
         size_t empties = 0;
         for (size_t pos = 0; pos < BoardSize; pos++) {
             unsigned char val = board.cells[pos];

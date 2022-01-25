@@ -186,7 +186,7 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
 template <typename SudokuSlover>
 void run_solver_testcase(size_t index)
 {
-    Board board;
+    Board board, solution;
     make_sudoku_board(board, index);
 
     SudokuSlover solver;
@@ -194,11 +194,11 @@ void run_solver_testcase(size_t index)
 
     jtest::StopWatch sw;
     sw.start();
-    int success = solver.solve(board);
+    int success = solver.solve(board, solution, 1);
     sw.stop();
 
     double elapsed_time = sw.getElapsedMillisec();
-    solver.display_result(board, elapsed_time);
+    solver.display_result(solution, elapsed_time);
 }
 
 void run_a_testcase(size_t index)
@@ -238,19 +238,21 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
     size_t total_no_guess = 0;
 
     size_t puzzleCount = 0;
+    size_t puzzleInvalid = 0;
     size_t puzzleSolved = 0;
+    size_t puzzleMultiSolution = 0;
     double total_time = 0.0;
 
-    Board board;
+    Board solution;
     SudokuSolver solver;
     BasicSolver basicSolver;
     jtest::StopWatch sw;
     sw.start();
 
     for (size_t i = 0; i < puzzleTotal; i++) {
-        board = puzzles[i];
-        int status = solver.solve(board);
-        if (status == Status::Solved || status == Status::UniqueSolution) {
+        Board & board = puzzles[i];
+        int solutions = solver.solve(board, solution, 1);
+        if (solutions == 1) {
             total_guesses += BasicSolverTy::num_guesses;
             total_unique_candidate += BasicSolverTy::num_unique_candidate;
             total_failed_return += BasicSolverTy::num_failed_return;
@@ -260,6 +262,12 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
             }
 
             puzzleSolved++;
+        }
+        else if (solutions > 1) {
+            puzzleMultiSolution++;
+        }
+        else {
+            puzzleInvalid++;
         }
         puzzleCount++;
 #ifndef NDEBUG
@@ -277,25 +285,27 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
     double guesses_percent = calc_percent(total_guesses, total_recur_counter);
     double no_guess_percent = calc_percent(total_no_guess, puzzleCount);
 
-    printf("Total puzzle count = %u, puzzle solved = %u, total_no_guess: %" PRIuPTR ", no_guess %% = %0.1f %%\n\n",
-        (uint32_t)puzzleCount, (uint32_t)puzzleSolved, total_no_guess, no_guess_percent);
+    printf("Total puzzle count = %u, puzzle solved = %u, puzzle invalid = %u, puzzle multi-solution = %u\n"
+           "total_no_guess: %" PRIuPTR ", no_guess %% = %0.1f %%\n\n",
+           (uint32_t)puzzleCount, (uint32_t)puzzleSolved, (uint32_t)puzzleInvalid, (uint32_t)puzzleMultiSolution,
+           total_no_guess, no_guess_percent);
     printf("Total elapsed time: %0.3f ms\n\n", total_time);
     printf("recur_counter: %" PRIuPTR "\n\n"
-        "total_guesses: %" PRIuPTR ", total_failed_return: %" PRIuPTR ", total_unique_candidate: %" PRIuPTR "\n\n"
-        "guess %% = %0.1f %%, failed_return %% = %0.1f %%, unique_candidate %% = %0.1f %%\n\n",
-        total_recur_counter,
-        total_guesses, total_failed_return, total_unique_candidate,
-        guesses_percent, failed_return_percent, unique_candidate_percent);
+           "total_guesses: %" PRIuPTR ", total_failed_return: %" PRIuPTR ", total_unique_candidate: %" PRIuPTR "\n\n"
+           "guess %% = %0.1f %%, failed_return %% = %0.1f %%, unique_candidate %% = %0.1f %%\n\n",
+           total_recur_counter,
+           total_guesses, total_failed_return, total_unique_candidate,
+           guesses_percent, failed_return_percent, unique_candidate_percent);
 
     if (puzzleCount != 0) {
         printf("%0.1f usec/puzzle, %0.2f guesses/puzzle, %0.1f puzzles/sec\n\n",
-            total_time * 1000.0 / puzzleCount,
-            (double)total_guesses / puzzleCount,
-            puzzleCount / (total_time / 1000.0));
+               total_time * 1000.0 / puzzleCount,
+               (double)total_guesses / puzzleCount,
+               puzzleCount / (total_time / 1000.0));
     }
     else {
         printf("NaN usec/puzzle, NaN guesses/puzzle, %0.1f puzzles/sec\n\n",
-            puzzleCount / (total_time / 1000.0));
+               puzzleCount / (total_time / 1000.0));
     }
 
     printf("------------------------------------------\n\n");

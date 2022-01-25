@@ -518,13 +518,15 @@ private:
 
 #pragma pack(pop)
 
-    size_t numSolutions_;
+    int numSolutions_;
+    int limitSolutions_;
+
     State states_[BoardSize];
 
     static StaticData Static;
 
 public:
-    Solver() : basic_solver_t() {
+    Solver() : basic_solver_t(), numSolutions_(0), limitSolutions_(1) {
     }
     ~Solver() {}
 
@@ -648,7 +650,7 @@ private:
         //board.cells[BoardSize] = 0;
     }
 
-    size_t init_board(State * state, Board & board) {
+    int init_board(State * state, const Board & board) {
         if (kSearchMode > SearchMode::OneSolution) {
             this->answers_.clear();
         }
@@ -658,13 +660,15 @@ private:
         register BitVec08x16 solved_cells;
         solved_cells.setAllZeros();
 
-        size_t candidates = 0;
+        int candidates = 0;
         for (size_t pos = 0; pos < BoardSize; pos++) {
             unsigned char val = board.cells[pos];
             if (val != '.') {
                 size_t num = val - '1';
                 assert(num >= (Sudoku::kMinNumber - 1) && num <= (Sudoku::kMaxNumber - 1));
-                this->update_peer_cells(state, solved_cells, pos, num);
+                int validity = this->update_peer_cells(state, solved_cells, pos, num);
+                if (validity == Status::Invalid)
+                    return -1;
                 candidates++;
             }
         }
@@ -675,21 +679,30 @@ private:
         return candidates;
     }
 
-    inline void update_peer_cells(State * state, BitVec08x16 & solved_cells, size_t fill_pos, size_t fill_num) {
+    inline int update_peer_cells(State * state, BitVec08x16 & solved_cells, size_t fill_pos, size_t fill_num) {
         assert(fill_pos < Sudoku::kBoardSize);
         assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
+
+        BitVec08x16 cells16, mask16;
+        void * pCells16, * pMask16;
+
+        BitVec08x16 candidates;
+        pCells16 = (void *)&state->candidates[fill_num];
+        candidates.loadAligned(pCells16);
+
+        BitVec08x16 fill_mask;
+        pMask16 = (void *)&Static.fill_mask[fill_pos];
+        fill_mask.loadAligned(pMask16);
+
+        BitVec08x16 verify_bit = candidates & fill_mask;
+        if (verify_bit.isAllZeros())
+            return Status::Invalid;
 
         size_t rowBit = fill_num * Rows + tables.div9[fill_pos];
         uint32_t band = tables.div27[rowBit];
         uint32_t shift = tables.mod27[rowBit];
         state->solvedRows.bands[band] |= 1U << shift;
 
-        BitVec08x16 cells16, mask16;
-        void * pCells16, * pMask16;
-
-        BitVec08x16 fill_mask;
-        pMask16 = (void *)&Static.fill_mask[fill_pos];
-        fill_mask.loadAligned(pMask16);
         solved_cells |= fill_mask;
 
         for (size_t num = 0; num < Numbers; num++) {
@@ -699,13 +712,13 @@ private:
             cells16.saveAligned(pCells16);
         }
 
-        pCells16 = (void *)&state->candidates[fill_num];
         pMask16 = (void *)&Static.flip_mask[fill_pos];
-        cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
-        cells16.and_not(mask16);
-        cells16._or(fill_mask);
-        cells16.saveAligned(pCells16);
+        candidates.and_not(mask16);
+        candidates._or(fill_mask);
+        candidates.saveAligned((void *)&state->candidates[fill_num]);
+
+        return Status::Success;
     }
 
     inline void update_peer_cells(State * state, size_t fill_pos, size_t fill_num) {
@@ -1757,7 +1770,6 @@ private:
 
             return Status::Success;
         }
-
 #else
         for (size_t band = 0; band < 3; band++) {
             uint32_t unsolvedCells = state->solvedCells.bands[band] ^ kBitSet27;
@@ -1789,7 +1801,6 @@ private:
             return Status::Success;
         }
 #endif
-
         return Status::Failed;
     }
 
@@ -1822,6 +1833,7 @@ private:
     }
 
     template <bool fast_mode>
+    JSTD_FORCE_INLINE
     int find_naked_singles(State * state) {
         int unique_cells;
         if (fast_mode)
@@ -1858,8 +1870,8 @@ private:
 
 public:
     int search(State *& state, Board & board) {
-        int status = Status::Invalid;
-        int unique_cells = this->normal_find_naked_singles(state);
+        int status;
+        int unique_cells = this->find_naked_singles<false>(state);
         if (unique_cells > 0) {
             status = this->find_all_single_literals<false>(state);
             if (status == Status::Invalid)
@@ -1869,25 +1881,27 @@ public:
         return status;
     }
 
-    int solve(Board & board) {
+    int solve(const Board & board, Board & solution, int limitSolutions = 1) {
         this->numSolutions_ = 0;
+        this->limitSolutions_ = limitSolutions;
         basic_solver_t::num_guesses = 0;
 
         State * state = &this->states_[0];
-        size_t candidates = this->init_board(state, board);
+        int candidates = this->init_board(state, board);
         if (candidates < Sudoku::kMinInitCandidates)
             return Status::Invalid;
 
         int status = this->find_all_single_literals<true>(state);
         if (status == Status::Solved) {
             //this->extract_solution(state, board);
-            return Status::UniqueSolution;
+            return 1;
         }
-        else if (status == Status::Invalid)
-            return status;
+        else if (status == Status::Invalid) {
+            return 0;
+        }
 
-        status = this->search(state, board);
-        return (int)this->numSolutions_;
+        status = this->search(state, solution);
+        return this->numSolutions_;
     }
 
     void display_result(Board & board, double elapsed_time,

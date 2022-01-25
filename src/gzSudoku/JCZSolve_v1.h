@@ -401,7 +401,7 @@ private:
         init_flip_mask();
     }
 
-    size_t init_board(Board & board) {
+    size_t init_board(const Board & board) {
 #if JCZ_V1_USE_SIMD_INIT
         BitVec16x16_AVX full_mask;
         full_mask.fill_u16(kAllColBits);
@@ -1246,16 +1246,18 @@ Next_Search:
         return empties;
     }
 
-    int solve(Board & board) {
+    int solve(const Board & board, Board & solution, int limitSolutions = 1) {
         size_t candidates = this->init_board(board);
         if (candidates < (ptrdiff_t)Sudoku::kMinInitCandidates)
             return Status::Invalid;
 
+        solution = board;
+
         ptrdiff_t empties = (ptrdiff_t)(BoardSize - candidates);
-        empties = this->find_all_unique_candidates(board, empties);
+        empties = this->find_all_unique_candidates(solution, empties);
 
         LiteralInfoEx last_literal;
-        bool success = this->search(board, empties, last_literal);
+        bool success = this->search(solution, empties, last_literal);
         return (success) ? Status::Solved : Status::Invalid;
     }
 

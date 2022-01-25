@@ -56,16 +56,22 @@ struct Status {
         Success = 0,
         Solved = 1,
         UniqueSolution = 2,
-        MoreThanOneSolution = 3
+        ReachMaxSolutions = 3
+    };
+};
+
+struct VerifyMode {
+    enum {
+        VerifyValidity = 0,
+        VerifyCorrectness
     };
 };
 
 struct SearchMode {
     enum {
-        OneSolution = 0,
-        MoreThanOneSolution = 1,
-        AllSolutions = 2,
-        MaxSearchMode
+        AllSolutions = 0,
+        OneSolution = 1,
+        MoreThanOneSolution = 2
     };
 };
 

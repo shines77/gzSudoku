@@ -615,7 +615,7 @@ private:
         }
     }
 
-    void init_board(Board & board) {
+    void init_board(const Board & board) {
         init_literal_info();
 
 #if V5_USE_SIMD_INIT
@@ -2142,16 +2142,18 @@ public:
         return false;
     }
 
-    int solve(Board & board) {
+    int solve(const Board & board, Board & solution, int limitSolutions = 1) {
         this->init_board(board);
 
         size_t empties = this->calc_empties(board);
-        assert(empties >= Sudoku::kMinInitCandidates);
+        assert(empties <= (Sudoku::kBoardSize - Sudoku::kMinInitCandidates));
+
+        solution = board;
 #if 1
         LiteralInfo literalInfo = this->find_single_literal();
 
         while (literalInfo.isValid()) {
-            this->do_single_literal(this->init_state_, board, literalInfo);
+            this->do_single_literal(this->init_state_, solution, literalInfo);
             literalInfo = this->find_single_literal();
             empties--;
             if (empties == 0)
@@ -2164,12 +2166,12 @@ public:
         LiteralInfo literalInfo = this->find_single_literal();
 
         if (literalInfo.isValid()) {
-            empties = this->search_single_literal(this->init_state_, board, empties, literalInfo);
+            empties = this->search_single_literal(this->init_state_, solution, empties, literalInfo);
         }
 
         //this->last_literal_ = literalInfo.toLiteralInfoEx(255);
 #endif
-        bool success = this->search(board, empties, this->last_literal_);
+        bool success = this->search(solution, empties, this->last_literal_);
         return (success) ? Status::Solved : Status::Invalid;
     }
 

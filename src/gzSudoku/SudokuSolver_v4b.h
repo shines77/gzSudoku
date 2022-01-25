@@ -704,7 +704,7 @@ private:
         }
     }
 
-    void init_board(Board & board) {
+    void init_board(const Board & board) {
         init_literal_info();
 
 #if V4B_USE_SIMD_INIT
@@ -1978,11 +1978,13 @@ public:
         return false;
     }
 
-    int solve(Board & board) {
+    int solve(const Board & board, Board & solution, int limitSolutions = 1) {
         this->init_board(board);
 
         ptrdiff_t empties = this->calc_empties(board);
-        assert(empties >= Sudoku::kMinInitCandidates);
+        assert(empties <= (Sudoku::kBoardSize - Sudoku::kMinInitCandidates));
+
+        solution = board;
 #if 0
         LiteralInfo literalInfo;
         LiteralMask literalMask = this->find_single_literal_full();
@@ -2002,7 +2004,7 @@ public:
                 assert(index < 9);
                 single_mask &= TableLs2b[index];
                 literalInfo.literal_index = (literal_first * 16) | index;
-                this->do_single_literal_delta(this->init_state_, board, literalInfo);
+                this->do_single_literal_delta(this->init_state_, solution, literalInfo);
                 count++;
             }
             empties -= count;
@@ -2018,7 +2020,7 @@ public:
             size_t single_mask = literalMask.literal_mask;
             assert(single_mask != 0);
             //size_t fill_num;
-            ptrdiff_t count = this->do_single_literal_mask(this->init_state_, board, literalMask);
+            ptrdiff_t count = this->do_single_literal_mask(this->init_state_, solution, literalMask);
             assert(count != 0);
             empties -= count;
             if (empties <= 0) {
@@ -2033,7 +2035,7 @@ public:
             size_t single_mask = literalMask.literal_mask;
             assert(single_mask != 0);
             size_t fill_num;
-            ptrdiff_t count = this->do_single_literal_mask(this->init_state_, board, literalMask, fill_num);
+            ptrdiff_t count = this->do_single_literal_mask(this->init_state_, solution, literalMask, fill_num);
             assert(count != 0);
             empties -= count;
             if (empties <= 0) {
@@ -2042,7 +2044,7 @@ public:
             literalMask = this->find_single_literal_full(fill_num);
         }
 #endif
-        bool success = this->search(board, empties, this->last_literal_);
+        bool success = this->search(solution, empties, this->last_literal_);
         return (success) ? Status::Solved : Status::Invalid;
     }
 
