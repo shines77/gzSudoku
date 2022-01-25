@@ -1845,7 +1845,7 @@ private:
 
     template <bool fast_mode>
     int find_all_single_literals(State * state) {
-        if (!fast_mode && (this->numSolutions_ >= kLimitSolutions))
+        if (!fast_mode && (this->numSolutions_ >= this->limitSolutions_))
             return Status::Invalid;
 
         do {
@@ -1888,7 +1888,7 @@ public:
 
         State * state = &this->states_[0];
         int candidates = this->init_board(state, board);
-        if (candidates < Sudoku::kMinInitCandidates)
+        if (candidates < (int)Sudoku::kMinInitCandidates)
             return Status::Invalid;
 
         int status = this->find_all_single_literals<true>(state);
