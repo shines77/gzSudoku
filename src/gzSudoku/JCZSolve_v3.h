@@ -497,7 +497,7 @@ private:
         }
 
         void init() {
-#if defined(__AVX__)
+#if defined(__AVX2__)
             BitVec16x16_AVX bitset27(kBitSet27_Double64, kBitSet27_Single64, kBitSet27_Double64, kBitSet27_Single64);
             BitVec16x16_AVX zeros;
             BitVec08x16 bitset27_x4(kBitSet27_Double64, kBitSet27_Single64);
@@ -583,7 +583,7 @@ private:
         }
 
         void copy(const State & other) {
-#if defined(__AVX__)
+#if defined(__AVX2__)
             BitVec16x16_AVX B1, B2, B3, B4;
             BitVec08x16 B5;
             {
@@ -1801,7 +1801,7 @@ private:
     }
 
     int normal_find_naked_singles(State & state) {
-#if defined(__AVX__) && 0
+#if defined(__AVX2__) && 0
         BitVec16x16_AVX A1, A2, A3;
         BitVec16x16_AVX band_bits;
 
