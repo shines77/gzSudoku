@@ -497,20 +497,84 @@ private:
         }
 
         void init() {
+#if defined(__AVX__)
+            BitVec16x16_AVX bitset27(kBitSet27_Double64, kBitSet27_Single64, kBitSet27_Double64, kBitSet27_Single64);
+            BitVec16x16_AVX zeros;
+            zeros.setAllZeros();
+            for (size_t num = 0; num < Numbers10; num += 2) {
+                bitset27.saveAligned((void *)&this->candidates[num]);
+                zeros.saveAligned((void *)&this->prevCandidates[num]);
+  #if JCZ_V3_COMP_COLCOMBBITS
+                zeros.saveAligned((void *)&this->colCombBits[num]);
+  #endif
+            }
+            zeros.saveAligned((void *)&this->solvedCells);
+            zeros.saveAligned((void *)&this->pairs);
+#elif defined(__SSE2__)
+            BitVec16x16 bitset27(kBitSet27_Double64, kBitSet27_Single64, kBitSet27_Double64, kBitSet27_Single64);
+            BitVec16x16 zeros;
+            zeros.setAllZeros();
+            for (size_t num = 0; num < Numbers10; num += 2) {
+                bitset27.saveAligned((void *)&this->candidates[num]);
+                zeros.saveAligned((void *)&this->prevCandidates[num]);
+  #if JCZ_V3_COMP_COLCOMBBITS
+                zeros.saveAligned((void *)&this->colCombBits[num]);
+  #endif
+            }
+            zeros.saveAligned((void *)&this->solvedCells);
+            zeros.saveAligned((void *)&this->pairs);
+#else
             for (size_t num = 0; num < Numbers10; num++) {
                 this->candidates[num].set();
                 this->prevCandidates[num].reset();
-#if JCZ_V3_COMP_COLCOMBBITS
+  #if JCZ_V3_COMP_COLCOMBBITS
                 this->colCombBits[num].reset();
-#endif
-            }            
+  #endif
+            }
             this->solvedCells.reset();
             this->solvedRows.reset();
             this->pairs.reset();
+#endif
         }
 
         void copy(const State & other) {
+#if defined(__AVX__)
+            BitVec16x16_AVX B1, B2;
+            for (size_t num = 0; num < Numbers10; num += 2) {
+                B1.loadAligned((void *)&other.candidates[num]);
+                B2.loadAligned((void *)&other.prevCandidates[num]);
+                B1.saveAligned((void *)&this->candidates[num]);
+                B2.saveAligned((void *)&this->prevCandidates[num]);
+  #if JCZ_V3_COMP_COLCOMBBITS
+                B1.loadAligned((void *)&other.colCombBits[num]);
+                B1.saveAligned((void *)&this->colCombBits[num]);
+  #endif
+            }
+            B1.loadAligned((void *)&other.solvedCells);
+            B2.loadAligned((void *)&other.pairs);
+            B1.saveAligned((void *)&this->solvedCells);
+            B2.saveAligned((void *)&this->pairs);
+#elif defined(__SSE2__)
+            BitVec16x16 B1, B2;
+            for (size_t num = 0; num < Numbers10; num += 2) {
+                B1.loadAligned((void *)&other.candidates[num]);
+                B2.loadAligned((void *)&other.prevCandidates[num]);
+                B1.saveAligned((void *)&this->candidates[num]);
+                B2.saveAligned((void *)&this->prevCandidates[num]);
+  #if JCZ_V3_COMP_COLCOMBBITS
+                B1.loadAligned((void *)&other.colCombBits[num]);
+                B1.saveAligned((void *)&this->colCombBits[num]);
+  #endif
+            }
+            B1.loadAligned((void *)&other.solvedCells);
+            B1.saveAligned((void *)&this->solvedCells);
+
+            BitVec08x16 B3;
+            B3.loadAligned((void *)&other.pairs);
+            B3.saveAligned((void *)&this->pairs);
+#else
             std::memcpy((void *)this, (const void *)&other, sizeof(State));
+#endif
         }
     };
 
