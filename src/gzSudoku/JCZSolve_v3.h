@@ -1,6 +1,6 @@
 
-#ifndef GZ_SUDOKU_JCZSOLVE_V4_H
-#define GZ_SUDOKU_JCZSOLVE_V4_H
+#ifndef GZ_SUDOKU_JCZSOLVE_V3_H
+#define GZ_SUDOKU_JCZSOLVE_V3_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -31,16 +31,16 @@
 //
 // Whether use R1 counter and compare ? Disable it maybe faster.
 //
-#define JCZ_V4_ENABLE_R1_COUNT      0
+#define JCZ_V3_ENABLE_R1_COUNT      0
 
 //
 // Whether enable compare colCombBits ? Disable it maybe faster.
 //
-#define JCZ_V4_COMP_COLCOMBBITS     0
+#define JCZ_V3_COMP_COLCOMBBITS     0
 
 namespace gzSudoku {
 namespace JCZ {
-namespace v4 {
+namespace v3 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
@@ -476,7 +476,7 @@ private:
     struct alignas(16) State {
         BandBoard candidates[Numbers];
         BandBoard prevCandidates[Numbers];
-#if JCZ_V4_COMP_COLCOMBBITS
+#if JCZ_V3_COMP_COLCOMBBITS
         BandBoard colCombBits[Numbers];
 #endif
         BandBoard solvedCells;
@@ -499,7 +499,7 @@ private:
             for (size_t num = 0; num < Numbers; num++) {
                 this->candidates[num].set();
                 this->prevCandidates[num].reset();
-#if JCZ_V4_COMP_COLCOMBBITS
+#if JCZ_V3_COMP_COLCOMBBITS
                 this->colCombBits[num].reset();
 #endif
             }            
@@ -805,7 +805,7 @@ private:
         if (fast_mode || band != 0) {
             assert(band != 0);
             uint32_t colCombBits = (band | (band >> 9U) | (band >> 18U)) & kFullRowBits;
-#if JCZ_V4_COMP_COLCOMBBITS
+#if JCZ_V3_COMP_COLCOMBBITS
             if (colCombBits != state.colCombBits[digit].bands[self]) {
                 state.colCombBits[digit].bands[self] = colCombBits;
                 uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
@@ -1444,7 +1444,7 @@ private:
             low_bit = R1 & neg_R1;
             R1 ^= low_bit;
 #endif
-#if JCZ_V4_ENABLE_R1_COUNT
+#if JCZ_V3_ENABLE_R1_COUNT
             int R1_count = R1.popcount();
             assert(R1_count > 0);
 #endif
@@ -1497,7 +1497,7 @@ private:
                         }
                     }
 #endif
-#if JCZ_V4_ENABLE_R1_COUNT
+#if JCZ_V3_ENABLE_R1_COUNT
                     if (cell_count >= R1_count) {
                         assert(cell_count > 0);
                         break;
@@ -1916,8 +1916,8 @@ public:
 
 Solver::StaticData Solver::Static;
 
-} // namespace v4
+} // namespace v3
 } // namespace JCZ
 } // namespace gzSudoku
 
-#endif // GZ_SUDOKU_JCZSOLVE_V4_H
+#endif // GZ_SUDOKU_JCZSOLVE_V3_H

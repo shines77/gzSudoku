@@ -168,8 +168,8 @@
     <ClInclude Include="..\..\..\src\gzSudoku\CPUWarmUp.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\JCZSolve_v1.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\JCZSolve_v2.h" />
-    <ClInclude Include="..\..\..\src\gzSudoku\JCZSolve_v3.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\JCZSolve_v4.h" />
+    <ClInclude Include="..\..\..\src\gzSudoku\JCZSolve_v3.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\msvc_x86intrin.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\PackedBitSet.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\PowerOf2.h" />
