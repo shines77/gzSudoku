@@ -641,7 +641,7 @@ private:
     }
 
     static void init_mask() {
-        printf("JCZ::v2::Solver::StaticData::init_mask()\n");
+        printf("JCZ::v3::Solver::StaticData::init_mask()\n");
 
         init_flip_mask();
 
