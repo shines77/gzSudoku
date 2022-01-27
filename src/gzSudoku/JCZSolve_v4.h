@@ -2278,12 +2278,12 @@ private:
     template <bool fast_mode>
     JSTD_FORCE_INLINE
     int find_naked_singles(State & state) {
-        int unique_cells;
+        int naked_singles;
         if (fast_mode)
-            unique_cells = this->fast_find_naked_singles(state);
+            naked_singles = this->fast_find_naked_singles(state);
         else
-            unique_cells = this->normal_find_naked_singles(state);
-        return unique_cells;
+            naked_singles = this->normal_find_naked_singles(state);
+        return naked_singles;
     }
 
     template <bool fast_mode>
@@ -2301,10 +2301,10 @@ private:
                 return Status::Solved;
             }
 
-            int unique_cells = this->find_naked_singles<fast_mode>(state);
-            if (unique_cells == 0)
+            int naked_singles = this->find_naked_singles<fast_mode>(state);
+            if (naked_singles == 0)
                 break;
-            if (unique_cells < 0)
+            if (naked_singles < 0)
                 return Status::Invalid;
         } while (1);
 
@@ -2314,8 +2314,8 @@ private:
 public:
     int search(State & state, Board & board) {
         int status;
-        int unique_cells = this->find_naked_singles<false>(state);
-        if (unique_cells > 0) {
+        int naked_singles = this->find_naked_singles<false>(state);
+        if (naked_singles > 0) {
             status = this->find_all_single_literals<false>(state);
             if (status == Status::Invalid)
                 return status;
