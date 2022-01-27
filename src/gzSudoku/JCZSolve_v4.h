@@ -795,9 +795,9 @@ private:
             uint32_t band_bits = 0;
             uint32_t row = band * kBoxCellsY32;
             for (uint32_t cellY = 0; cellY < kBoxCellsY32; cellY++) {
-                uint32_t row_bits = bit_mask[row].value();
+                uint32_t band_bits = bit_mask[row].value();
                 row++;
-                band_bits |= row_bits << (cellY * 9);
+                band_bits |= band_bits << (cellY * 9);
             }
             band_mask.bands[band] = band_bits;
         }
@@ -1670,8 +1670,8 @@ private:
                     assert(pos != size_t(-1));
 
                     for (size_t num = 0; num < Numbers; num++) {
-                        uint64_t row_bits = state.candidates[num].bands64[band];
-                        if ((row_bits & bit) != 0) {
+                        uint64_t band_bits = state.candidates[num].bands64[band];
+                        if ((band_bits & bit) != 0) {
                             this->update_band_solved_mask64(state, band, pos, num);
                             cell_count++;
                             break;
@@ -1690,8 +1690,8 @@ private:
                 assert(pos != size_t(-1));
 
                 for (size_t num = 0; num < Numbers; num++) {
-                    uint64_t row_bits = state.candidates[num].bands64[0];
-                    if ((row_bits & bit) != 0) {
+                    uint64_t band_bits = state.candidates[num].bands64[0];
+                    if ((band_bits & bit) != 0) {
                         this->update_band_solved_mask64(state, 0, pos, num);
                         cell_count++;
                         break;
@@ -1709,8 +1709,8 @@ private:
                 assert(pos != size_t(-1));
 
                 for (size_t num = 0; num < Numbers; num++) {
-                    uint64_t row_bits = state.candidates[num].bands64[1];
-                    if ((row_bits & bit) != 0) {
+                    uint64_t band_bits = state.candidates[num].bands64[1];
+                    if ((band_bits & bit) != 0) {
                         this->update_band_solved_mask64(state, 1, pos, num);
                         cell_count++;
                         break;
@@ -1730,8 +1730,8 @@ private:
                     assert(pos != size_t(-1));
 
                     for (size_t num = 0; num < Numbers; num++) {
-                        uint32_t row_bits = state.candidates[num].bands[band];
-                        if ((row_bits & bit) != 0) {
+                        uint32_t band_bits = state.candidates[num].bands[band];
+                        if ((band_bits & bit) != 0) {
                             this->update_band_solved_mask32(state, pos, num);
                             cell_count++;
                             break;
@@ -1806,7 +1806,7 @@ private:
             pCells16 = (void *)&state.candidates[num];
             band_bits.loadAligned(pCells16);
 
-            R2 |= R1 & row_bits;
+            R2 |= R1 & band_bits;
             R1 |= band_bits;
         }
 #endif
@@ -1837,15 +1837,15 @@ private:
             assert(R1_count > 0);
 #endif
             for (size_t num = 0; num < Numbers; num++) {
-                BitVec08x16 row_bits;
+                BitVec08x16 band_bits;
                 void * pCells16 = (void *)&state.candidates[num];
-                row_bits.loadAligned(pCells16);
+                band_bits.loadAligned(pCells16);
 
-                row_bits &= R1;
-                if (row_bits.isNotAllZeros()) {
+                band_bits &= R1;
+                if (band_bits.isNotAllZeros()) {
                     // Find the position of low bit, and fill the num.
                     IntVec128 row_vec;
-                    row_bits.saveAligned((void *)&row_vec);
+                    band_bits.saveAligned((void *)&row_vec);
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -2004,8 +2004,8 @@ private:
                     assert(pos != size_t(-1));
 
                     for (size_t num = 0; num < Numbers; num++) {
-                        uint64_t row_bits = state.candidates[num].bands64[band];
-                        if ((row_bits & bit) != 0) {
+                        uint64_t band_bits = state.candidates[num].bands64[band];
+                        if ((band_bits & bit) != 0) {
                             this->update_band_solved_mask64(state, band, pos, num);
                             cell_count++;
                             break;
@@ -2024,8 +2024,8 @@ private:
                 assert(pos != size_t(-1));
 
                 for (size_t num = 0; num < Numbers; num++) {
-                    uint64_t row_bits = state.candidates[num].bands64[0];
-                    if ((row_bits & bit) != 0) {
+                    uint64_t band_bits = state.candidates[num].bands64[0];
+                    if ((band_bits & bit) != 0) {
                         this->update_band_solved_mask64(state, 0, pos, num);
                         cell_count++;
                         break;
@@ -2043,8 +2043,8 @@ private:
                 assert(pos != size_t(-1));
 
                 for (size_t num = 0; num < Numbers; num++) {
-                    uint64_t row_bits = state.candidates[num].bands64[1];
-                    if ((row_bits & bit) != 0) {
+                    uint64_t band_bits = state.candidates[num].bands64[1];
+                    if ((band_bits & bit) != 0) {
                         this->update_band_solved_mask64(state, 1, pos, num);
                         cell_count++;
                         break;
@@ -2064,8 +2064,8 @@ private:
                     assert(pos != size_t(-1));
 
                     for (size_t num = 0; num < Numbers; num++) {
-                        uint32_t row_bits = state.candidates[num].bands[band];
-                        if ((row_bits & bit) != 0) {
+                        uint32_t band_bits = state.candidates[num].bands[band];
+                        if ((band_bits & bit) != 0) {
                             this->update_band_solved_mask32(state, pos, num);
                             cell_count++;
                             break;
