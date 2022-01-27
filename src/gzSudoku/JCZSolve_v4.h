@@ -38,6 +38,11 @@
 //
 #define JCZ_V4_COMP_COLCOMBBITS     0
 
+//
+// Whether search no guess steps only?
+//
+#define JCZ_V4_ONLY_NO_GUESS        1
+
 namespace gzSudoku {
 namespace JCZ {
 namespace v4 {
@@ -2233,21 +2238,26 @@ public:
         this->limitSolutions_ = limitSolutions;
         basic_solver_t::num_guesses = 0;
 
-        int candidates = this->init_board(this->state_, board);
+        State & state = this->state_;
+        int candidates = this->init_board(state, board);
         if (candidates < (int)Sudoku::kMinInitCandidates)
-            return Status::Invalid;
+            return -1;
 
-        int status = this->find_all_single_literals<true>(this->state_);
+        int status = this->find_all_single_literals<true>(state);
         if (status == Status::Solved) {
-            //this->extract_solution(state, board);
+            this->extract_solution(state, solution);
             return 1;
         }
         else if (status == Status::Invalid) {
             return 0;
         }
 
-        status = this->search(this->state_, solution);
+#if JCZ_V4_ONLY_NO_GUESS
+        return 0;
+#else
+        status = this->search(state, solution);
         return this->numSolutions_;
+#endif
     }
 
     void display_result(Board & board, double elapsed_time,
