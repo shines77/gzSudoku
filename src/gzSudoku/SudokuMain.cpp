@@ -332,7 +332,8 @@ void run_all_benchmark(const char * filename)
 #else
 //  run_sudoku_test<v4b::Solver    >(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
 //  run_sudoku_test<JCZ::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v1");
-    run_sudoku_test<JCZ::v2::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
+//  run_sudoku_test<JCZ::v2::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
+    run_sudoku_test<JCZ::v4::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v4");
 #endif
 }
 

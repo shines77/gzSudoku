@@ -649,7 +649,7 @@ private:
                 }
             }
         }
-        //board.cells[BoardSize] = 0;
+        board.cells[BoardSize] = 0;
     }
 
     int init_board(State * state, const Board & board) {

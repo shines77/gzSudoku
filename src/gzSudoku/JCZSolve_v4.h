@@ -845,7 +845,84 @@ private:
     }
 
     void extract_solution(State & state, Board & board) {
-        assert(state != nullptr);
+#if 1
+ #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+        for (size_t num = 0; num < Numbers; num++) {
+            // Band 0
+            {
+                uint64_t band_bits = state.candidates[num].bands64[0];
+                while (band_bits != 0) {
+                    uint32_t bit_pos = BitUtils::bsf64(band_bits);
+                    uint64_t mask = BitUtils::ls1b64(band_bits);
+                    band_bits ^= mask;
+
+                    size_t pos = bandBitPosToPos64[0][bit_pos];
+                    assert(pos != size_t(-1));
+                    board.cells[pos] = (char)('1' + num);
+                }
+            }
+
+            // Band 1
+            {
+                uint64_t band_bits = state.candidates[num].bands64[1];
+                while (band_bits != 0) {
+                    uint32_t bit_pos = BitUtils::bsf64(band_bits);
+                    uint64_t mask = BitUtils::ls1b64(band_bits);
+                    band_bits ^= mask;
+
+                    size_t pos = bandBitPosToPos64[1][bit_pos];
+                    assert(pos != size_t(-1));
+                    board.cells[pos] = (char)('1' + num);
+                }
+            }
+        }
+#else
+        for (size_t num = 0; num < Numbers; num++) {
+            // Band 0
+            {
+                uint32_t band_bits = state.candidates[num].bands[0];
+                while (band_bits != 0) {
+                    uint32_t bit_pos = BitUtils::bsf32(band_bits);
+                    uint32_t mask = BitUtils::ls1b32(band_bits);
+                    band_bits ^= mask;
+
+                    size_t pos = bandBitPosToPos32[0][bit_pos];
+                    assert(pos != size_t(-1));
+                    board.cells[pos] = (char)('1' + num);
+                }
+            }
+
+            // Band 1
+            {
+                uint32_t band_bits = state.candidates[num].bands[1];
+                while (band_bits != 0) {
+                    uint32_t bit_pos = BitUtils::bsf32(band_bits);
+                    uint32_t mask = BitUtils::ls1b32(band_bits);
+                    band_bits ^= mask;
+
+                    size_t pos = bandBitPosToPos32[1][bit_pos];
+                    assert(pos != size_t(-1));
+                    board.cells[pos] = (char)('1' + num);
+                }
+            }
+
+            // Band 2
+            {
+                uint32_t band_bits = state.candidates[num].bands[2];
+                while (band_bits != 0) {
+                    uint32_t bit_pos = BitUtils::bsf32(band_bits);
+                    uint32_t mask = BitUtils::ls1b32(band_bits);
+                    band_bits ^= mask;
+
+                    size_t pos = bandBitPosToPos32[2][bit_pos];
+                    assert(pos != size_t(-1));
+                    board.cells[pos] = (char)('1' + num);
+                }
+            }
+        }
+#endif
+#else
         for (size_t pos = 0; pos < BoardSize; pos++) {
             uint32_t mask = tables.posToMask[pos];
             uint32_t band = tables.div27[pos];
@@ -856,7 +933,8 @@ private:
                 }
             }
         }
-        //board.cells[BoardSize] = 0;
+#endif
+        board.cells[BoardSize] = 0;
     }
 
     int init_board(State & state, const Board & board) {
@@ -1987,7 +2065,6 @@ private:
     }
 
     int guess_bivalue_cells(State & state, Board & board) {
-        assert(state != nullptr);
  #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
   || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
         for (size_t band = 0; band < 2; band++) {
@@ -2071,7 +2148,6 @@ private:
     }
 
     int guess_first_cell(State & state, Board & board) {
-        assert(state != nullptr);
  #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
   || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
         // Band64: 0
@@ -2157,7 +2233,6 @@ private:
     }
 
     int guess_next_cell(State & state, Board & board) {
-        assert(state != nullptr);
         if ((state.solvedCells.bands64[0] == kBitSet27_Double64) &&
             (state.solvedCells.bands64[1] == kBitSet27_Single64)) {
             if (kSearchMode > SearchMode::OneSolution) {
