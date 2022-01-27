@@ -1801,47 +1801,7 @@ private:
     }
 
     int normal_find_naked_singles(State & state) {
-#if defined(__AVX2__) && 0
-        BitVec16x16_AVX A1, A2, A3;
-        BitVec16x16_AVX band_bits;
-
-        // 0
-        A1.loadAligned((void *)&state.candidates[0]);
-        //A2.setAllZeros();
-        //A3.setAllZeros();
-
-        // 2
-        band_bits.loadAligned((void *)&state.candidates[2]);
-        A2 = A1 & band_bits;
-        A1 |= band_bits;
-
-        // 4
-        band_bits.loadAligned((void *)&state.candidates[4]);
-        A3 = A2 & band_bits;
-        A2 |= A1 & band_bits;
-        A1 |= band_bits;
-
-        // 6
-        band_bits.loadAligned((void *)&state.candidates[6]);
-        A3 |= A2 & band_bits;
-        A2 |= A1 & band_bits;
-        A1 |= band_bits;
-
-        // 8
-        band_bits.loadAligned((void *)&state.candidates[8]);
-        A3 |= A2 & band_bits;
-        A2 |= A1 & band_bits;
-        A1 |= band_bits;
-
-        BitVec08x16 R1, R2, R3, R1h, R2h, R3h;
-        A3.castTo(R3, R3h);
-        A2.castTo(R2, R2h);
-        A1.castTo(R1, R1h);
-
-        R3 |= R3h;
-        R2 |= R2h;
-        R1 |= R1h;
-#elif defined(__SSE2__) || 1
+#if 1
         BitVec08x16 R1, R2, R3;
         BitVec08x16 band_bits;
 
