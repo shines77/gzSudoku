@@ -62,14 +62,16 @@
 
 using namespace gzSudoku;
 
-static const size_t kEnableDlxV1Solution = 1;
-static const size_t kEnableDlxV2Solution = 1;
-static const size_t kEnableDlxV3Solution = 1;
+static const size_t kEnableDlxV1Solver = 1;
+static const size_t kEnableDlxV2Solver = 1;
+static const size_t kEnableDlxV3Solver = 1;
 
-static const size_t kEnableV1Solution = 1;
-static const size_t kEnableV2Solution = 1;
-static const size_t kEnableV3Solution = 1;
-static const size_t kEnableV4Solution = 1;
+static const size_t kEnableV1Solver = 1;
+static const size_t kEnableV2Solver = 1;
+static const size_t kEnableV3Solver = 1;
+static const size_t kEnableV4Solver = 1;
+
+static const size_t kEnableJCZSolver = 1;
 
 static std::vector<Board> bm_puzzles;
 static size_t bm_puzzleTotal = 0;
@@ -205,22 +207,40 @@ void run_solver_testcase(size_t index)
 
 void run_a_testcase(size_t index)
 {
-    if (kEnableV4Solution)
+    if (kEnableV4Solver)
     {
         printf("------------------------------------------\n\n");
-        printf("gzSudoku: v4::Solution - dfs\n\n");
+        printf("gzSudoku: v4::Solver - dfs\n\n");
 
         run_solver_testcase<v4::Solver>(index);
 
         printf("------------------------------------------\n\n");
-        printf("gzSudoku: v4a::Solution - dfs\n\n");
+        printf("gzSudoku: v4a::Solver - dfs\n\n");
 
         run_solver_testcase<v4a::Solver>(index);
 
         printf("------------------------------------------\n\n");
-        printf("gzSudoku: v4b::Solution - dfs\n\n");
+        printf("gzSudoku: v4b::Solver - dfs\n\n");
 
         run_solver_testcase<v4b::Solver>(index);
+    }
+
+    if (kEnableJCZSolver)
+    {
+        printf("------------------------------------------\n\n");
+        printf("gzSudoku: JCZ::v2::Solver\n\n");
+
+        run_solver_testcase<JCZ::v2::Solver>(index);
+
+        printf("------------------------------------------\n\n");
+        printf("gzSudoku: JCZ::v3::Solver\n\n");
+
+        run_solver_testcase<JCZ::v3::Solver>(index);
+
+        printf("------------------------------------------\n\n");
+        printf("gzSudoku: JCZ::v4::Solver\n\n");
+
+        run_solver_testcase<JCZ::v4::Solver>(index);
     }
 
     printf("------------------------------------------\n\n");
