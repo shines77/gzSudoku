@@ -588,9 +588,9 @@ private:
             uint32_t band_bits = 0;
             uint32_t row = band * kBoxCellsY32;
             for (uint32_t cellY = 0; cellY < kBoxCellsY32; cellY++) {
-                uint32_t band_bits = bit_mask[row].value();
+                uint32_t mask = bit_mask[row].value();
                 row++;
-                band_bits |= band_bits << (cellY * 9);
+                band_bits |= mask << (cellY * 9);
             }
             band_mask.bands[band] = band_bits;
         }
