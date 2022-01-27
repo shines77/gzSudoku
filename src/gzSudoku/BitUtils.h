@@ -27,8 +27,8 @@
 	#include <x86intrin.h>
 #endif
 
- #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
-  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
   #define JSTD_IS_X86       1
   #define JSTD_IS_X86_64    1
   #define JSTD_WORD_SIZE    64

@@ -695,8 +695,8 @@ struct BitVec08x16 {
 
     template <bool isNonZeros>
     inline int firstIndexOfOnes16(const BitVec08x16 & compare_mask) const {
- #if !(defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
-    || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)) || 1
+#if !(defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+   || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)) || 1
         int compare_mask_16 = _mm_movemask_epi8(compare_mask.m128);
         if (isNonZeros || (compare_mask_16 != 0)) {
             assert(!isNonZeros || (compare_mask_16 != 0));

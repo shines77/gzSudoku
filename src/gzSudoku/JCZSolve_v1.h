@@ -737,8 +737,8 @@ private:
                     IntVec256 row_vec;
                     row_bits.saveAligned((void *)&row_vec);
 
- #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
-  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
                     for (size_t i = 0; i < 3; i++) {
                         uint64_t bits64 = row_vec.u64[i];
                         while (bits64 != 0) {
@@ -848,8 +848,8 @@ private:
                     alignas(32) IntVec256 row_vec;
                     row_bits.saveAligned((void *)&row_vec);
 
- #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
-  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
                     for (size_t i = 0; i < 3; i++) {
                         uint64_t bits64 = row_vec.u64[i];
                         while (bits64 != 0) {

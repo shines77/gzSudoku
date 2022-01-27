@@ -855,7 +855,7 @@ private:
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
         for (size_t num = 0; num < Numbers; num++) {
-            // Band 0
+            // Band64: 0
             {
                 uint64_t band_bits = state.candidates[num].bands64[0];
                 while (band_bits != 0) {
@@ -871,7 +871,7 @@ private:
                 }
             }
 
-            // Band 1
+            // Band64: 1
             {
                 uint64_t band_bits = state.candidates[num].bands64[1];
                 while (band_bits != 0) {
@@ -1656,8 +1656,8 @@ private:
         register int cell_count = 0;
         //if (R1_bits.bands64[0] != 0 || R1_bits.bands64[1] != 0)
         {
- #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
-  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
 #if 0
             for (size_t band = 0; band < 2; band++) {
                 register uint64_t bits64 = R1_bits.bands64[band];
@@ -1847,8 +1847,8 @@ private:
                     IntVec128 row_vec;
                     row_bits.saveAligned((void *)&row_vec);
 
- #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
-  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
                     for (size_t i = 0; i < 2; i++) {
                         uint64_t bits64 = row_vec.u64[i];
                         while (bits64 != 0) {
@@ -1990,8 +1990,8 @@ private:
         register int cell_count = 0;
         //if (R1_bits.bands64[0] != 0 || R1_bits.bands64[1] != 0)
         {
- #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
-  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
 #if 0
             for (size_t band = 0; band < 2; band++) {
                 register uint64_t bits64 = R1_bits.bands64[band];
@@ -2081,8 +2081,8 @@ private:
     }
 
     int guess_bivalue_cells(State & state, Board & board) {
- #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
-  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
         for (size_t band = 0; band < 2; band++) {
             uint64_t pairs = state.pairs.bands64[band];
             if (pairs) {
@@ -2164,8 +2164,8 @@ private:
     }
 
     int guess_first_cell(State & state, Board & board) {
- #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
-  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
         // Band64: 0
         uint64_t unsolvedCells = state.solvedCells.bands64[0] ^ kBitSet27_Double64;
         if (unsolvedCells != 0) {
