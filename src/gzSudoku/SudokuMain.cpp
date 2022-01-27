@@ -338,6 +338,7 @@ int main(int argc, char * argv [])
 {
     const char * filename = nullptr;
     const char * out_file = nullptr;
+    UNUSED_VARIANT(out_file);
     if (argc > 2) {
         filename = argv[1];
         out_file = argv[2];
