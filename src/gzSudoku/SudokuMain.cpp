@@ -44,6 +44,13 @@
 #include <vector>
 #include <bitset>
 
+#include <atomic>
+#include <thread>
+#include <chrono>
+
+#include "CPUWarmUp.h"
+#include "StopWatch.h"
+
 #include "Sudoku.h"
 #include "TestCase.h"
 
@@ -56,9 +63,6 @@
 #include "JCZSolve_v2.h"
 #include "JCZSolve_v3.h"
 #include "JCZSolve_v4.h"
-
-#include "CPUWarmUp.h"
-#include "StopWatch.h"
 
 using namespace gzSudoku;
 
@@ -152,6 +156,7 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
             ifs.seekg(0, std::ios::beg);
 
             //std::cout << std::endl;
+            std::cout << "------------------------------------------" << std::endl << std::endl;
             std::cout << "File name: " << filename << std::endl;
             std::cout << "File size: " << total_size << " Byte(s)" << std::endl;
 
@@ -176,6 +181,8 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
                     puzzleCount++;
                 }
             }
+
+            std::cout << "------------------------------------------" << std::endl << std::endl;
 
             ifs.close();
         }
@@ -370,7 +377,12 @@ int main(int argc, char * argv [])
         filename = argv[1];
     }
 
-    jtest::CPU::warmup(1000);
+    //
+    // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
+    //
+//  std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
+//  std::atomic_thread_fence(std::memory_order_release);        // x86: _compile_barrier(), arm: _memory_barrier()
+//  std::atomic_thread_fence(std::memory_order_seq_cst);        // CPU: mfence
 
     Sudoku::initialize();
 

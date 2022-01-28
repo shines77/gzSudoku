@@ -21,6 +21,8 @@
 #include <chrono>
 #endif
 
+#include <atomic>
+
 namespace jtest {
 namespace CPU {
 
@@ -86,6 +88,19 @@ void warmup(DWORD delayMillsecs)
 }
 
 #endif // _MSC_VER
+
+struct WarmUp {
+    WarmUp() {
+        //
+        // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
+        //
+        std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
+        jtest::CPU::warmup(1000);
+        std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
+    }
+};
+
+static WarmUp warm_up;
 
 } // namespace CPU
 } // namespace jtest

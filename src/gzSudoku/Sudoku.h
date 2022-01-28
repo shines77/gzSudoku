@@ -21,6 +21,8 @@
 #include <type_traits>
 #include <algorithm>    // For std::sort()
 
+#include <atomic>
+
 #include "stddef.h"
 #include "BitSet.h"
 #include "BitArray.h"
@@ -562,6 +564,10 @@ struct Sudoku {
     static BitMaskTable     neighbors_mask_tbl;
 
     static void initialize() {
+        //
+        // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
+        //
+        std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
         if (!is_inited) {
             printf("Sudoku::initialize()\n");
             neighbors_mask_tbl.reset();
@@ -570,9 +576,11 @@ struct Sudoku {
             make_neighbor_cells();
             is_inited = true;
         }
+        std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
     }
 
     static void finalize() {
+        std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
         if (is_inited) {
             printf("Sudoku::finalize()\n");
             if (cell_info) {
@@ -601,6 +609,7 @@ struct Sudoku {
             }
             is_inited = false;
         }
+        std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
     }
 
     static void make_cell_info() {
