@@ -1492,7 +1492,7 @@ private:
                     for (size_t num = 0; num < Numbers; num++) {
                         uint32_t band_bits = state.candidates[num].bands[band];
                         if ((band_bits & bit) != 0) {
-                            this->update_band_solved_mask32(state, pos, num);
+                            this->update_band_solved_mask32(state, band, pos, num);
                             cell_count++;
                             break;
                         }
@@ -1723,7 +1723,7 @@ private:
                     for (size_t num = 0; num < Numbers; num++) {
                         uint32_t band_bits = state.candidates[num].bands[band];
                         if ((band_bits & bit) != 0) {
-                            this->update_band_solved_mask32(state, pos, num);
+                            this->update_band_solved_mask32(state, band, pos, num);
                             cell_count++;
                             break;
                         }
