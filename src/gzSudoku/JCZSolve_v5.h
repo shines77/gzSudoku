@@ -1291,7 +1291,7 @@ private:
 #else
                 uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
                 register uint32_t _updated = 0;
-#if 1
+#if 0
                 if (self == 0) {
                     uint32_t peer1_band = state.candidates[digit].bands[peer1];
                     uint32_t new_peer1_band = peer1_band & colLockedSingleMask;
