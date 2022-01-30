@@ -1258,6 +1258,61 @@ private:
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, uint32_t shift, bool fast_mode>
     JSTD_FORCE_INLINE
+    void find_and_update_band_sse2(State & state, int32_t & changed, uint32_t & updated,
+                                   uint32_t & solvedRows, const BandBoard & rowTriadsMaskAll) {
+        register uint32_t band = state.candidates[digit].bands[self];
+        if (band != state.prevCandidates[digit].bands[self]) {
+            uint32_t rowTriadsMask;
+            if (updated == 0) {
+                rowTriadsMask = rowTriadsMaskAll.bands[self];
+                uint32_t rowTriadsMask_ = rowTriadsMaskTbl[band & kFullRowBits] |
+                                         (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
+                                         (rowTriadsMaskTbl[(band >> 18U) & kFullRowBits] << 6U);
+                assert(rowTriadsMask == rowTriadsMask_);
+            }
+            else {
+                rowTriadsMask = rowTriadsMaskTbl[band & kFullRowBits] |
+                               (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
+                               (rowTriadsMaskTbl[(band >> 18U) & kFullRowBits] << 6U);
+            }            
+            uint32_t lockedCandidates = keepLockedCandidatesTbl[rowTriadsMask];
+            uint32_t newBand = band & lockedCandidates;
+            if (fast_mode || newBand != 0) {
+                assert(newBand != 0);
+                uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
+#if JCZ_V5_COMP_COLCOMBBITS
+                if (colCombBits != state.colCombBits[digit].bands[self]) {
+                    state.colCombBits[digit].bands[self] = colCombBits;
+                    uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
+                    state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                    state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                }
+#else
+                uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
+                state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+#endif // JCZ_V5_COMP_COLCOMBBITS
+                state.candidates[digit].bands[self] = newBand;
+                state.prevCandidates[digit].bands[self] = newBand;
+                uint32_t bandSolvedRows = rowHiddenSingleMaskTbl[rowTriadsSingleMaskTbl[rowTriadsMask] &
+                                                                 combColumnSingleMaskTbl[colCombBits]];
+                uint32_t newSolvedRows = bandSolvedRows << shift;
+                if ((solvedRows & (0x007U << shift)) != newSolvedRows) {
+                    solvedRows |= newSolvedRows;
+                    this->update_solved_rows<digit, self>(state, newBand, bandSolvedRows);
+                }
+                if (self != 2)
+                    updated |= 1;
+                changed = 1;
+            }
+            else {
+                changed = -1;
+            }
+        }
+    }
+
+    template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, uint32_t shift, bool fast_mode>
+    JSTD_FORCE_INLINE
     void find_and_update_band(State & state, int32_t & changed, uint32_t & updated,
                               uint32_t & solvedRows, const BandBoard & rowTriadsMaskAll) {
         register uint32_t band = state.candidates[digit].bands[self];
@@ -1279,7 +1334,6 @@ private:
             uint32_t newBand = band & lockedCandidates;
             if (fast_mode || newBand != 0) {
                 assert(newBand != 0);
-                
                 uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
 #if JCZ_V5_COMP_COLCOMBBITS
                 if (colCombBits != state.colCombBits[digit].bands[self]) {
@@ -1437,9 +1491,9 @@ private:
 
     template <bool fast_mode = false>
     int find_hidden_singles(State & state) {
-#if defined(__AVX2__)
+#if defined(__AVX2__) && 0
         return find_hidden_singles_avx2(state);
-#elif defined(__SSE2__) && 0
+#elif defined(__SSE2__)
         return find_hidden_singles_sse2(state);
 #else
         return find_hidden_singles_plain(state);
@@ -1448,6 +1502,267 @@ private:
 
     template <bool fast_mode = false>
     int find_hidden_singles_sse2(State & state) {
+        register uint32_t solvedRows;
+        register int32_t changed;
+
+        BandBoard rowTriadsMaskAll;
+
+        do {
+            changed = 0;
+
+            /********* Number 1-3 Start *********/
+            solvedRows = state.solvedRows.bands[0];        
+            if ((solvedRows & kFullRowBits) != kFullRowBits) {
+                // Number 1
+                {
+                    static const uint32_t digit = 0;
+                    uint32_t updated = 0;
+
+                    // Number 1 rowTriadsMask
+                    this->getRowTriadsMask_SSE2<digit>(state, &rowTriadsMaskAll);
+
+                    // Number 1 - band 0
+                    this->find_and_update_band_sse2<digit, 0, 1, 2, 0, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 1 - band 1
+                    this->find_and_update_band_sse2<digit, 1, 0, 2, 3, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 1 - band 2
+                    this->find_and_update_band_sse2<digit, 2, 0, 1, 6, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+                }
+            }
+
+            if ((solvedRows & kFullRowBits_1) != kFullRowBits_1) {
+                // Number 2
+                {
+                    static const uint32_t digit = 1;
+                    uint32_t updated = 0;
+
+                    // Number 2 rowTriadsMask
+                    this->getRowTriadsMask_SSE2<digit>(state, &rowTriadsMaskAll);
+
+                    // Number 2 - band 0
+                    this->find_and_update_band_sse2<digit, 0, 1, 2, 9, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 2 - band 1
+                    this->find_and_update_band_sse2<digit, 1, 0, 2, 12, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 2 - band 2
+                    this->find_and_update_band_sse2<digit, 2, 0, 1, 15, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+                }
+            }
+
+            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
+                // Number 3
+                {
+                    static const uint32_t digit = 2;
+                    uint32_t updated = 0;
+
+                    // Number 3 rowTriadsMask
+                    this->getRowTriadsMask_SSE2<digit>(state, &rowTriadsMaskAll);
+
+                    // Number 3 - band 0
+                    this->find_and_update_band_sse2<digit, 0, 1, 2, 18, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 3 - band 1
+                    this->find_and_update_band_sse2<digit, 1, 0, 2, 21, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 3 - band 2
+                    this->find_and_update_band_sse2<digit, 2, 0, 1, 24, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+                }
+            }
+            /********* Number 1-3 Start *********/
+
+            state.solvedRows.bands[0] = solvedRows;
+
+            /********* Number 4-6 Start *********/
+            solvedRows = state.solvedRows.bands[1];
+            if ((solvedRows & kFullRowBits) != kFullRowBits) {
+                // Number 4
+                {
+                    static const uint32_t digit = 3;
+                    uint32_t updated = 0;
+
+                    // Number 4 rowTriadsMask
+                    this->getRowTriadsMask_SSE2<digit>(state, &rowTriadsMaskAll);
+
+                    // Number 4 - band 0
+                    this->find_and_update_band_sse2<digit, 0, 1, 2, 0, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 4 - band 1
+                    this->find_and_update_band_sse2<digit, 1, 0, 2, 3, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 4 - band 2
+                    this->find_and_update_band_sse2<digit, 2, 0, 1, 6, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+                }
+            }
+  
+            if ((solvedRows & kFullRowBits_1) != kFullRowBits_1) {
+                // Number 5
+                {
+                    static const uint32_t digit = 4;
+                    uint32_t updated = 0;
+
+                    // Number 5 rowTriadsMask
+                    this->getRowTriadsMask_SSE2<digit>(state, &rowTriadsMaskAll);
+
+                    // Number 5 - band 0
+                    this->find_and_update_band_sse2<digit, 0, 1, 2, 9, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 5 - band 1
+                    this->find_and_update_band_sse2<digit, 1, 0, 2, 12, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 5 - band 2
+                    this->find_and_update_band_sse2<digit, 2, 0, 1, 15, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+                }
+            }
+
+            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
+                // Number 6
+                {
+                    static const uint32_t digit = 5;
+                    uint32_t updated = 0;
+
+                    // Number 6 rowTriadsMask
+                    this->getRowTriadsMask_SSE2<digit>(state, &rowTriadsMaskAll);
+
+                    // Number 6 - band 0
+                    this->find_and_update_band_sse2<digit, 0, 1, 2, 18, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 6 - band 1
+                    this->find_and_update_band_sse2<digit, 1, 0, 2, 21, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 6 - band 2
+                    this->find_and_update_band_sse2<digit, 2, 0, 1, 24, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+                }
+            }
+            /********* Number 4-6 End *********/
+
+            state.solvedRows.bands[1] = solvedRows;
+
+            /********* Number 7-9 Start *********/
+            solvedRows = state.solvedRows.bands[2];
+            if ((solvedRows & kFullRowBits) != kFullRowBits) {
+                // Number 7
+                {
+                    static const uint32_t digit = 6;
+                    uint32_t updated = 0;
+
+                    // Number 7 rowTriadsMask
+                    this->getRowTriadsMask_SSE2<digit>(state, &rowTriadsMaskAll);
+
+                    // Number 7 - band 0
+                    this->find_and_update_band_sse2<digit, 0, 1, 2, 0, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 7 - band 1
+                    this->find_and_update_band_sse2<digit, 1, 0, 2, 3, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 7 - band 2
+                    this->find_and_update_band_sse2<digit, 2, 0, 1, 6, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+                }
+            }
+
+            if ((solvedRows & kFullRowBits_1) != kFullRowBits_1) {
+                // Number 8
+                {
+                    static const uint32_t digit = 7;
+                    uint32_t updated = 0;
+
+                    // Number 8 rowTriadsMask
+                    this->getRowTriadsMask_SSE2<digit>(state, &rowTriadsMaskAll);
+
+                    // Number 8 - band 0
+                    this->find_and_update_band_sse2<digit, 0, 1, 2, 9, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 8 - band 1
+                    this->find_and_update_band_sse2<digit, 1, 0, 2, 12, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 8 - band 2
+                    this->find_and_update_band_sse2<digit, 2, 0, 1, 15, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+                }
+            }
+
+            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
+                // Number 9 rowTriadsMask
+                this->getRowTriadsMask_SSE2<8>(state, &rowTriadsMaskAll);
+
+                // Number 9
+                {
+                    static const uint32_t digit = 8;
+                    uint32_t updated = 0;
+
+                    // Number 9 rowTriadsMask
+                    this->getRowTriadsMask_SSE2<digit>(state, &rowTriadsMaskAll);
+
+                    // Number 9 - band 0
+                    this->find_and_update_band_sse2<digit, 0, 1, 2, 18, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 9 - band 1
+                    this->find_and_update_band_sse2<digit, 1, 0, 2, 21, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+
+                    // Number 9 - band 2
+                    this->find_and_update_band_sse2<digit, 2, 0, 1, 24, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll);
+                    if (!fast_mode && (changed == -1))
+                        return Status::Invalid;
+                }
+            }
+            /********* Number 7-9 End *********/
+
+            state.solvedRows.bands[2] = solvedRows;
+        } while (changed != 0);
+
         return Status::Success;
     }
 
