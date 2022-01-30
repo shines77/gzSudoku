@@ -115,7 +115,7 @@
 //
 // Intel Intrinsics Guide (SIMD)
 //
-// https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.htm
+// https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
 //
 
 //
@@ -155,6 +155,14 @@ union alignas(32) IntVec256 {
 };
 
 #pragma pack(pop)
+
+bool check_alignment(void * address, size_t alignment)
+{
+    uintptr_t ptr = (uintptr_t)address;
+    assert(alignment > 0 );
+    assert((alignment & (alignment - 1)) == 0);
+    return ((ptr & (alignment - 1)) == 0);
+}
 
 struct SSE {
 
