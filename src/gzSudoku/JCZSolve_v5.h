@@ -1096,9 +1096,9 @@ private:
     JSTD_FORCE_INLINE
     void getRowTriadsMask_SSE2(const State & state, BandBoard * rowTriadsMaskAll) {
         BitVec08x16 band1, band2, band3;
-        BitVec08x16 triads_mask1(0111111111, 0111111111, 0111111111, 0111111111);
-        BitVec08x16 triads_mask2(0007007007, 0007007007, 0007007007, 0007007007);
-        BitVec08x16 triads_mask3(0000000777, 0000000777, 0000000777, 0000000777);
+        static BitVec08x16 triads_mask1(0111111111, 0111111111, 0111111111, 0111111111);
+        static BitVec08x16 triads_mask2(0007007007, 0007007007, 0007007007, 0007007007);
+        static BitVec08x16 triads_mask3(0000000777, 0000000777, 0000000777, 0000000777);
 
         band1.loadAligned((void *)&state.candidates[digit]);
 
@@ -1129,9 +1129,9 @@ private:
         static_assert(((digit & 1) == 0), "getRowTriadsMask_AVX2<digit>: digit must be an even number.");
 
         BitVec16x16_AVX band1, band2, band3;
-        BitVec16x16_AVX triads_mask1(0111111111, 0111111111, 0111111111, 0111111111, 0111111111, 0111111111, 0111111111, 0111111111);
-        BitVec16x16_AVX triads_mask2(0007007007, 0007007007, 0007007007, 0007007007, 0007007007, 0007007007, 0007007007, 0007007007);
-        BitVec16x16_AVX triads_mask3(0000000777, 0000000777, 0000000777, 0000000777, 0000000777, 0000000777, 0000000777, 0000000777);
+        static BitVec16x16_AVX triads_mask1(0111111111, 0111111111, 0111111111, 0111111111, 0111111111, 0111111111, 0111111111, 0111111111);
+        static BitVec16x16_AVX triads_mask2(0007007007, 0007007007, 0007007007, 0007007007, 0007007007, 0007007007, 0007007007, 0007007007);
+        static BitVec16x16_AVX triads_mask3(0000000777, 0000000777, 0000000777, 0000000777, 0000000777, 0000000777, 0000000777, 0000000777);
 
         band1.loadAligned((void *)&state.candidates[digit]);
 
@@ -1290,6 +1290,42 @@ private:
 #else
                 uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
                 register uint32_t _updated = 0;
+#if 1
+                if (self == 0) {
+                    uint32_t peer1_band = state.candidates[digit].bands[peer1];
+                    uint32_t new_peer1_band = peer1_band & colLockedSingleMask;
+                    if (new_peer1_band != peer1_band) {
+                        state.candidates[digit].bands[peer1] = new_peer1_band;
+                        uint32_t peer2_band = state.candidates[digit].bands[peer2];
+                        uint32_t new_peer2_band = peer2_band & colLockedSingleMask;
+                        if (new_peer2_band != peer2_band) {
+                            state.candidates[digit].bands[peer2] = new_peer2_band;
+                        }
+                        _updated |= 1;
+                    }
+                    else {
+                        uint32_t peer2_band = state.candidates[digit].bands[peer2];
+                        uint32_t new_peer2_band = peer2_band & colLockedSingleMask;
+                        if (new_peer2_band != peer2_band) {
+                            state.candidates[digit].bands[peer2] = new_peer2_band;
+                            _updated |= 1;
+                        }
+                    }
+                }
+                else if (self == 1) {
+                    state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                    uint32_t peer2_band = state.candidates[digit].bands[peer2];
+                    uint32_t new_peer2_band = peer2_band & colLockedSingleMask;
+                    if (new_peer2_band != peer2_band) {
+                        state.candidates[digit].bands[peer2] = new_peer2_band;
+                        _updated |= 1;
+                    }
+                }
+                else {
+                    state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                    state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                }
+#else
                 if (self == 0) {
                     uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
                     uint32_t peer1_band = state.candidates[digit].bands[peer1];
@@ -1323,6 +1359,7 @@ private:
                     state.candidates[digit].bands[peer2] &= colLockedSingleMask;
                 }
 #endif
+#endif // JCZ_V5_COMP_COLCOMBBITS
                 state.candidates[digit].bands[self] = newBand;
                 state.prevCandidates[digit].bands[self] = newBand;
                 uint32_t bandSolvedRows = rowHiddenSingleMaskTbl[rowTriadsSingleMaskTbl[rowTriadsMask] &
