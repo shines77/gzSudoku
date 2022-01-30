@@ -1279,7 +1279,6 @@ private:
             uint32_t newBand = band & lockedCandidates;
             if (fast_mode || newBand != 0) {
                 assert(newBand != 0);
-
                 uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
 #if JCZ_V5_COMP_COLCOMBBITS
                 if (colCombBits != state.colCombBits[digit].bands[self]) {
@@ -1324,8 +1323,8 @@ private:
                 }
 #else
                 if (self == 0) {
-                    uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
                     uint32_t peer1_band = state.candidates[digit].bands[peer1];
+                    uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
                     if ((peer1_band & colLockedSingleRevMask) != 0) {
                         state.candidates[digit].bands[peer1] &= colLockedSingleMask;
                         state.candidates[digit].bands[peer2] &= colLockedSingleMask;
@@ -1394,7 +1393,7 @@ private:
     int find_hidden_singles_avx2(State & state) {
         register uint32_t solvedRows;
         register int32_t changed;
-        register uint32_t updated;
+        uint32_t updated;
 
         BandBoardPair rowTriadsMaskAll;
 
