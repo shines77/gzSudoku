@@ -845,7 +845,7 @@ private:
     }
 
     static void init_mask() {
-        printf("JCZ::v4::Solver::StaticData::init_mask()\n");
+        printf("JCZ::v5::Solver::StaticData::init_mask()\n");
 
         init_flip_mask();
 
@@ -1259,7 +1259,7 @@ private:
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, uint32_t shift, bool fast_mode>
     JSTD_FORCE_INLINE
     void find_and_update_band(State & state, int32_t & changed, uint32_t & updated,
-                              uint32_t solvedRows, const BandBoard & rowTriadsMaskAll) {
+                              uint32_t & solvedRows, const BandBoard & rowTriadsMaskAll) {
         register uint32_t band = state.candidates[digit].bands[self];
         if (band != state.prevCandidates[digit].bands[self]) {
             uint32_t rowTriadsMask;
