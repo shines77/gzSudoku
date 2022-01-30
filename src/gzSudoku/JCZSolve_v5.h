@@ -1291,17 +1291,13 @@ private:
 #else
                 uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
                 register uint32_t _updated = 0;
-#if 0
+#if 1
                 if (self == 0) {
                     uint32_t peer1_band = state.candidates[digit].bands[peer1];
                     uint32_t new_peer1_band = peer1_band & colLockedSingleMask;
                     if (new_peer1_band != peer1_band) {
                         state.candidates[digit].bands[peer1] = new_peer1_band;
-                        uint32_t peer2_band = state.candidates[digit].bands[peer2];
-                        uint32_t new_peer2_band = peer2_band & colLockedSingleMask;
-                        if (new_peer2_band != peer2_band) {
-                            state.candidates[digit].bands[peer2] = new_peer2_band;
-                        }
+                        state.candidates[digit].bands[peer2] &= colLockedSingleMask;
                         _updated |= 1;
                     }
                     else {
@@ -1332,10 +1328,7 @@ private:
                     uint32_t peer1_band = state.candidates[digit].bands[peer1];
                     if ((peer1_band & colLockedSingleRevMask) != 0) {
                         state.candidates[digit].bands[peer1] &= colLockedSingleMask;
-                        uint32_t peer2_band = state.candidates[digit].bands[peer2];
-                        if ((peer2_band & colLockedSingleRevMask) != 0) {
-                            state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                        }
+                        state.candidates[digit].bands[peer2] &= colLockedSingleMask;
                         _updated |= 1;
                     }
                     else {
