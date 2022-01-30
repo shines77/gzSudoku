@@ -482,6 +482,10 @@ private:
         }
     };
 
+    struct alignas(32) BandBoardPair {
+        BandBoard board[2];
+    };
+
     struct alignas(32) State {
         BandBoard candidates[Numbers10];
         BandBoard prevCandidates[Numbers10];
@@ -1225,48 +1229,57 @@ private:
         }
     }
 
-    template <uint32_t digit, uint32_t band_id>
+    template <uint32_t digit, uint32_t self>
     JSTD_FORCE_INLINE
     void update_solved_rows(State & state, uint32_t band, uint32_t bandSolvedRows) {
         uint32_t solvedCells = band & solvedRowsBitMaskTbl[bandSolvedRows];
         //assert(solvedCells != 0);
-        state.solvedCells.bands[band_id] |= solvedCells;
+        state.solvedCells.bands[self] |= solvedCells;
         uint32_t unsolvedCells = ~solvedCells;
         if (digit != 0)
-            state.candidates[0].bands[band_id] &= unsolvedCells;
+            state.candidates[0].bands[self] &= unsolvedCells;
         if (digit != 1)
-            state.candidates[1].bands[band_id] &= unsolvedCells;
+            state.candidates[1].bands[self] &= unsolvedCells;
         if (digit != 2)
-            state.candidates[2].bands[band_id] &= unsolvedCells;
+            state.candidates[2].bands[self] &= unsolvedCells;
         if (digit != 3)
-            state.candidates[3].bands[band_id] &= unsolvedCells;
+            state.candidates[3].bands[self] &= unsolvedCells;
         if (digit != 4)
-            state.candidates[4].bands[band_id] &= unsolvedCells;
+            state.candidates[4].bands[self] &= unsolvedCells;
         if (digit != 5)
-            state.candidates[5].bands[band_id] &= unsolvedCells;
+            state.candidates[5].bands[self] &= unsolvedCells;
         if (digit != 6)
-            state.candidates[6].bands[band_id] &= unsolvedCells;
+            state.candidates[6].bands[self] &= unsolvedCells;
         if (digit != 7)
-            state.candidates[7].bands[band_id] &= unsolvedCells;
+            state.candidates[7].bands[self] &= unsolvedCells;
         if (digit != 8)
-            state.candidates[8].bands[band_id] &= unsolvedCells;
+            state.candidates[8].bands[self] &= unsolvedCells;
     }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, uint32_t shift, bool fast_mode>
     JSTD_FORCE_INLINE
-    void find_and_update_band(State & state, int32_t & changed, uint32_t solvedRows, const BandBoard & rowTriadsMaskAll) {
+    void find_and_update_band(State & state, int32_t & changed, uint32_t & updated,
+                              uint32_t solvedRows, const BandBoard & rowTriadsMaskAll) {
         register uint32_t band = state.candidates[digit].bands[self];
         if (band != state.prevCandidates[digit].bands[self]) {
-            uint32_t rowTriadsMask_ = rowTriadsMaskTbl[band & kFullRowBits] |
-                                     (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
-                                     (rowTriadsMaskTbl[(band >> 18U) & kFullRowBits] << 6U);
-            uint32_t rowTriadsMask = rowTriadsMaskAll.bands[self];
-            assert(rowTriadsMask == rowTriadsMask_);
+            uint32_t rowTriadsMask;
+            if (updated == 0) {
+                rowTriadsMask = rowTriadsMaskAll.bands[self];
+                uint32_t rowTriadsMask_ = rowTriadsMaskTbl[band & kFullRowBits] |
+                                         (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
+                                         (rowTriadsMaskTbl[(band >> 18U) & kFullRowBits] << 6U);
+                assert(rowTriadsMask == rowTriadsMask_);
+            }
+            else {
+                rowTriadsMask = rowTriadsMaskTbl[band & kFullRowBits] |
+                               (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
+                               (rowTriadsMaskTbl[(band >> 18U) & kFullRowBits] << 6U);
+            }            
             uint32_t lockedCandidates = keepLockedCandidatesTbl[rowTriadsMask];
             uint32_t newBand = band & lockedCandidates;
             if (fast_mode || newBand != 0) {
                 assert(newBand != 0);
-                if (newBand != band) {
+                //if (newBand != band) {
                     uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
 #if JCZ_V5_COMP_COLCOMBBITS
                     if (colCombBits != state.colCombBits[digit].bands[self]) {
@@ -1277,8 +1290,38 @@ private:
                     }
 #else
                     uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
-                    state.candidates[digit].bands[peer1] &= colLockedSingleMask;
-                    state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                    if (self == 0) {
+                        uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
+                        uint32_t peer1_band = state.candidates[digit].bands[peer1];
+                        if ((peer1_band & colLockedSingleRevMask) != 0) {
+                            state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                            uint32_t peer2_band = state.candidates[digit].bands[peer2];
+                            if ((peer2_band & colLockedSingleRevMask) != 0) {
+                                state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                            }
+                            updated |= 1;
+                        }
+                        else {
+                            uint32_t peer2_band = state.candidates[digit].bands[peer2];
+                            if ((peer2_band & colLockedSingleRevMask) != 0) {
+                                state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                                updated |= 1;
+                            }
+                        }
+                    }
+                    else if (self == 1) {
+                        state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                        uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
+                        uint32_t peer2_band = state.candidates[digit].bands[peer2];
+                        if ((peer2_band & colLockedSingleRevMask) != 0) {
+                            state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                            updated |= 1;
+                        }
+                    }
+                    else {
+                        state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                        state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                    }
 #endif
                     state.candidates[digit].bands[self] = newBand;
                     state.prevCandidates[digit].bands[self] = newBand;
@@ -1288,9 +1331,13 @@ private:
                     if ((solvedRows & (0x007U << shift)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, self>(state, newBand, bandSolvedRows);
+                        updated |= 2;
+                        changed = 1;
                     }
-                    changed = 1;
-                }
+                    else {
+                        changed = (updated != 0) ? 1 : changed;
+                    }
+                //}
             }
             else {
                 changed = -1;
@@ -1318,8 +1365,9 @@ private:
     int find_hidden_singles_avx2(State & state) {
         register uint32_t solvedRows;
         register int32_t changed;
+        register uint32_t updated;
 
-        BandBoard rowTriadsMaskAll[2];
+        BandBoardPair rowTriadsMaskAll;
 
         do {
             changed = 0;
@@ -1328,24 +1376,25 @@ private:
             solvedRows = state.solvedRows.bands[0];        
             if ((solvedRows & kFullRowBits_01) != kFullRowBits_01) {
                 // Number 1-2 rowTriadsMask
-                this->getRowTriadsMask_AVX2<0>(state, &rowTriadsMaskAll[0]);
+                this->getRowTriadsMask_AVX2<0>(state, &rowTriadsMaskAll.board[0]);
 
                 // Number 1
                 {
                     static const uint32_t digit = 0;
+                    updated = 0;
 
                     // Number 1 - band 0
-                    this->find_and_update_band<digit, 0, 1, 2, 0, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 0, 1, 2, 0, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 1 - band 1
-                    this->find_and_update_band<digit, 1, 0, 2, 3, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 1, 0, 2, 3, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 1 - band 2
-                    this->find_and_update_band<digit, 2, 0, 1, 6, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 2, 0, 1, 6, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
                 }
@@ -1353,19 +1402,20 @@ private:
                 // Number 2
                 {
                     static const uint32_t digit = 1;
+                    updated ^= 1;
 
                     // Number 2 - band 0
-                    this->find_and_update_band<digit, 0, 1, 2, 9, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[1]);
+                    this->find_and_update_band<digit, 0, 1, 2, 9, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[1]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 2 - band 1
-                    this->find_and_update_band<digit, 1, 0, 2, 12, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[1]);
+                    this->find_and_update_band<digit, 1, 0, 2, 12, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[1]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 2 - band 2
-                    this->find_and_update_band<digit, 2, 0, 1, 15, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[1]);
+                    this->find_and_update_band<digit, 2, 0, 1, 15, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[1]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
                 }
@@ -1376,25 +1426,26 @@ private:
             uint32_t inited = 0;
             if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
                 // Number 3-4 rowTriadsMask
-                this->getRowTriadsMask_AVX2<2>(state, &rowTriadsMaskAll[0]);
+                this->getRowTriadsMask_AVX2<2>(state, &rowTriadsMaskAll.board[0]);
                 inited = 1;
 
                 // Number 3
                 {
                     static const uint32_t digit = 2;
+                    updated = 0;
 
                     // Number 3 - band 0
-                    this->find_and_update_band<digit, 0, 1, 2, 18, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 0, 1, 2, 18, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 3 - band 1
-                    this->find_and_update_band<digit, 1, 0, 2, 21, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 1, 0, 2, 21, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 3 - band 2
-                    this->find_and_update_band<digit, 2, 0, 1, 24, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 2, 0, 1, 24, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
                 }
@@ -1405,8 +1456,9 @@ private:
             solvedRows = state.solvedRows.bands[1];
             if ((solvedRows & kFullRowBits) != kFullRowBits) {
                 // Number 3-4 rowTriadsMask
-                if (inited == 0) {
-                    this->getRowTriadsMask_AVX2<2>(state, &rowTriadsMaskAll[0]);
+                updated ^= 1;
+                if (inited == 0 || updated != 0) {
+                    this->getRowTriadsMask_AVX2<2>(state, &rowTriadsMaskAll.board[0]);
                 }
 
                 // Number 4
@@ -1414,17 +1466,17 @@ private:
                     static const uint32_t digit = 3;
 
                     // Number 4 - band 0
-                    this->find_and_update_band<digit, 0, 1, 2, 0, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[1]);
+                    this->find_and_update_band<digit, 0, 1, 2, 0, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[1]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 4 - band 1
-                    this->find_and_update_band<digit, 1, 0, 2, 3, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[1]);
+                    this->find_and_update_band<digit, 1, 0, 2, 3, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[1]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 4 - band 2
-                    this->find_and_update_band<digit, 2, 0, 1, 6, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[1]);
+                    this->find_and_update_band<digit, 2, 0, 1, 6, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[1]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
                 }
@@ -1434,24 +1486,25 @@ private:
             /********* Number 5-6 Start *********/   
             if ((solvedRows & kFullRowBits_12) != kFullRowBits_12) {
                 // Number 5-6 rowTriadsMask
-                this->getRowTriadsMask_AVX2<4>(state, &rowTriadsMaskAll[0]);
+                this->getRowTriadsMask_AVX2<4>(state, &rowTriadsMaskAll.board[0]);
 
                 // Number 5
                 {
                     static const uint32_t digit = 4;
+                    updated = 0;
 
                     // Number 5 - band 0
-                    this->find_and_update_band<digit, 0, 1, 2, 9, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 0, 1, 2, 9, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 5 - band 1
-                    this->find_and_update_band<digit, 1, 0, 2, 12, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 1, 0, 2, 12, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 5 - band 2
-                    this->find_and_update_band<digit, 2, 0, 1, 15, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 2, 0, 1, 15, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
                 }
@@ -1459,19 +1512,20 @@ private:
                 // Number 6
                 {
                     static const uint32_t digit = 5;
+                    updated ^= 1;
 
                     // Number 6 - band 0
-                    this->find_and_update_band<digit, 0, 1, 2, 18, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[1]);
+                    this->find_and_update_band<digit, 0, 1, 2, 18, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[1]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 6 - band 1
-                    this->find_and_update_band<digit, 1, 0, 2, 21, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[1]);
+                    this->find_and_update_band<digit, 1, 0, 2, 21, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[1]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 6 - band 2
-                    this->find_and_update_band<digit, 2, 0, 1, 24, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[1]);
+                    this->find_and_update_band<digit, 2, 0, 1, 24, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[1]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
                 }
@@ -1484,24 +1538,25 @@ private:
             solvedRows = state.solvedRows.bands[2];        
             if ((solvedRows & kFullRowBits_01) != kFullRowBits_01) {
                 // Number 7-8 rowTriadsMask
-                this->getRowTriadsMask_AVX2<6>(state, &rowTriadsMaskAll[0]);
+                this->getRowTriadsMask_AVX2<6>(state, &rowTriadsMaskAll.board[0]);
 
                 // Number 7
                 {
                     static const uint32_t digit = 6;
+                    updated = 0;
 
                     // Number 7 - band 0
-                    this->find_and_update_band<digit, 0, 1, 2, 0, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 0, 1, 2, 0, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 7 - band 1
-                    this->find_and_update_band<digit, 1, 0, 2, 3, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 1, 0, 2, 3, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 7 - band 2
-                    this->find_and_update_band<digit, 2, 0, 1, 6, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 2, 0, 1, 6, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
                 }
@@ -1509,19 +1564,20 @@ private:
                 // Number 8
                 {
                     static const uint32_t digit = 7;
+                    updated ^= 1;
 
                     // Number 8 - band 0
-                    this->find_and_update_band<digit, 0, 1, 2, 9, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[1]);
+                    this->find_and_update_band<digit, 0, 1, 2, 9, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[1]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 8 - band 1
-                    this->find_and_update_band<digit, 1, 0, 2, 12, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[1]);
+                    this->find_and_update_band<digit, 1, 0, 2, 12, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[1]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 8 - band 2
-                    this->find_and_update_band<digit, 2, 0, 1, 15, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[1]);
+                    this->find_and_update_band<digit, 2, 0, 1, 15, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[1]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
                 }
@@ -1531,24 +1587,25 @@ private:
             /********* Number 9 Start *********/
             if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
                 // Number 9 rowTriadsMask
-                this->getRowTriadsMask_SSE2<8>(state, &rowTriadsMaskAll[0]);
+                this->getRowTriadsMask_SSE2<8>(state, &rowTriadsMaskAll.board[0]);
 
                 // Number 9
                 {
-                    static const uint32_t digit = 2;
+                    static const uint32_t digit = 8;
+                    updated = 0;
 
                     // Number 9 - band 0
-                    this->find_and_update_band<digit, 0, 1, 2, 18, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 0, 1, 2, 18, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 9 - band 1
-                    this->find_and_update_band<digit, 1, 0, 2, 21, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 1, 0, 2, 21, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
 
                     // Number 9 - band 2
-                    this->find_and_update_band<digit, 2, 0, 1, 24, fast_mode>(state, changed, solvedRows, rowTriadsMaskAll[0]);
+                    this->find_and_update_band<digit, 2, 0, 1, 24, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
                     if (!fast_mode && (changed == -1))
                         return Status::Invalid;
                 }
