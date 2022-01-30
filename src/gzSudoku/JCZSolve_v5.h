@@ -1334,9 +1334,10 @@ private:
                     _updated |= 2;
                 }
 
-                updated |= _updated;
-                if (_updated != 0)
+                if (_updated != 0) {
+                    updated |= _updated;
                     changed = 1;
+                }
             }
             else {
                 changed = -1;
