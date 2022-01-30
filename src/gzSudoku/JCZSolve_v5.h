@@ -1279,6 +1279,68 @@ private:
             uint32_t newBand = band & lockedCandidates;
             if (fast_mode || newBand != 0) {
                 assert(newBand != 0);
+                
+                uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
+#if JCZ_V5_COMP_COLCOMBBITS
+                if (colCombBits != state.colCombBits[digit].bands[self]) {
+                    state.colCombBits[digit].bands[self] = colCombBits;
+                    uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
+                    state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                    state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                }
+#else
+                uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
+                state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+#endif // JCZ_V5_COMP_COLCOMBBITS
+                state.candidates[digit].bands[self] = newBand;
+                state.prevCandidates[digit].bands[self] = newBand;
+                register uint32_t _updated;
+                if (self != 2)
+                    _updated = 1;
+                else
+                    _updated = 0;
+                uint32_t bandSolvedRows = rowHiddenSingleMaskTbl[rowTriadsSingleMaskTbl[rowTriadsMask] &
+                                                                 combColumnSingleMaskTbl[colCombBits]];
+                uint32_t newSolvedRows = bandSolvedRows << shift;
+                if ((solvedRows & (0x007U << shift)) != newSolvedRows) {
+                    solvedRows |= newSolvedRows;
+                    this->update_solved_rows<digit, self>(state, newBand, bandSolvedRows);
+                    if ((digit & 1) == 0)
+                        _updated |= 2;
+                }
+                updated |= _updated;
+                changed = 1;
+            }
+            else {
+                changed = -1;
+            }
+        }
+    }
+
+    template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, uint32_t shift, bool fast_mode>
+    JSTD_FORCE_INLINE
+    void find_and_update_band_v2(State & state, int32_t & changed, uint32_t & updated,
+                              uint32_t & solvedRows, const BandBoard & rowTriadsMaskAll) {
+        register uint32_t band = state.candidates[digit].bands[self];
+        if (band != state.prevCandidates[digit].bands[self]) {
+            uint32_t rowTriadsMask;
+            if (updated == 0) {
+                rowTriadsMask = rowTriadsMaskAll.bands[self];
+                uint32_t rowTriadsMask_ = rowTriadsMaskTbl[band & kFullRowBits] |
+                                         (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
+                                         (rowTriadsMaskTbl[(band >> 18U) & kFullRowBits] << 6U);
+                assert(rowTriadsMask == rowTriadsMask_);
+            }
+            else {
+                rowTriadsMask = rowTriadsMaskTbl[band & kFullRowBits] |
+                               (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
+                               (rowTriadsMaskTbl[(band >> 18U) & kFullRowBits] << 6U);
+            }            
+            uint32_t lockedCandidates = keepLockedCandidatesTbl[rowTriadsMask];
+            uint32_t newBand = band & lockedCandidates;
+            if (fast_mode || newBand != 0) {
+                assert(newBand != 0);
                 uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
 #if JCZ_V5_COMP_COLCOMBBITS
                 if (colCombBits != state.colCombBits[digit].bands[self]) {
