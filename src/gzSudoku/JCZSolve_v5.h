@@ -1279,65 +1279,64 @@ private:
             uint32_t newBand = band & lockedCandidates;
             if (fast_mode || newBand != 0) {
                 assert(newBand != 0);
-                //if (newBand != band) {
-                    uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
+                uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
 #if JCZ_V5_COMP_COLCOMBBITS
-                    if (colCombBits != state.colCombBits[digit].bands[self]) {
-                        state.colCombBits[digit].bands[self] = colCombBits;
-                        uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
-                        state.candidates[digit].bands[peer1] &= colLockedSingleMask;
-                        state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                    }
-#else
+                if (colCombBits != state.colCombBits[digit].bands[self]) {
+                    state.colCombBits[digit].bands[self] = colCombBits;
                     uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
-                    if (self == 0) {
-                        uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
-                        uint32_t peer1_band = state.candidates[digit].bands[peer1];
-                        if ((peer1_band & colLockedSingleRevMask) != 0) {
-                            state.candidates[digit].bands[peer1] &= colLockedSingleMask;
-                            uint32_t peer2_band = state.candidates[digit].bands[peer2];
-                            if ((peer2_band & colLockedSingleRevMask) != 0) {
-                                state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                            }
-                            updated |= 1;
-                        }
-                        else {
-                            uint32_t peer2_band = state.candidates[digit].bands[peer2];
-                            if ((peer2_band & colLockedSingleRevMask) != 0) {
-                                state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                                updated |= 1;
-                            }
-                        }
-                    }
-                    else if (self == 1) {
+                    state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                    state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                }
+#else
+                uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
+                register uint32_t _updated = 0;
+                if (self == 0) {
+                    uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
+                    uint32_t peer1_band = state.candidates[digit].bands[peer1];
+                    if ((peer1_band & colLockedSingleRevMask) != 0) {
                         state.candidates[digit].bands[peer1] &= colLockedSingleMask;
-                        uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
                         uint32_t peer2_band = state.candidates[digit].bands[peer2];
                         if ((peer2_band & colLockedSingleRevMask) != 0) {
                             state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                            updated |= 1;
+                        }
+                        _updated |= 1;
+                    }
+                    else {
+                        uint32_t peer2_band = state.candidates[digit].bands[peer2];
+                        if ((peer2_band & colLockedSingleRevMask) != 0) {
+                            state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                            _updated |= 1;
                         }
                     }
-                    else {
-                        state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                }
+                else if (self == 1) {
+                    state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                    uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
+                    uint32_t peer2_band = state.candidates[digit].bands[peer2];
+                    if ((peer2_band & colLockedSingleRevMask) != 0) {
                         state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                        _updated |= 1;
                     }
+                }
+                else {
+                    state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                    state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+                }
 #endif
-                    state.candidates[digit].bands[self] = newBand;
-                    state.prevCandidates[digit].bands[self] = newBand;
-                    uint32_t bandSolvedRows = rowHiddenSingleMaskTbl[rowTriadsSingleMaskTbl[rowTriadsMask] &
-                                                                     combColumnSingleMaskTbl[colCombBits]];
-                    uint32_t newSolvedRows = bandSolvedRows << shift;
-                    if ((solvedRows & (0x007U << shift)) != newSolvedRows) {
-                        solvedRows |= newSolvedRows;
-                        this->update_solved_rows<digit, self>(state, newBand, bandSolvedRows);
-                        updated |= 2;
-                        changed = 1;
-                    }
-                    else {
-                        changed = (updated != 0) ? 1 : changed;
-                    }
-                //}
+                state.candidates[digit].bands[self] = newBand;
+                state.prevCandidates[digit].bands[self] = newBand;
+                uint32_t bandSolvedRows = rowHiddenSingleMaskTbl[rowTriadsSingleMaskTbl[rowTriadsMask] &
+                                                                 combColumnSingleMaskTbl[colCombBits]];
+                uint32_t newSolvedRows = bandSolvedRows << shift;
+                if ((solvedRows & (0x007U << shift)) != newSolvedRows) {
+                    solvedRows |= newSolvedRows;
+                    this->update_solved_rows<digit, self>(state, newBand, bandSolvedRows);
+                    _updated |= 2;
+                }
+
+                updated |= _updated;
+                if (_updated != 0)
+                    changed = 1;
             }
             else {
                 changed = -1;
