@@ -1279,6 +1279,8 @@ private:
             uint32_t newBand = band & lockedCandidates;
             if (fast_mode || newBand != 0) {
                 assert(newBand != 0);
+                changed = 1;
+
                 uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
 #if JCZ_V5_COMP_COLCOMBBITS
                 if (colCombBits != state.colCombBits[digit].bands[self]) {
@@ -1290,7 +1292,7 @@ private:
 #else
                 uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
                 register uint32_t _updated = 0;
-#if 1
+#if 0
                 if (self == 0) {
                     uint32_t peer1_band = state.candidates[digit].bands[peer1];
                     uint32_t new_peer1_band = peer1_band & colLockedSingleMask;
@@ -1370,14 +1372,8 @@ private:
                     this->update_solved_rows<digit, self>(state, newBand, bandSolvedRows);
                     if ((digit & 1) == 0)
                         _updated |= 2;
-                    else
-                        changed = 1;
                 }
-
-                if (_updated != 0) {
-                    updated |= _updated;
-                    changed = 1;
-                }
+                updated |= _updated;
             }
             else {
                 changed = -1;
