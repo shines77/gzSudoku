@@ -1351,13 +1351,13 @@ private:
                     if ((peer1_band & colLockedSingleRevMask) != 0) {
                         state.candidates[digit].bands[peer1] &= colLockedSingleMask;
                         state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                        _updated |= 1;
+                        _updated = 1;
                     }
                     else {
                         uint32_t peer2_band = state.candidates[digit].bands[peer2];
                         if ((peer2_band & colLockedSingleRevMask) != 0) {
                             state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                            _updated |= 1;
+                            _updated = 1;
                         }
                     }
                 }
@@ -1367,7 +1367,7 @@ private:
                     uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
                     if ((peer2_band & colLockedSingleRevMask) != 0) {
                         state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                        _updated |= 1;
+                        _updated = 1;
                     }
                 }
                 else {
@@ -1395,8 +1395,8 @@ private:
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, uint32_t shift, bool fast_mode>
     JSTD_FORCE_INLINE
-    void find_and_update_band(State & state, int32_t & changed, uint32_t & updated,
-                              uint32_t & solvedRows, const BandBoard & rowTriadsMaskAll) {
+    void find_and_update_band_v1(State & state, int32_t & changed, uint32_t & updated,
+                                 uint32_t & solvedRows, const BandBoard & rowTriadsMaskAll) {
         register uint32_t band = state.candidates[digit].bands[self];
         if (band != state.prevCandidates[digit].bands[self]) {
             uint32_t rowTriadsMask;
@@ -1456,7 +1456,7 @@ private:
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, uint32_t shift, bool fast_mode>
     JSTD_FORCE_INLINE
-    void find_and_update_band_v2(State & state, int32_t & changed, uint32_t & updated,
+    void find_and_update_band(State & state, int32_t & changed, uint32_t & updated,
                               uint32_t & solvedRows, const BandBoard & rowTriadsMaskAll) {
         register uint32_t band = state.candidates[digit].bands[self];
         if (band != state.prevCandidates[digit].bands[self]) {
@@ -1495,14 +1495,14 @@ private:
                     if (new_peer1_band != peer1_band) {
                         state.candidates[digit].bands[peer1] = new_peer1_band;
                         state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                        _updated |= 1;
+                        _updated = 1;
                     }
                     else {
                         uint32_t peer2_band = state.candidates[digit].bands[peer2];
                         uint32_t new_peer2_band = peer2_band & colLockedSingleMask;
                         if (new_peer2_band != peer2_band) {
                             state.candidates[digit].bands[peer2] = new_peer2_band;
-                            _updated |= 1;
+                            _updated = 1;
                         }
                     }
                 }
@@ -1512,7 +1512,7 @@ private:
                     uint32_t new_peer2_band = peer2_band & colLockedSingleMask;
                     if (new_peer2_band != peer2_band) {
                         state.candidates[digit].bands[peer2] = new_peer2_band;
-                        _updated |= 1;
+                        _updated = 1;
                     }
                 }
                 else {
@@ -1526,13 +1526,13 @@ private:
                     if ((peer1_band & colLockedSingleRevMask) != 0) {
                         state.candidates[digit].bands[peer1] &= colLockedSingleMask;
                         state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                        _updated |= 1;
+                        _updated = 1;
                     }
                     else {
                         uint32_t peer2_band = state.candidates[digit].bands[peer2];
                         if ((peer2_band & colLockedSingleRevMask) != 0) {
                             state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                            _updated |= 1;
+                            _updated = 1;
                         }
                     }
                 }
@@ -1542,7 +1542,7 @@ private:
                     uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
                     if ((peer2_band & colLockedSingleRevMask) != 0) {
                         state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                        _updated |= 1;
+                        _updated = 1;
                     }
                 }
                 else {
@@ -1569,17 +1569,6 @@ private:
                 changed = -1;
             }
         }
-    }
-
-    template <bool fast_mode = false>
-    int find_hidden_singles(State & state) {
-#if defined(__AVX2__) && 0
-        return find_hidden_singles_avx2(state);
-#elif defined(__SSE2__)
-        return find_hidden_singles_sse2(state);
-#else
-        return find_hidden_singles_plain(state);
-#endif
     }
 
     template <bool fast_mode = false>
@@ -2532,6 +2521,17 @@ private:
         } while (bandSolvedRows != uint32_t(-1));
 
         return Status::Success;
+    }
+
+    template <bool fast_mode = false>
+    int find_hidden_singles(State & state) {
+#if defined(__AVX2__)
+        return find_hidden_singles_avx2(state);
+#elif defined(__SSE2__)
+        return find_hidden_singles_sse2(state);
+#else
+        return find_hidden_singles_plain(state);
+#endif
     }
 
     int fast_find_naked_singles(State & state) {
