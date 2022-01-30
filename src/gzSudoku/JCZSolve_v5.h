@@ -1279,8 +1279,6 @@ private:
             uint32_t newBand = band & lockedCandidates;
             if (fast_mode || newBand != 0) {
                 assert(newBand != 0);
-                if (newBand != band)
-                    changed = 1;
 
                 uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
 #if JCZ_V5_COMP_COLCOMBBITS
@@ -1349,36 +1347,17 @@ private:
                     }
                 }
                 else if (self == 1) {
-                    uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
-                    uint32_t peer1_band = state.candidates[digit].bands[peer1];
-                    if ((peer1_band & colLockedSingleRevMask) != 0) {
-                        state.candidates[digit].bands[peer1] &= colLockedSingleMask;
-                        changed = 1;
-                    }
+                    state.candidates[digit].bands[peer1] &= colLockedSingleMask;
                     uint32_t peer2_band = state.candidates[digit].bands[peer2];
+                    uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
                     if ((peer2_band & colLockedSingleRevMask) != 0) {
                         state.candidates[digit].bands[peer2] &= colLockedSingleMask;
                         _updated |= 1;
                     }
                 }
                 else {
-                    uint32_t colLockedSingleRevMask = ~colLockedSingleMask;
-                    uint32_t peer1_band = state.candidates[digit].bands[peer1];
-                    if ((peer1_band & colLockedSingleRevMask) != 0) {
-                        state.candidates[digit].bands[peer1] &= colLockedSingleMask;
-                        uint32_t peer2_band = state.candidates[digit].bands[peer2];
-                        if ((peer2_band & colLockedSingleRevMask) != 0) {
-                            state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                        }
-                        changed = 1;
-                    }
-                    else {
-                        uint32_t peer2_band = state.candidates[digit].bands[peer2];
-                        if ((peer2_band & colLockedSingleRevMask) != 0) {
-                            state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-                            changed = 1;
-                        }
-                    }
+                    state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                    state.candidates[digit].bands[peer2] &= colLockedSingleMask;
                 }
 #endif
 #endif // JCZ_V5_COMP_COLCOMBBITS
@@ -1392,12 +1371,9 @@ private:
                     this->update_solved_rows<digit, self>(state, newBand, bandSolvedRows);
                     if ((digit & 1) == 0)
                         _updated |= 2;
-                    changed = 1;
-                }
-                else {
-                    changed = (_updated != 0);
                 }
                 updated |= _updated;
+                changed = 1;
             }
             else {
                 changed = -1;
