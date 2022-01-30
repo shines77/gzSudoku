@@ -1331,7 +1331,10 @@ private:
                 if ((solvedRows & (0x007U << shift)) != newSolvedRows) {
                     solvedRows |= newSolvedRows;
                     this->update_solved_rows<digit, self>(state, newBand, bandSolvedRows);
-                    _updated |= 2;
+                    if ((digit & 1) == 0)
+                        _updated |= 2;
+                    else
+                        changed = 1;
                 }
 
                 if (_updated != 0) {
