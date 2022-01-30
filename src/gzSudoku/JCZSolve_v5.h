@@ -1424,15 +1424,15 @@ private:
 
             /********* Number 3-4 Start *********/
             uint32_t inited = 0;
+            updated = 0;
             if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
                 // Number 3-4 rowTriadsMask
                 this->getRowTriadsMask_AVX2<2>(state, &rowTriadsMaskAll.board[0]);
-                inited = 1;
+                inited = 1;                
 
                 // Number 3
                 {
                     static const uint32_t digit = 2;
-                    updated = 0;
 
                     // Number 3 - band 0
                     this->find_and_update_band<digit, 0, 1, 2, 18, fast_mode>(state, changed, updated, solvedRows, rowTriadsMaskAll.board[0]);
