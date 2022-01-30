@@ -2144,7 +2144,6 @@ private:
                             if (this->find_all_single_literals<false>(next_state) != Status::Invalid) {
                                 this->guess_next_cell(next_state, board);
                             }
-                            --state;
                         }
                         else {
                             // Second of pair
