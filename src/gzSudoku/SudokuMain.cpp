@@ -347,7 +347,7 @@ void run_all_benchmark(const char * filename)
     bm_puzzleTotal = load_sudoku_puzzles(filename, bm_puzzles);
 
 #if defined(NDEBUG)
-#if 1
+#if 0
 //  run_sudoku_test<v4::Solver     >(bm_puzzles, bm_puzzleTotal, "dfs::v4");
     run_sudoku_test<v4a::Solver    >(bm_puzzles, bm_puzzleTotal, "dfs::v4a");
     run_sudoku_test<v4b::Solver    >(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
