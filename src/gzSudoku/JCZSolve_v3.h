@@ -966,7 +966,7 @@ private:
         
             // Number 1
             solvedRows = state.solvedRows.bands[0];        
-            //if ((solvedRows & kFullRowBits) != kFullRowBits)
+            if ((solvedRows & kFullRowBits) != kFullRowBits)
             {
                 static const uint32_t digit = 0;
 
@@ -1011,7 +1011,7 @@ private:
             }
 
             // Number 2
-            //if ((solvedRows & kFullRowBits_1) != kFullRowBits_1)
+            if ((solvedRows & kFullRowBits_1) != kFullRowBits_1)
             {
                 static const uint32_t digit = 1;
 
@@ -1056,7 +1056,7 @@ private:
             }
 
             // Number 3
-            //if ((solvedRows & kFullRowBits_2) != kFullRowBits_2)
+            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2)
             {
                 static const uint32_t digit = 2;
 
@@ -1108,7 +1108,7 @@ private:
         
             // Number 4
             solvedRows = state.solvedRows.bands[1];        
-            //if ((solvedRows & kFullRowBits) != kFullRowBits)
+            if ((solvedRows & kFullRowBits) != kFullRowBits)
             {
                 static const uint32_t digit = 3;
 
@@ -1153,7 +1153,7 @@ private:
             }
 
             // Number 5
-            //if ((solvedRows & kFullRowBits_1) != kFullRowBits_1)
+            if ((solvedRows & kFullRowBits_1) != kFullRowBits_1)
             {
                 static const uint32_t digit = 4;
 
@@ -1198,7 +1198,7 @@ private:
             }
 
             // Number 6
-            //if ((solvedRows & kFullRowBits_2) != kFullRowBits_2)
+            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2)
             {
                 static const uint32_t digit = 5;
 
@@ -1250,7 +1250,7 @@ private:
         
             // Number 7
             solvedRows = state.solvedRows.bands[2];        
-            //if ((solvedRows & kFullRowBits) != kFullRowBits)
+            if ((solvedRows & kFullRowBits) != kFullRowBits)
             {
                 static const uint32_t digit = 6;
 
@@ -1295,7 +1295,7 @@ private:
             }
 
             // Number 8
-            //if ((solvedRows & kFullRowBits_1) != kFullRowBits_1)
+            if ((solvedRows & kFullRowBits_1) != kFullRowBits_1)
             {
                 static const uint32_t digit = 7;
 
@@ -1340,7 +1340,7 @@ private:
             }
 
             // Number 9
-            //if ((solvedRows & kFullRowBits_2) != kFullRowBits_2)
+            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2)
             {
                 static const uint32_t digit = 8;
 
