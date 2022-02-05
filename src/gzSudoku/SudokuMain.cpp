@@ -346,6 +346,13 @@ void run_all_benchmark(const char * filename)
     // Read the puzzles data
     bm_puzzleTotal = load_sudoku_puzzles(filename, bm_puzzles);
 
+    //
+    // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
+    //
+    std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
+    jtest::CPU::warmup(1000);
+    std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
+
 #if defined(NDEBUG)
 #if 1
 //  run_sudoku_test<v4::Solver     >(bm_puzzles, bm_puzzleTotal, "dfs::v4");
@@ -356,7 +363,7 @@ void run_all_benchmark(const char * filename)
 #endif
 //  run_sudoku_test<JCZ::v2::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
     run_sudoku_test<JCZ::v2::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
-//  run_sudoku_test<JCZ::v3::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v3");
+    run_sudoku_test<JCZ::v3::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v3");
 //  run_sudoku_test<JCZ::v4::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v4");
     run_sudoku_test<JCZ::v4::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v4");
     run_sudoku_test<JCZ::v5::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v5");
