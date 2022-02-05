@@ -350,7 +350,7 @@ void run_all_benchmark(const char * filename)
     // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
     //
     std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
-    jtest::CPU::warmup(1000);
+    jtest::CPU::warmup(2000);
     std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
 
 #if defined(NDEBUG)
