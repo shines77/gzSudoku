@@ -927,31 +927,31 @@ private:
         }
     }
 
-    template <uint32_t digit, uint32_t band_id>
+    template <uint32_t digit, uint32_t self>
     JSTD_FORCE_INLINE
     void update_solved_rows(State & state, uint32_t band, uint32_t bandSolvedRows) {
         uint32_t solvedCells = band & solvedRowsBitMaskTbl[bandSolvedRows];
         //assert(solvedCells != 0);
-        state.solvedCells.bands[band_id] |= solvedCells;
+        state.solvedCells.bands[self] |= solvedCells;
         uint32_t unsolvedCells = ~solvedCells;
         if (digit != 0)
-            state.candidates[0].bands[band_id] &= unsolvedCells;
+            state.candidates[0].bands[self] &= unsolvedCells;
         if (digit != 1)
-            state.candidates[1].bands[band_id] &= unsolvedCells;
+            state.candidates[1].bands[self] &= unsolvedCells;
         if (digit != 2)
-            state.candidates[2].bands[band_id] &= unsolvedCells;
+            state.candidates[2].bands[self] &= unsolvedCells;
         if (digit != 3)
-            state.candidates[3].bands[band_id] &= unsolvedCells;
+            state.candidates[3].bands[self] &= unsolvedCells;
         if (digit != 4)
-            state.candidates[4].bands[band_id] &= unsolvedCells;
+            state.candidates[4].bands[self] &= unsolvedCells;
         if (digit != 5)
-            state.candidates[5].bands[band_id] &= unsolvedCells;
+            state.candidates[5].bands[self] &= unsolvedCells;
         if (digit != 6)
-            state.candidates[6].bands[band_id] &= unsolvedCells;
+            state.candidates[6].bands[self] &= unsolvedCells;
         if (digit != 7)
-            state.candidates[7].bands[band_id] &= unsolvedCells;
+            state.candidates[7].bands[self] &= unsolvedCells;
         if (digit != 8)
-            state.candidates[8].bands[band_id] &= unsolvedCells;
+            state.candidates[8].bands[self] &= unsolvedCells;
     }
 
     template <bool fast_mode = false>

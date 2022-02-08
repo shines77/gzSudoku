@@ -64,6 +64,7 @@
 #include "JCZSolve_v3.h"
 #include "JCZSolve_v4.h"
 #include "JCZSolve_v5.h"
+#include "JCZSolveEx_v1.h"
 
 using namespace gzSudoku;
 
@@ -370,7 +371,8 @@ void run_all_benchmark(const char * filename)
 //  run_sudoku_test<JCZ::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v1");
 //  run_sudoku_test<JCZ::v2::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
 //  run_sudoku_test<JCZ::v4::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v4");
-    run_sudoku_test<JCZ::v5::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v5");
+//  run_sudoku_test<JCZ::v5::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v5");
+    run_sudoku_test<JCZEx::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZEx::v1");
 #endif
 }
 
