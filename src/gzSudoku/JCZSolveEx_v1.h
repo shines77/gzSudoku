@@ -390,7 +390,37 @@ static const int8_t bandBitPosToPos32[4][32] = {
     }
 };
 
-static const int8_t bandSolvedRowAndBoxTbl[64] = {
+#pragma pack(push, 1)
+
+union BandSolvedInfo {
+    struct {
+        int8_t   solvedType;
+        uint8_t  s0;
+        uint8_t  s1, s2;
+    };
+    uint32_t value;
+
+    BandSolvedInfo(uint32_t _value = 0) : value(_value) {}
+    BandSolvedInfo(int _solvedType, int _s0, int _s1, int _s2)
+        : solvedType((int8_t)solvedType),
+          s0((uint8_t)_s0),
+          s1((uint8_t)_s1),
+          s2((uint8_t)_s2) {
+    }
+    BandSolvedInfo(const BandSolvedInfo & src) : value(src.value) {}
+
+    BandSolvedInfo & operator = (const BandSolvedInfo & rhs) {
+        this->value = rhs.value;
+        return *this;
+    }
+
+    BandSolvedInfo & operator = (uint32_t rhs) {
+        this->value = rhs;
+        return *this;
+    }
+};
+
+static const int8_t _bandSolvedRowAndBoxTbl[64] = {
      0,  0,  0,  0,  0,  0,  0,  0,
      0,  1,  1, -1,  1, -1, -1, -1,
      0,  2,  2, -1,  2, -1, -1, -1,
@@ -400,6 +430,77 @@ static const int8_t bandSolvedRowAndBoxTbl[64] = {
      0, -1, -1,  3, -1,  3,  3, -1,
      0, -1, -1, -1, -1, -1, -1,  4
 };
+
+static const BandSolvedInfo bandSolvedRowAndBoxTbl[64] = {
+    {  0,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    {  1,  0, 12, 21 },
+    {  1,  0,  3, 21 },
+    { -1,  0,  0,  0 },
+    {  1,  0,  3, 12 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    {  2, 18,  9, 15 },
+    {  2, 18,  0,  6 },
+    { -1,  0,  0,  0 },
+    {  2,  9,  0,  6 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    {  3,  0, 24,  0 },
+    { -1,  0,  0,  0 },
+    {  3,  0, 15,  0 },
+    {  3,  0,  6,  0 },
+    { -1,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    {  1,  0,  9, 18 },
+    {  1,  0,  0, 18 },
+    { -1,  0,  0,  0 },
+    {  1,  0,  0,  9 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    {  3,  0, 21,  0 },
+    { -1,  0,  0,  0 },
+    {  3,  0, 12,  0 },
+    {  3,  0,  3,  0 },
+    { -1,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    {  3,  0, 18,  0 },
+    { -1,  0,  0,  0 },
+    {  3,  0,  9,  0 },
+    {  3,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    {  0,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    { -1,  0,  0,  0 },
+    {  4,  0,  0,  0 },
+};
+
+static BandSolvedInfo sBandSolvedRowAndBoxTbl[64];
+
+#pragma pack(pop)
 
 class Solver : public BasicSolver {
 public:
@@ -620,7 +721,7 @@ private:
         band_mask.bands[band] = 0;
     }
 
-    static void transform_to_fillBandBoard(const PackedBitSet2D<Rows16, Cols16> & bit_mask,
+    static void transform_to_complexBandBoard(const PackedBitSet2D<Rows16, Cols16> & bit_mask,
                                            BandBoard & band_mask) {
         static const uint32_t kBoxCountY32 = (uint32_t)BoxCountY;
         static const uint32_t kBoxCellsY32 = (uint32_t)BoxCellsY;
@@ -670,47 +771,272 @@ private:
         printf("\n");
     }
 
-    static void general_bandSolvedRowAndBoxTbl(int table[64]) {
+    static void general_bandSolvedRowAndBoxTbl(BandSolvedInfo * table) {
         static const uint8_t popcntTbl[8] = { 0, 1, 1, 2, 1, 2, 2, 3 };
-        int8_t solvedType;
+        BandSolvedInfo solvedInfo;
         for (uint32_t bits = 0; bits < 64; bits++) {
             uint32_t solvedRowBits = bits & 07;
             uint32_t solvedBoxBits = (bits >> 3U) & 07;
             uint32_t solvedRows = popcntTbl[solvedRowBits];
             uint32_t solvedBoxes = popcntTbl[solvedBoxBits];
             if (solvedRows == 0 || solvedBoxes == 0) {
-                solvedType = 0;
+                solvedInfo.solvedType = 0;
+                solvedInfo.s0 = 0;
+                solvedInfo.s1 = 0;
+                solvedInfo.s2 = 0;
             }
             else if (solvedRows == 1 && solvedBoxes == 1) {
-                if (solvedBoxBits != 2)
-                    solvedType = 1;
-                else
-                    solvedType = 2;
+                if (solvedBoxBits != 2) {
+                    solvedInfo.solvedType = 1;
+                    solvedInfo.s0 = 0;
+                    if (solvedRowBits == 1) {
+                        if (solvedBoxBits == 1) {
+                            // Row: 0, Box: 0
+                            //
+                            // 000 000 000
+                            // 000 111 111
+                            // 000 111 111
+                            //
+                            solvedInfo.s1 = 12;
+                            solvedInfo.s2 = 21;
+                        }
+                        else if (solvedBoxBits == 4) {
+                            // Row: 0, Box: 2
+                            //
+                            // 000 000 000
+                            // 111 111 000
+                            // 111 111 000
+                            //
+                            solvedInfo.s1 = 9;
+                            solvedInfo.s2 = 18;
+                        }
+                        else {
+                            assert(false);
+                        }
+                    }
+                    else if (solvedRowBits == 2) {
+                        if (solvedBoxBits == 1) {
+                            // Row: 1, Box: 0
+                            //
+                            // 000 111 111
+                            // 000 000 000
+                            // 000 111 111
+                            //
+                            solvedInfo.s1 = 3;
+                            solvedInfo.s2 = 21;
+                        }
+                        else if (solvedBoxBits == 4) {
+                            // Row: 1, Box: 2
+                            //
+                            // 111 111 000
+                            // 000 000 000
+                            // 111 111 000
+                            //
+                            solvedInfo.s1 = 0;
+                            solvedInfo.s2 = 18;
+                        }
+                        else {
+                            assert(false);
+                        }
+                    }
+                    else if (solvedRowBits == 4) {
+                        if (solvedBoxBits == 1) {
+                            // Row: 2, Box: 0
+                            //
+                            // 000 111 111
+                            // 000 111 111
+                            // 000 000 000
+                            //
+                            solvedInfo.s1 = 3;
+                            solvedInfo.s2 = 12;
+                        }
+                        else if (solvedBoxBits == 4) {
+                            // Row: 2, Box: 2
+                            //
+                            // 111 111 000
+                            // 111 111 000
+                            // 000 000 000
+                            //
+                            solvedInfo.s1 = 0;
+                            solvedInfo.s2 = 9;
+                        }
+                        else {
+                            assert(false);
+                        }
+                    }
+                    else {
+                        assert(false);
+                    }
+                }
+                else {
+                    assert(solvedBoxBits == 2);
+                    solvedInfo.solvedType = 2;
+                    if (solvedRowBits == 1) {
+                        // Row: 0, Box: 1
+                        //
+                        // 000 000 000
+                        // 111 000 111
+                        // 111 000 111
+                        //
+                        solvedInfo.s0 = 18;
+                        solvedInfo.s1 = 9;
+                        solvedInfo.s2 = 15;
+                    }
+                    else if (solvedRowBits == 2) {
+                        // Row: 1, Box: 1
+                        //
+                        // 111 000 111
+                        // 000 000 000
+                        // 111 000 111
+                        //
+                        solvedInfo.s0 = 18;
+                        solvedInfo.s1 = 0;
+                        solvedInfo.s2 = 6;
+                    }
+                    else if (solvedRowBits == 4) {
+                        // Row: 2, Box: 1
+                        //
+                        // 111 000 111
+                        // 111 000 111
+                        // 000 000 000
+                        //
+                        solvedInfo.s0 = 9;
+                        solvedInfo.s1 = 0;
+                        solvedInfo.s2 = 6;
+                    }
+                    else {
+                        assert(false);
+                    }
+                }
             }
             else if (solvedRows == 2 && solvedBoxes == 2) {
-                solvedType = 3;
+                solvedInfo.solvedType = 3;
+                solvedInfo.s0 = 0;
+                solvedInfo.s2 = 0;
+                if (solvedRowBits == 3) {
+                    if (solvedBoxBits == 3) {
+                        // Row: 0,1, Box: 0,1
+                        //
+                        // 000 000 000
+                        // 000 000 000
+                        // 000 000 111
+                        //
+                        solvedInfo.s1 = 24;
+                    }
+                    else if (solvedBoxBits == 5) {
+                        // Row: 0,1, Box: 0,2
+                        //
+                        // 000 000 000
+                        // 000 000 000
+                        // 000 111 000
+                        //
+                        solvedInfo.s1 = 21;
+                    }
+                    else if (solvedBoxBits == 6) {
+                        // Row: 0,1, Box: 1,2
+                        //
+                        // 000 000 000
+                        // 000 000 000
+                        // 111 000 000
+                        //
+                        solvedInfo.s1 = 18;
+                    }
+                    else {
+                        assert(false);
+                    }
+                }
+                else if (solvedRowBits == 5) {
+                    if (solvedBoxBits == 3) {
+                        // Row: 0,2, Box: 0,1
+                        //
+                        // 000 000 000
+                        // 000 000 111
+                        // 000 000 000
+                        //
+                        solvedInfo.s1 = 15;
+                    }
+                    else if (solvedBoxBits == 5) {
+                        // Row: 0,2, Box: 0,2
+                        //
+                        // 000 000 000
+                        // 000 111 000
+                        // 000 000 000
+                        //
+                        solvedInfo.s1 = 12;
+                    }
+                    else if (solvedBoxBits == 6) {
+                        // Row: 0,2, Box: 1,2
+                        //
+                        // 000 000 000
+                        // 111 000 000
+                        // 000 000 000
+                        //
+                        solvedInfo.s1 = 9;
+                    }
+                    else {
+                        assert(false);
+                    }
+                }
+                else if (solvedRowBits == 6) {
+                    if (solvedBoxBits == 3) {
+                        // Row: 1,2, Box: 0,1
+                        //
+                        // 000 000 111
+                        // 000 000 000
+                        // 000 000 000
+                        //
+                        solvedInfo.s1 = 6;
+                    }
+                    else if (solvedBoxBits == 5) {
+                        // Row: 1,2, Box: 0,2
+                        //
+                        // 000 111 000
+                        // 000 000 000
+                        // 000 000 000
+                        //
+                        solvedInfo.s1 = 3;
+                    }
+                    else if (solvedBoxBits == 6) {
+                        // Row: 1,2, Box: 1,2
+                        //
+                        // 111 000 000
+                        // 000 000 000
+                        // 000 000 000
+                        //
+                        solvedInfo.s1 = 0;
+                    }
+                    else {
+                        assert(false);
+                    }
+                }
+                else {
+                    assert(false);
+                }
             }
             else if (solvedRows == 3 && solvedBoxes == 3) {
-                solvedType = 4;
+                solvedInfo.solvedType = 4;
+                solvedInfo.s0 = 0;
+                solvedInfo.s1 = 0;
+                solvedInfo.s2 = 0;
             }
             else {
-                solvedType = -1;
+                solvedInfo.solvedType = -1;
+                solvedInfo.s0 = 0;
+                solvedInfo.s1 = 0;
+                solvedInfo.s2 = 0;
             }
-            table[bits] = solvedType;
+            table[bits] = solvedInfo;
         }
     }
 
-    static void print_bandSolvedRowAndBoxTbl(int table[64]) {
+    static void print_bandSolvedRowAndBoxTbl(BandSolvedInfo * table) {
         printf("\n");
-        printf("static const int8_t bandSolvedRowAndBoxTbl[64] = {\n");
+        printf("static const BandSolvedInfo bandSolvedRowAndBoxTbl[64] = {\n");
         for (size_t i = 0; i < 64; i++) {
-            if ((i % 8) == 0)
-                printf("    ");
-            printf("%2d", table[i]);
-            if ((i % 8) == 7)
-                printf(",\n");
-            else
-                printf(", ");
+            printf("    ");
+            printf("{ %2d, %2d, %2d, %2d }", (int)table[i].solvedType, (int)table[i].s0,
+                                             (int)table[i].s1, (int)table[i].s2);
+            printf(",\n");
         }
         printf("};\n");
         printf("\n");
@@ -726,7 +1052,7 @@ private:
                 make_flip_mask(fill_pos, row, col);
                 transform_to_BandBoard(Static.num_row_mask[fill_pos], Static.flip_mask[fill_pos]);
                 transform_to_BandBoard(Static.row_fill_mask[fill_pos], Static.fill_mask[fill_pos]);
-                transform_to_fillBandBoard(Static.row_fill_mask[fill_pos], Static.complex_fill_mask[fill_pos]);
+                transform_to_complexBandBoard(Static.row_fill_mask[fill_pos], Static.complex_fill_mask[fill_pos]);
                 fill_pos++;
             }
         }
@@ -739,10 +1065,11 @@ private:
 
 #if 0
         print_rowHiddenSingleMaskTbl();
+#endif
 
-        int _bandSolvedRowAndBoxTbl[64];
-        general_bandSolvedRowAndBoxTbl(_bandSolvedRowAndBoxTbl);
-        print_bandSolvedRowAndBoxTbl(_bandSolvedRowAndBoxTbl);
+#if 0
+        general_bandSolvedRowAndBoxTbl(&sBandSolvedRowAndBoxTbl[0]);
+        print_bandSolvedRowAndBoxTbl(&sBandSolvedRowAndBoxTbl[0]);
 #endif
     }
 
@@ -1045,7 +1372,8 @@ private:
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, bool fast_mode>
     JSTD_FORCE_INLINE
-    int update_band(State & state, uint32_t band, int32_t solvedType) {
+    int update_band(State & state, uint32_t band, BandSolvedInfo solvedInfo) {
+        int8_t solvedType = solvedInfo.solvedType;
         if (solvedType == 0) {
             //
             return 0;
@@ -1086,9 +1414,9 @@ private:
                 register uint32_t band = state.candidates[digit].bands[0];
                 if (band != state.prevCandidates[digit].bands[0]) {
                     uint32_t bandSolvedBits = numSolvedBits & kRowAndBoxBits;
-                    int8_t solvedType = bandSolvedRowAndBoxTbl[bandSolvedBits];
-                    assert(solvedType != (int8_t)-1);
-                    int updateType = this->update_band<digit, 0, 1, 2, fast_mode>(state, band, solvedType);
+                    BandSolvedInfo solvedInfo = bandSolvedRowAndBoxTbl[bandSolvedBits];
+                    assert(solvedInfo.solvedType != (int8_t)-1);
+                    int updateType = this->update_band<digit, 0, 1, 2, fast_mode>(state, band, solvedInfo);
                     if (!fast_mode && (updateType == -1))
                         return Status::Invalid;
                 }
@@ -1097,9 +1425,9 @@ private:
                 band = state.candidates[digit].bands[1];
                 if (band != state.prevCandidates[digit].bands[1]) {
                     uint32_t bandSolvedBits = (numSolvedBits >> 6U) & kRowAndBoxBits;
-                    int8_t solvedType = bandSolvedRowAndBoxTbl[bandSolvedBits];
-                    assert(solvedType != (int8_t)-1);
-                    int updateType = this->update_band<digit, 1, 0, 2, fast_mode>(state, band, solvedType);
+                    BandSolvedInfo solvedInfo = bandSolvedRowAndBoxTbl[bandSolvedBits];
+                    assert(solvedInfo.solvedType != (int8_t)-1);
+                    int updateType = this->update_band<digit, 1, 0, 2, fast_mode>(state, band, solvedInfo);
                     if (!fast_mode && (updateType == -1))
                         return Status::Invalid;
                 }
@@ -1108,9 +1436,9 @@ private:
                 band = state.candidates[digit].bands[2];
                 if (band != state.prevCandidates[digit].bands[2]) {
                     uint32_t bandSolvedBits = (numSolvedBits >> 12U) & kRowAndBoxBits;
-                    int8_t solvedType = bandSolvedRowAndBoxTbl[bandSolvedBits];
-                    assert(solvedType != (int8_t)-1);
-                    int updateType = this->update_band<digit, 2, 0, 1, fast_mode>(state, band, solvedType);
+                    BandSolvedInfo solvedInfo = bandSolvedRowAndBoxTbl[bandSolvedBits];
+                    assert(solvedInfo.solvedType != (int8_t)-1);
+                    int updateType = this->update_band<digit, 2, 0, 1, fast_mode>(state, band, solvedInfo);
                     if (!fast_mode && (updateType == -1))
                         return Status::Invalid;
                 }
@@ -1127,9 +1455,9 @@ private:
                 register uint32_t band = state.candidates[digit].bands[0];
                 if (band != state.prevCandidates[digit].bands[0]) {
                     uint32_t bandSolvedBits = numSolvedBits & kRowAndBoxBits;
-                    int8_t solvedType = bandSolvedRowAndBoxTbl[bandSolvedBits];
-                    assert(solvedType != (int8_t)-1);
-                    int updateType = this->update_band<digit, 0, 1, 2, fast_mode>(state, band, solvedType);
+                    BandSolvedInfo solvedInfo = bandSolvedRowAndBoxTbl[bandSolvedBits];
+                    assert(solvedInfo.solvedType != (int8_t)-1);
+                    int updateType = this->update_band<digit, 0, 1, 2, fast_mode>(state, band, solvedInfo);
                     if (!fast_mode && (updateType == -1))
                         return Status::Invalid;
                 }
@@ -1138,9 +1466,9 @@ private:
                 band = state.candidates[digit].bands[1];
                 if (band != state.prevCandidates[digit].bands[1]) {
                     uint32_t bandSolvedBits = (numSolvedBits >> 6U) & kRowAndBoxBits;
-                    int8_t solvedType = bandSolvedRowAndBoxTbl[bandSolvedBits];
-                    assert(solvedType != (int8_t)-1);
-                    int updateType = this->update_band<digit, 1, 0, 2, fast_mode>(state, band, solvedType);
+                    BandSolvedInfo solvedInfo = bandSolvedRowAndBoxTbl[bandSolvedBits];
+                    assert(solvedInfo.solvedType != (int8_t)-1);
+                    int updateType = this->update_band<digit, 1, 0, 2, fast_mode>(state, band, solvedInfo);
                     if (!fast_mode && (updateType == -1))
                         return Status::Invalid;
                 }
@@ -1149,9 +1477,9 @@ private:
                 band = state.candidates[digit].bands[2];
                 if (band != state.prevCandidates[digit].bands[2]) {
                     uint32_t bandSolvedBits = (numSolvedBits >> 12U) & kRowAndBoxBits;
-                    int8_t solvedType = bandSolvedRowAndBoxTbl[bandSolvedBits];
-                    assert(solvedType != (int8_t)-1);
-                    int updateType = this->update_band<digit, 2, 0, 1, fast_mode>(state, band, solvedType);
+                    BandSolvedInfo solvedInfo = bandSolvedRowAndBoxTbl[bandSolvedBits];
+                    assert(solvedInfo.solvedType != (int8_t)-1);
+                    int updateType = this->update_band<digit, 2, 0, 1, fast_mode>(state, band, solvedInfo);
                     if (!fast_mode && (updateType == -1))
                         return Status::Invalid;
                 }
