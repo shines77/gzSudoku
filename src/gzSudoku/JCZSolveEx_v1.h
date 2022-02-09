@@ -403,7 +403,7 @@ static const int8_t bandSolvedRowAndBoxTbl[64] = {
 
 class Solver : public BasicSolver {
 public:
-    typedef BasicSolver                         basic_solver_t;
+    typedef BasicSolver                         basic_solver;
     typedef Solver                              this_type;
 
     typedef typename Sudoku::NeighborCells      NeighborCells;
@@ -547,7 +547,7 @@ private:
     static StaticData Static;
 
 public:
-    Solver() : basic_solver_t(), numSolutions_(0), limitSolutions_(1) {
+    Solver() : basic_solver(), numSolutions_(0), limitSolutions_(1) {
     }
     ~Solver() {}
 
@@ -1867,7 +1867,7 @@ private:
                             // First of pair
                             State next_state(state);
                             state.candidates[num].bands64[band] ^= mask;
-                            basic_solver_t::num_guesses++;
+                            basic_solver::num_guesses++;
 
                             this->update_band_solved_mask64(next_state, band, pos, num, mask);
 
@@ -1905,7 +1905,7 @@ private:
                             // First of pair
                             State next_state(state);
                             state.candidates[num].bands[band] ^= mask;
-                            basic_solver_t::num_guesses++;
+                            basic_solver::num_guesses++;
 
                             this->update_band_solved_mask32(next_state, band, pos, num);
 
@@ -1946,7 +1946,7 @@ private:
                 if ((state.candidates[num].bands64[0] & mask) != 0) {
                     State next_state(state);
                     state.candidates[num].bands64[0] ^= mask;
-                    basic_solver_t::num_guesses++;
+                    basic_solver::num_guesses++;
 
                     this->update_band_solved_mask64(next_state, 0, pos, num);
 
@@ -1971,7 +1971,7 @@ private:
                 if ((state.candidates[num].bands64[1] & mask) != 0) {
                     State next_state(state);
                     state.candidates[num].bands64[1] ^= mask;
-                    basic_solver_t::num_guesses++;
+                    basic_solver::num_guesses++;
 
                     this->update_band_solved_mask64(next_state, 1, pos, num);
 
@@ -1999,7 +1999,7 @@ private:
                 if ((state.candidates[num].bands[band] & mask) != 0) {
                     State next_state(state);
                     state.candidates[num].bands[band] ^= mask;
-                    basic_solver_t::num_guesses++;
+                    basic_solver::num_guesses++;
 
                     this->update_band_solved_mask32(next_state, band, pos, num);
 
@@ -2094,7 +2094,7 @@ public:
     int solve(const Board & board, Board & solution, int limitSolutions = 1) {
         this->numSolutions_ = 0;
         this->limitSolutions_ = limitSolutions;
-        basic_solver_t::num_guesses = 0;
+        basic_solver::num_guesses = 0;
 
         State & state = this->state_;
         int candidates = this->init_board(state, board);
@@ -2121,7 +2121,7 @@ public:
     void display_result(Board & board, double elapsed_time,
                         bool print_answer = true,
                         bool print_all_answers = true) {
-        basic_solver_t::display_result<kSearchMode>(board, elapsed_time, print_answer, print_all_answers);
+        basic_solver::display_result<kSearchMode>(board, elapsed_time, print_answer, print_all_answers);
     }
 };
 

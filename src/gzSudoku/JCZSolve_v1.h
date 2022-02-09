@@ -38,7 +38,7 @@ static const size_t kSearchMode = SearchMode::OneSolution;
 
 class Solver : public BasicSolver {
 public:
-    typedef BasicSolver                         basic_solver_t;
+    typedef BasicSolver                         basic_solver;
     typedef Solver                              this_type;
 
     typedef typename Sudoku::NeighborCells      NeighborCells;
@@ -225,7 +225,7 @@ private:
     static StaticData Static;
 
 public:
-    Solver() : basic_solver_t() {
+    Solver() : basic_solver() {
     }
     ~Solver() {}
 
@@ -1264,7 +1264,7 @@ Next_Search:
     void display_result(Board & board, double elapsed_time,
                         bool print_answer = true,
                         bool print_all_answers = true) {
-        basic_solver_t::display_result<kSearchMode>(board, elapsed_time, print_answer, print_all_answers);
+        basic_solver::display_result<kSearchMode>(board, elapsed_time, print_answer, print_all_answers);
     }
 };
 

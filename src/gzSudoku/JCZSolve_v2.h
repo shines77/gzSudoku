@@ -397,7 +397,7 @@ static const int8_t bandBitPosToPos32[4][32] = {
 
 class Solver : public BasicSolver {
 public:
-    typedef BasicSolver                         basic_solver_t;
+    typedef BasicSolver                         basic_solver;
     typedef Solver                              this_type;
 
     typedef typename Sudoku::NeighborCells      NeighborCells;
@@ -530,7 +530,7 @@ private:
     static StaticData Static;
 
 public:
-    Solver() : basic_solver_t(), numSolutions_(0), limitSolutions_(1) {
+    Solver() : basic_solver(), numSolutions_(0), limitSolutions_(1) {
     }
     ~Solver() {}
 
@@ -1752,7 +1752,7 @@ private:
                             std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
                             state->candidates[num].bands64[band] ^= mask;
                             ++state;
-                            basic_solver_t::num_guesses++;
+                            basic_solver::num_guesses++;
 
                             this->update_band_solved_mask64(state, band, pos, num, mask);
 
@@ -1792,7 +1792,7 @@ private:
                             std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
                             state->candidates[num].bands[band] ^= mask;
                             ++state;
-                            basic_solver_t::num_guesses++;
+                            basic_solver::num_guesses++;
 
                             this->update_band_solved_mask32(state, band, pos, num);
 
@@ -1836,7 +1836,7 @@ private:
                     std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
                     state->candidates[num].bands64[0] ^= mask;
                     ++state;
-                    basic_solver_t::num_guesses++;
+                    basic_solver::num_guesses++;
 
                     this->update_band_solved_mask64(state, 0, pos, num);
 
@@ -1863,7 +1863,7 @@ private:
                     std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
                     state->candidates[num].bands64[1] ^= mask;
                     ++state;
-                    basic_solver_t::num_guesses++;
+                    basic_solver::num_guesses++;
 
                     this->update_band_solved_mask64(state, 1, pos, num);
 
@@ -1893,7 +1893,7 @@ private:
                     std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
                     state->candidates[num].bands[band] ^= mask;
                     ++state;
-                    basic_solver_t::num_guesses++;
+                    basic_solver::num_guesses++;
 
                     this->update_band_solved_mask32(state, band, pos, num);
 
@@ -1990,7 +1990,7 @@ public:
     int solve(const Board & board, Board & solution, int limitSolutions = 1) {
         this->numSolutions_ = 0;
         this->limitSolutions_ = limitSolutions;
-        basic_solver_t::num_guesses = 0;
+        basic_solver::num_guesses = 0;
 
         State * state = &this->states_[0];
         int candidates = this->init_board(state, board);
@@ -2017,7 +2017,7 @@ public:
     void display_result(Board & board, double elapsed_time,
                         bool print_answer = true,
                         bool print_all_answers = true) {
-        basic_solver_t::display_result<kSearchMode>(board, elapsed_time, print_answer, print_all_answers);
+        basic_solver::display_result<kSearchMode>(board, elapsed_time, print_answer, print_all_answers);
     }
 };
 

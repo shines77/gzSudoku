@@ -258,7 +258,7 @@ void run_a_testcase(size_t index)
 template <typename SudokuSolver>
 void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const char * name)
 {
-    typedef typename SudokuSolver::basic_solver_t   BasicSolverTy;
+    typedef typename SudokuSolver::basic_solver   BasicSolverTy;
 
     //printf("------------------------------------------\n\n");
     printf("gzSudoku: %s::Solver\n\n", name);
