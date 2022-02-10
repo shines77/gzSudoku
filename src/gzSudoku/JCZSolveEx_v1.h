@@ -392,6 +392,17 @@ static const int8_t bandBitPosToPos32[4][32] = {
 
 #pragma pack(push, 1)
 
+struct SolvedType {
+    enum {
+        Invalid = -1,
+        SolvedNone,
+        SolvedOne_A,
+        SolvedOne_B,
+        SolvedTwo,
+        AllSolved,
+    };
+};
+
 union BandSolvedInfo {
     struct {
         int8_t   type;
@@ -850,14 +861,14 @@ private:
             uint32_t solvedRows = popcntTbl[solvedRowBits];
             uint32_t solvedBoxes = popcntTbl[solvedBoxBits];
             if (solvedRows == 0 || solvedBoxes == 0) {
-                solvedInfo.type = 0;
+                solvedInfo.type = SolvedType::SolvedNone;
                 solvedInfo.s0 = 0;
                 solvedInfo.s1 = 0;
                 solvedInfo.s2 = 0;
             }
             else if (solvedRows == 1 && solvedBoxes == 1) {
                 if (solvedBoxBits != 2) {
-                    solvedInfo.type = 1;
+                    solvedInfo.type = SolvedType::SolvedOne_A;
                     solvedInfo.s0 = 0;
                     if (solvedRowBits == 1) {
                         if (solvedBoxBits == 1) {
@@ -940,7 +951,7 @@ private:
                 }
                 else {
                     assert(solvedBoxBits == 2);
-                    solvedInfo.type = 2;
+                    solvedInfo.type = SolvedType::SolvedOne_B;
                     if (solvedRowBits == 1) {
                         // Row: 0, Box: 1
                         //
@@ -980,7 +991,7 @@ private:
                 }
             }
             else if (solvedRows == 2 && solvedBoxes == 2) {
-                solvedInfo.type = 3;
+                solvedInfo.type = SolvedType::SolvedTwo;
                 solvedInfo.s0 = 0;
                 solvedInfo.s2 = 0;
                 if (solvedRowBits == 3) {
@@ -1084,13 +1095,13 @@ private:
                 }
             }
             else if (solvedRows == 3 && solvedBoxes == 3) {
-                solvedInfo.type = 4;
+                solvedInfo.type = SolvedType::AllSolved;
                 solvedInfo.s0 = 0;
                 solvedInfo.s1 = 0;
                 solvedInfo.s2 = 0;
             }
             else {
-                solvedInfo.type = -1;
+                solvedInfo.type = SolvedType::Invalid;
                 solvedInfo.s0 = 0;
                 solvedInfo.s1 = 0;
                 solvedInfo.s2 = 0;
@@ -1230,7 +1241,7 @@ private:
                 unsolvedInfo.type = BlockType::Unchanged;
             }
             else {
-                unsolvedInfo.type = BlockType::Invalid;
+                assert(false);
             }
             table[bits] = unsolvedInfo;
         }
@@ -1571,18 +1582,42 @@ private:
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, bool fast_mode>
     JSTD_FORCE_INLINE
     int update_band(State & state, uint32_t band, BandSolvedInfo solvedInfo) {
+        static const uint32_t kOneTriadsMask = 07;
+        static const uint32_t kSecondOneTriadsMask = 070;
+        static const uint32_t kTwoTriadsMask = 077;
+        static const uint32_t kSecondTwoTriadsMask = 07700;
+        Band2UnsolvedCellsInfo unsolvedInfo;
         int8_t solvedType = solvedInfo.type;
-        if (solvedType == 0) {
+        if (solvedType == SolvedType::SolvedNone) {
             //
             return 0;
         }
-        else if (solvedType == 1) {
+        else if (solvedType == SolvedType::SolvedOne_A) {
             //
-        }
-        else if (solvedType == 2) {
+            // 000 000 000
+            // 111 111 000
+            // 111 111 000
             //
+            uint32_t bandTriads1 = band >> solvedInfo.s1;
+            uint32_t bandTriads2 = band >> solvedInfo.s2;
+            //bandTriads1 = bandTriads1 & kTwoTriadsMask;
+            //bandTriads2 = bandTriads2 & kTwoTriadsMask;
+            uint32_t unsolvedBits = (bandTriads1 & kTwoTriadsMask) | ((bandTriads2 & kTwoTriadsMask) << 6U);
+            unsolvedInfo = band2UnsolvedCellsTbl[unsolvedBits];
         }
-        else if (solvedType == 3) {
+        else if (solvedType == SolvedType::SolvedOne_B) {
+            //
+            // 000 000 000
+            // 111 000 111
+            // 111 000 111
+            //
+            uint32_t bandTriads1 = band >> solvedInfo.s1;
+            uint32_t bandTriads2 = band >> solvedInfo.s2;
+            uint32_t unsolvedBits = (bandTriads1 & kOneTriadsMask) | ((bandTriads1 >> 3U) & kSecondOneTriadsMask) |
+                (((bandTriads2 & kOneTriadsMask) | ((bandTriads2 >> 3U) & kSecondOneTriadsMask)) << 6U);
+            unsolvedInfo = band2UnsolvedCellsTbl[unsolvedBits];
+        }
+        else if (solvedType == SolvedType::SolvedTwo) {
             //
         }
 
