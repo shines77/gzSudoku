@@ -1572,6 +1572,7 @@ private:
     }
 
     template <bool fast_mode = false>
+    JSTD_NO_INLINE
     int find_hidden_singles_sse2(State & state) {
         register uint32_t solvedRows;
         register int32_t changed;

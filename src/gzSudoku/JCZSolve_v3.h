@@ -955,6 +955,7 @@ private:
     }
 
     template <bool fast_mode = false>
+    JSTD_NO_INLINE
     int find_hidden_singles(State & state) {
         register uint32_t solvedRows;
         register uint32_t bandSolvedRows;
