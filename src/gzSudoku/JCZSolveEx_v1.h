@@ -394,15 +394,15 @@ static const int8_t bandBitPosToPos32[4][32] = {
 
 union BandSolvedInfo {
     struct {
-        int8_t   solvedType;
+        int8_t   type;
         uint8_t  s0;
         uint8_t  s1, s2;
     };
     uint32_t value;
 
     BandSolvedInfo(uint32_t _value = 0) : value(_value) {}
-    BandSolvedInfo(int _solvedType, int _s0, int _s1, int _s2)
-        : solvedType((int8_t)solvedType),
+    BandSolvedInfo(int _type, int _s0, int _s1, int _s2)
+        : type((int8_t)_type),
           s0((uint8_t)_s0),
           s1((uint8_t)_s1),
           s2((uint8_t)_s2) {
@@ -415,6 +415,75 @@ union BandSolvedInfo {
     }
 
     BandSolvedInfo & operator = (uint32_t rhs) {
+        this->value = rhs;
+        return *this;
+    }
+};
+
+struct BlockType {
+    enum {
+        Unchanged,
+        LockedCandidates,
+        //SingleBoxCol,
+        LockedBoxCol,
+        //LockedBoxColX2,
+        SolvedOne,
+        SolvedTwo,
+        Invalid,
+        ValueMask = 0x07FFFFFFU,
+        TypeMask  = 0xF8000000U
+    };
+};
+
+struct BaseType {
+    int8_t type;
+};
+
+union Band2UnsolvedCellsInfo {
+    struct {
+        int8_t    type;
+        uint8_t   reserve_00;
+        uint16_t  reserve_01;
+    };
+
+    // LockedCandidates
+    struct {
+        int8_t    type_lc;
+        uint8_t   reserve_lc;
+        uint16_t  lockedCandidateMask;
+    };
+
+    // LockedBoxCol
+    struct {
+        uint32_t  type_lbc:5;
+        uint32_t  lockedBoxColMask:27;
+    };
+
+    // SolvedOne
+    struct {
+        int8_t    type_1;
+        uint8_t   s1;
+        uint16_t  reserve_1;
+    };
+
+    // SolvedTwo
+    struct {
+        int8_t    type_2;
+        uint8_t   reserve_2;
+        uint8_t   ss1, ss2;
+    };
+
+    uint32_t value;
+
+    Band2UnsolvedCellsInfo(uint32_t _value = 0) : value(_value) {}
+    Band2UnsolvedCellsInfo(const Band2UnsolvedCellsInfo & src) : value(src.value) {}
+
+    Band2UnsolvedCellsInfo & operator = (const Band2UnsolvedCellsInfo & rhs) {
+        this->value = rhs.value;
+        return *this;
+    }
+
+    Band2UnsolvedCellsInfo & operator = (uint32_t rhs) {
         this->value = rhs;
         return *this;
     }
@@ -495,10 +564,11 @@ static const BandSolvedInfo bandSolvedRowAndBoxTbl[64] = {
     { -1,  0,  0,  0 },
     { -1,  0,  0,  0 },
     { -1,  0,  0,  0 },
-    {  4,  0,  0,  0 },
+    {  4,  0,  0,  0 }
 };
 
 static BandSolvedInfo sBandSolvedRowAndBoxTbl[64];
+static Band2UnsolvedCellsInfo band2UnsolvedCellsTbl[4096];
 
 #pragma pack(pop)
 
@@ -772,7 +842,7 @@ private:
     }
 
     static void general_bandSolvedRowAndBoxTbl(BandSolvedInfo * table) {
-        static const uint8_t popcntTbl[8] = { 0, 1, 1, 2, 1, 2, 2, 3 };
+        static const uint32_t popcntTbl[8] = { 0, 1, 1, 2, 1, 2, 2, 3 };
         BandSolvedInfo solvedInfo;
         for (uint32_t bits = 0; bits < 64; bits++) {
             uint32_t solvedRowBits = bits & 07;
@@ -780,14 +850,14 @@ private:
             uint32_t solvedRows = popcntTbl[solvedRowBits];
             uint32_t solvedBoxes = popcntTbl[solvedBoxBits];
             if (solvedRows == 0 || solvedBoxes == 0) {
-                solvedInfo.solvedType = 0;
+                solvedInfo.type = 0;
                 solvedInfo.s0 = 0;
                 solvedInfo.s1 = 0;
                 solvedInfo.s2 = 0;
             }
             else if (solvedRows == 1 && solvedBoxes == 1) {
                 if (solvedBoxBits != 2) {
-                    solvedInfo.solvedType = 1;
+                    solvedInfo.type = 1;
                     solvedInfo.s0 = 0;
                     if (solvedRowBits == 1) {
                         if (solvedBoxBits == 1) {
@@ -870,7 +940,7 @@ private:
                 }
                 else {
                     assert(solvedBoxBits == 2);
-                    solvedInfo.solvedType = 2;
+                    solvedInfo.type = 2;
                     if (solvedRowBits == 1) {
                         // Row: 0, Box: 1
                         //
@@ -910,7 +980,7 @@ private:
                 }
             }
             else if (solvedRows == 2 && solvedBoxes == 2) {
-                solvedInfo.solvedType = 3;
+                solvedInfo.type = 3;
                 solvedInfo.s0 = 0;
                 solvedInfo.s2 = 0;
                 if (solvedRowBits == 3) {
@@ -1014,13 +1084,13 @@ private:
                 }
             }
             else if (solvedRows == 3 && solvedBoxes == 3) {
-                solvedInfo.solvedType = 4;
+                solvedInfo.type = 4;
                 solvedInfo.s0 = 0;
                 solvedInfo.s1 = 0;
                 solvedInfo.s2 = 0;
             }
             else {
-                solvedInfo.solvedType = -1;
+                solvedInfo.type = -1;
                 solvedInfo.s0 = 0;
                 solvedInfo.s1 = 0;
                 solvedInfo.s2 = 0;
@@ -1034,12 +1104,135 @@ private:
         printf("static const BandSolvedInfo bandSolvedRowAndBoxTbl[64] = {\n");
         for (size_t i = 0; i < 64; i++) {
             printf("    ");
-            printf("{ %2d, %2d, %2d, %2d }", (int)table[i].solvedType, (int)table[i].s0,
+            printf("{ %2d, %2d, %2d, %2d }", (int)table[i].type, (int)table[i].s0,
                                              (int)table[i].s1, (int)table[i].s2);
             printf(",\n");
         }
         printf("};\n");
         printf("\n");
+    }
+
+    static void general_band2UnsolvedCellsTbl(Band2UnsolvedCellsInfo * table) {
+        static const uint32_t popcntTbl[8] = { 0, 1, 1, 2, 1, 2, 2, 3 };
+        static const uint32_t bitForwardTbl[8] =  { -1, 0, 1, 0, 2, 0, 1, 0 };
+
+        for (uint32_t bits = 0; bits < 4096; bits++) {
+            Band2UnsolvedCellsInfo unsolvedInfo;
+            uint32_t solved_cnt = 0;
+            uint32_t solved[2];
+            uint32_t part1, part2, part3, part4;
+            part1 = bits & 7;
+            part2 = (bits >> 3) & 7;
+            part3 = (bits >> 6) & 7;
+            part4 = (bits >> 9) & 7;
+            uint32_t cnt1, cnt2, cnt3, cnt4;
+            cnt1 = popcntTbl[part1];
+            cnt2 = popcntTbl[part2];
+            cnt3 = popcntTbl[part3];
+            cnt4 = popcntTbl[part4];
+            if ((cnt1 == 0 && cnt3 == 0) || (cnt2 == 0 && cnt4 == 0)) {
+                unsolvedInfo.type = BlockType::Invalid;
+            }
+            else if (((cnt1 == 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 != 0)) ||
+                     ((cnt1 != 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 == 0))) {
+                if (cnt2 == 1) {
+                    solved[solved_cnt] = 3 + bitForwardTbl[part2];
+                    solved_cnt++;
+                }
+                if (cnt3 == 1) {
+                    solved[solved_cnt] = 9 + bitForwardTbl[part3];
+                    solved_cnt++;
+                }
+                if (solved_cnt == 2) {
+                    unsolvedInfo.type = BlockType::SolvedTwo;
+                    unsolvedInfo.ss1 = solved[0];
+                    unsolvedInfo.ss2 = solved[1];
+                }
+                else if (solved_cnt == 1) {
+                    unsolvedInfo.type = BlockType::SolvedOne;
+                    unsolvedInfo.s1 = solved[0];
+                }
+                else {
+                    unsolvedInfo.type = BlockType::LockedCandidates;
+                    unsolvedInfo.lockedCandidateMask = 007070;
+                }
+            }
+            else if (((cnt1 != 0 && cnt2 == 0) && (cnt3 != 0 && cnt4 != 0)) ||
+                     ((cnt1 != 0 && cnt2 != 0) && (cnt3 == 0 && cnt4 != 0))) {
+                if (cnt1 == 1) {
+                    solved[solved_cnt] = 0 + bitForwardTbl[part1];
+                    solved_cnt++;
+                }
+                if (cnt4 == 1) {
+                    solved[solved_cnt] = 12 + bitForwardTbl[part4];
+                    solved_cnt++;
+                }
+                if (solved_cnt == 2) {
+                    unsolvedInfo.type = BlockType::SolvedTwo;
+                    unsolvedInfo.ss1 = solved[0];
+                    unsolvedInfo.ss2 = solved[1];
+                }
+                else if (solved_cnt == 1) {
+                    unsolvedInfo.type = BlockType::SolvedOne;
+                    unsolvedInfo.s1 = solved[0];
+                }
+                else {
+                    unsolvedInfo.type = BlockType::LockedCandidates;
+                    unsolvedInfo.lockedCandidateMask = 070007;
+                }
+            }
+            else if ((cnt1 == 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 == 0)) {
+                if (cnt2 == 1) {
+                    solved[solved_cnt] = 3 + bitForwardTbl[part2];
+                    solved_cnt++;
+                }
+                if (cnt3 == 1) {
+                    solved[solved_cnt] = 9 + bitForwardTbl[part3];
+                    solved_cnt++;
+                }
+                if (solved_cnt == 2) {
+                    unsolvedInfo.type = BlockType::SolvedTwo;
+                    unsolvedInfo.ss1 = solved[0];
+                    unsolvedInfo.ss2 = solved[1];
+                }
+                else if (solved_cnt == 1) {
+                    unsolvedInfo.type = BlockType::SolvedOne;
+                    unsolvedInfo.s1 = solved[0];
+                }
+                else {
+                    unsolvedInfo.type = BlockType::Unchanged;
+                }
+            }
+            else if ((cnt1 != 0 && cnt2 == 0) && (cnt3 == 0 && cnt4 != 0)) {
+                if (cnt1 == 1) {
+                    solved[solved_cnt] = 0 + bitForwardTbl[part1];
+                    solved_cnt++;
+                }
+                if (cnt4 == 1) {
+                    solved[solved_cnt] = 12 + bitForwardTbl[part4];
+                    solved_cnt++;
+                }
+                if (solved_cnt == 2) {
+                    unsolvedInfo.type = BlockType::SolvedTwo;
+                    unsolvedInfo.ss1 = solved[0];
+                    unsolvedInfo.ss2 = solved[1];
+                }
+                else if (solved_cnt == 1) {
+                    unsolvedInfo.type = BlockType::SolvedOne;
+                    unsolvedInfo.s1 = solved[0];
+                }
+                else {
+                    unsolvedInfo.type = BlockType::Unchanged;
+                }
+            }
+            else if ((cnt1 != 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 != 0)) {
+                unsolvedInfo.type = BlockType::Unchanged;
+            }
+            else {
+                unsolvedInfo.type = BlockType::Invalid;
+            }
+            table[bits] = unsolvedInfo;
+        }
     }
 
     static void init_flip_mask() {
@@ -1070,6 +1263,10 @@ private:
 #if 0
         general_bandSolvedRowAndBoxTbl(&sBandSolvedRowAndBoxTbl[0]);
         print_bandSolvedRowAndBoxTbl(&sBandSolvedRowAndBoxTbl[0]);
+#endif
+
+#if 1
+        general_band2UnsolvedCellsTbl(&band2UnsolvedCellsTbl[0]);
 #endif
     }
 
@@ -1373,7 +1570,7 @@ private:
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, bool fast_mode>
     JSTD_FORCE_INLINE
     int update_band(State & state, uint32_t band, BandSolvedInfo solvedInfo) {
-        int8_t solvedType = solvedInfo.solvedType;
+        int8_t solvedType = solvedInfo.type;
         if (solvedType == 0) {
             //
             return 0;
@@ -1396,7 +1593,7 @@ private:
         register uint32_t numSolvedBits;
         register uint32_t changed;
 
-        static const uint32_t kBand3AllRowBits = 070707;
+        static const uint32_t kBandAllRowBits = 070707;
         static const uint32_t kRowAndBoxBits = 077;
 
         do {
@@ -1406,7 +1603,7 @@ private:
         
             // Number 1
             numSolvedBits = state.candidates[0].bands[3];
-            if ((numSolvedBits & kBand3AllRowBits) != kBand3AllRowBits)
+            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 0;
 
@@ -1415,7 +1612,7 @@ private:
                 if (band != state.prevCandidates[digit].bands[0]) {
                     uint32_t bandSolvedBits = numSolvedBits & kRowAndBoxBits;
                     BandSolvedInfo solvedInfo = bandSolvedRowAndBoxTbl[bandSolvedBits];
-                    assert(solvedInfo.solvedType != (int8_t)-1);
+                    assert(solvedInfo.type != (int8_t)-1);
                     int updateType = this->update_band<digit, 0, 1, 2, fast_mode>(state, band, solvedInfo);
                     if (!fast_mode && (updateType == -1))
                         return Status::Invalid;
@@ -1426,7 +1623,7 @@ private:
                 if (band != state.prevCandidates[digit].bands[1]) {
                     uint32_t bandSolvedBits = (numSolvedBits >> 6U) & kRowAndBoxBits;
                     BandSolvedInfo solvedInfo = bandSolvedRowAndBoxTbl[bandSolvedBits];
-                    assert(solvedInfo.solvedType != (int8_t)-1);
+                    assert(solvedInfo.type != (int8_t)-1);
                     int updateType = this->update_band<digit, 1, 0, 2, fast_mode>(state, band, solvedInfo);
                     if (!fast_mode && (updateType == -1))
                         return Status::Invalid;
@@ -1437,7 +1634,7 @@ private:
                 if (band != state.prevCandidates[digit].bands[2]) {
                     uint32_t bandSolvedBits = (numSolvedBits >> 12U) & kRowAndBoxBits;
                     BandSolvedInfo solvedInfo = bandSolvedRowAndBoxTbl[bandSolvedBits];
-                    assert(solvedInfo.solvedType != (int8_t)-1);
+                    assert(solvedInfo.type != (int8_t)-1);
                     int updateType = this->update_band<digit, 2, 0, 1, fast_mode>(state, band, solvedInfo);
                     if (!fast_mode && (updateType == -1))
                         return Status::Invalid;
@@ -1447,7 +1644,7 @@ private:
 #if 0
             // Number 2
             numSolvedBits = state.candidates[1].bands[3];
-            if ((numSolvedBits & kBand3AllRowBits) != kBand3AllRowBits)
+            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 1;
 
@@ -1487,7 +1684,7 @@ private:
 
             // Number 3
             numSolvedBits = state.candidates[2].bands[3];
-            if ((numSolvedBits & kBand3AllRowBits) != kBand3AllRowBits)
+            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 2;
 
@@ -1537,7 +1734,7 @@ private:
         
             // Number 4
             numSolvedBits = state.candidates[3].bands[3];
-            if ((numSolvedBits & kBand3AllRowBits) != kBand3AllRowBits)
+            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 3;
 
@@ -1583,7 +1780,7 @@ private:
 
             // Number 5
             numSolvedBits = state.candidates[4].bands[3];
-            if ((numSolvedBits & kBand3AllRowBits) != kBand3AllRowBits)
+            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 4;
 
@@ -1629,7 +1826,7 @@ private:
 
             // Number 6
             numSolvedBits = state.candidates[5].bands[3];
-            if ((numSolvedBits & kBand3AllRowBits) != kBand3AllRowBits)
+            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 5;
 
@@ -1679,7 +1876,7 @@ private:
         
             // Number 7
             numSolvedBits = state.candidates[6].bands[3];
-            if ((numSolvedBits & kBand3AllRowBits) != kBand3AllRowBits)
+            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 6;
 
@@ -1725,7 +1922,7 @@ private:
 
             // Number 8
             numSolvedBits = state.candidates[7].bands[3];
-            if ((numSolvedBits & kBand3AllRowBits) != kBand3AllRowBits)
+            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 7;
 
@@ -1771,7 +1968,7 @@ private:
 
             // Number 9
             numSolvedBits = state.candidates[8].bands[3];
-            if ((numSolvedBits & kBand3AllRowBits) != kBand3AllRowBits)
+            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 8;
 
