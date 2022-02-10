@@ -1114,12 +1114,12 @@ private:
 
     static void general_band2UnsolvedCellsTbl(Band2UnsolvedCellsInfo * table) {
         static const uint32_t popcntTbl[8] = { 0, 1, 1, 2, 1, 2, 2, 3 };
-        static const uint32_t bitForwardTbl[8] =  { -1, 0, 1, 0, 2, 0, 1, 0 };
+        static const int bitForwardTbl[8] =  { -1, 0, 1, 0, 2, 0, 1, 0 };
 
         for (uint32_t bits = 0; bits < 4096; bits++) {
             Band2UnsolvedCellsInfo unsolvedInfo;
             uint32_t solved_cnt = 0;
-            uint32_t solved[2];
+            int solved[2];
             uint32_t part1, part2, part3, part4;
             part1 = bits & 7;
             part2 = (bits >> 3) & 7;
@@ -1130,7 +1130,8 @@ private:
             cnt2 = popcntTbl[part2];
             cnt3 = popcntTbl[part3];
             cnt4 = popcntTbl[part4];
-            if ((cnt1 == 0 && cnt3 == 0) || (cnt2 == 0 && cnt4 == 0)) {
+            if ((cnt1 == 0 && cnt3 == 0) || (cnt2 == 0 && cnt4 == 0) ||
+                (cnt1 == 0 && cnt2 == 0) || (cnt3 == 0 && cnt4 == 0)) {
                 unsolvedInfo.type = BlockType::Invalid;
             }
             else if (((cnt1 == 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 != 0)) ||
@@ -2036,6 +2037,7 @@ private:
         }
 
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
+        R1 &= full_mask;
         bool is_legal = R1.isEqual(full_mask);
         assert(is_legal);
         //if (!is_legal) return -1;
@@ -2159,6 +2161,7 @@ private:
         }
 
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
+        R1 &= full_mask;
         bool is_legal = R1.isEqual(full_mask);
         //assert(is_legal);
         if (!is_legal) return -1;
@@ -2265,6 +2268,7 @@ private:
         }
 
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
+        R1 &= full_mask;
         bool is_legal = R1.isEqual(full_mask);
         if (!is_legal) return -1;
 
