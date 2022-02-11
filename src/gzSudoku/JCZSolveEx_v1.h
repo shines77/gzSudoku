@@ -1948,8 +1948,8 @@ private:
                 return 1;
             }
             else if (blockType == BlockType::LockedCandidates) {
-                uint32_t lockedCandidatesMask = unsolvedInfo.lockedCandidatesMask << solvedInfo.s1;
-                state.candidates[digit].bands[self] &= lockedCandidatesMask;
+                uint32_t lockedCandidateMask = unsolvedInfo.lockedCandidateMask << solvedInfo.s1;
+                state.candidates[digit].bands[self] &= lockedCandidateMask;
                 this->save_band_prev_candidates<digit, self>(state);
                 return 0;
             }
@@ -1994,8 +1994,8 @@ private:
                 return 1;
             }
             else if (blockType == BlockType::LockedCandidates) {
-                uint32_t lockedCandidatesMask = unsolvedInfo.lockedCandidatesMask << solvedInfo.s1;
-                state.candidates[digit].bands[self] &= lockedCandidatesMask;
+                uint32_t lockedCandidateMask = unsolvedInfo.lockedCandidateMask << solvedInfo.s1;
+                state.candidates[digit].bands[self] &= lockedCandidateMask;
                 this->save_band_prev_candidates<digit, self>(state);
                 return 0;
             }
