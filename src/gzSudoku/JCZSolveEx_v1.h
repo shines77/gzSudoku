@@ -1149,8 +1149,8 @@ private:
                 uint32_t lockedBoxColBitsA = leftlockedBoxColBits | rightlockedBoxColBitsA;
                 uint32_t lockedBoxColBitsB = leftlockedBoxColBits | rightlockedBoxColBitsB;
 
-                tableA[lockedBits] = ~lockedBoxColBitsA;
-                tableB[lockedBits] = ~lockedBoxColBitsB;
+                tableA[lockedBits] = lockedBoxColBitsA;
+                tableB[lockedBits] = lockedBoxColBitsB;
             }
         }
     }
@@ -2106,8 +2106,8 @@ private:
             }
             else if (blockType == BlockType::LockedBoxCol) {
                 uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << (solvedInfo.s1 % Rows);
-                state.candidates[digit].bands[peer1] &= lockedBoxColMask;
-                state.candidates[digit].bands[peer2] &= lockedBoxColMask;
+                state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
+                state.candidates[digit].bands[peer2] &= ~lockedBoxColMask;
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
             }
@@ -2167,8 +2167,8 @@ private:
             }
             else if (blockType == BlockType::LockedBoxCol) {
                 uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << (solvedInfo.s1 % Rows);
-                state.candidates[digit].bands[peer1] &= lockedBoxColMask;
-                state.candidates[digit].bands[peer2] &= lockedBoxColMask;
+                state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
+                state.candidates[digit].bands[peer2] &= ~lockedBoxColMask;
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
             }
