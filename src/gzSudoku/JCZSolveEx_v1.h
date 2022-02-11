@@ -36,7 +36,7 @@
 //
 // Whether search no guess steps only?
 //
-#define JCZEx_V1_ONLY_NO_GUESS        0
+#define JCZEx_V1_ONLY_NO_GUESS        1
 
 namespace gzSudoku {
 namespace JCZEx {
@@ -2125,7 +2125,12 @@ private:
             else if (blockType == BlockType::SolveTwo) {
                 uint32_t solvedPos1 = solvedInfo.s1 + unsolvedInfo.ss1;
                 uint32_t solvedPos2 = solvedInfo.s2 + unsolvedInfo.ss2;
+#if 1
+                this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos1);
+                this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos2);
+#else
                 this->update_band_solved_two<digit, self, peer1, peer2>(state, solvedPos1, solvedPos2);
+#endif
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
             }
@@ -2186,7 +2191,12 @@ private:
             else if (blockType == BlockType::SolveTwo) {
                 uint32_t solvedPos1 = solvedInfo.s1 + unsolvedInfo.ss1;
                 uint32_t solvedPos2 = solvedInfo.s2 + unsolvedInfo.ss2;
+#if 1
+                this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos1);
+                this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos2);
+#else
                 this->update_band_solved_two<digit, self, peer1, peer2>(state, solvedPos1, solvedPos2);
+#endif
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
             }
@@ -2222,12 +2232,16 @@ private:
                 return 0;
             }
         }
+#if 0
         else if (solvedType == SolvedType::Invalid) {
             return -1;
         }
 
         assert(solvedType == SolvedType::AllSolved);
         return (solvedType == SolvedType::AllSolved) ? 0 : -1;
+#else
+        return 0;
+#endif
     }
 
     template <bool fast_mode = false>
