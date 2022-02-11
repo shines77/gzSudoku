@@ -1503,7 +1503,7 @@ private:
 
             // Band64: 1
             {
-                uint64_t band_bits = state.candidates[num].bands64[1];
+                uint64_t band_bits = state.candidates[num].bands64[1] & kBitSet27_Single64;
                 while (band_bits != 0) {
                     uint32_t bit_pos = BitUtils::bsf64(band_bits);
                     uint64_t mask = BitUtils::ls1b64(band_bits);
