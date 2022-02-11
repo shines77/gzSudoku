@@ -435,8 +435,8 @@ struct BlockType {
     enum {
         Unchanged,
         LockedCandidates,
-        SolvedOne,
-        SolvedTwo,
+        SolveOne,
+        SolveTwo,
         LockedBoxCol,
         //SingleBoxCol,
         Invalid,
@@ -578,6 +578,9 @@ static const BandSolvedInfo bandSolvedRowAndBoxTbl[64] = {
 };
 
 static BandSolvedInfo sBandSolvedRowAndBoxTbl[64];
+
+static uint32_t bandLockedBoxColTblA[4096];
+static uint32_t bandLockedBoxColTblB[4096];
 
 static Band2UnsolvedCellsInfo band2UnsolvedCellsTblA[4096];
 static Band2UnsolvedCellsInfo band2UnsolvedCellsTblB[4096];
@@ -1124,9 +1127,38 @@ private:
         printf("\n");
     }
 
+    static void general_bandLockedBoxColTbl(uint32_t * tableA, uint32_t * tableB) {
+        static const uint32_t lockedBitsTbl[3] = { 0101, 0202, 0404 };
+        static const uint32_t lockedBoxColBitsTbl[3] = { 01001001, 02002002, 04004004 };
+
+        for (uint32_t bits = 0; bits < 4096; bits++) {
+            tableA[bits] = 0;
+            tableB[bits] = 0;
+        }
+
+        for (uint32_t L = 0; L < 3; L++) {
+            uint32_t leftLockedBits = lockedBitsTbl[L];
+            uint32_t leftlockedBoxColBits = lockedBoxColBitsTbl[L];
+            for (uint32_t R = 0; R < 3; R++) {
+                uint32_t rightLockedBits = lockedBitsTbl[R] << 3U;
+                uint32_t lockedBits = leftLockedBits | rightLockedBits;
+                assert(lockedBits < 4096);
+
+                uint32_t rightlockedBoxColBitsA = lockedBoxColBitsTbl[R] << 3U;
+                uint32_t rightlockedBoxColBitsB = lockedBoxColBitsTbl[R] << 6U;
+
+                uint32_t lockedBoxColBitsA = leftlockedBoxColBits | rightlockedBoxColBitsA;
+                uint32_t lockedBoxColBitsB = leftlockedBoxColBits | rightlockedBoxColBitsB;
+
+                tableA[lockedBits] = ~lockedBoxColBitsA;
+                tableB[lockedBits] = ~lockedBoxColBitsB;
+            }
+        }
+    }
+
     static void general_band2UnsolvedCellsTblA(Band2UnsolvedCellsInfo * table) {
         static const uint32_t popcntTbl[8] = { 0, 1, 1, 2, 1, 2, 2, 3 };
-        static const int bitForwardTbl[8] =  { -1, 0, 1, 0, 2, 0, 1, 0 };
+        static const int bitForwardTbl[8] = { -1, 0, 1, 0, 2, 0, 1, 0 };
 
         for (uint32_t bits = 0; bits < 4096; bits++) {
             Band2UnsolvedCellsInfo unsolvedInfo;
@@ -1157,12 +1189,12 @@ private:
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
-                    unsolvedInfo.type = BlockType::SolvedTwo;
+                    unsolvedInfo.type = BlockType::SolveTwo;
                     unsolvedInfo.ss1 = solved[0];
                     unsolvedInfo.ss2 = solved[1];
                 }
                 else if (solved_cnt == 1) {
-                    unsolvedInfo.type = BlockType::SolvedOne;
+                    unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
                 }
                 else {
@@ -1181,12 +1213,12 @@ private:
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
-                    unsolvedInfo.type = BlockType::SolvedTwo;
+                    unsolvedInfo.type = BlockType::SolveTwo;
                     unsolvedInfo.ss1 = solved[0];
                     unsolvedInfo.ss2 = solved[1];
                 }
                 else if (solved_cnt == 1) {
-                    unsolvedInfo.type = BlockType::SolvedOne;
+                    unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
                 }
                 else {
@@ -1204,12 +1236,12 @@ private:
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
-                    unsolvedInfo.type = BlockType::SolvedTwo;
+                    unsolvedInfo.type = BlockType::SolveTwo;
                     unsolvedInfo.ss1 = solved[0];
                     unsolvedInfo.ss2 = solved[1];
                 }
                 else if (solved_cnt == 1) {
-                    unsolvedInfo.type = BlockType::SolvedOne;
+                    unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
                 }
                 else {
@@ -1226,12 +1258,12 @@ private:
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
-                    unsolvedInfo.type = BlockType::SolvedTwo;
+                    unsolvedInfo.type = BlockType::SolveTwo;
                     unsolvedInfo.ss1 = solved[0];
                     unsolvedInfo.ss2 = solved[1];
                 }
                 else if (solved_cnt == 1) {
-                    unsolvedInfo.type = BlockType::SolvedOne;
+                    unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
                 }
                 else {
@@ -1239,7 +1271,14 @@ private:
                 }
             }
             else if ((cnt1 != 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 != 0)) {
-                unsolvedInfo.type = BlockType::Unchanged;
+                uint32_t lockedBoxColMask = bandLockedBoxColTblA[bits];
+                if (lockedBoxColMask != 0) {
+                    unsolvedInfo.type = BlockType::LockedBoxCol;
+                    unsolvedInfo.lockedBoxColMask = lockedBoxColMask;
+                }
+                else {
+                    unsolvedInfo.type = BlockType::Unchanged;
+                }
             }
             else {
                 assert(false);
@@ -1250,7 +1289,7 @@ private:
 
     static void general_band2UnsolvedCellsTblB(Band2UnsolvedCellsInfo * table) {
         static const uint32_t popcntTbl[8] = { 0, 1, 1, 2, 1, 2, 2, 3 };
-        static const int bitForwardTbl[8] =  { -1, 0, 1, 0, 2, 0, 1, 0 };
+        static const int bitForwardTbl[8] = { -1, 0, 1, 0, 2, 0, 1, 0 };
 
         for (uint32_t bits = 0; bits < 4096; bits++) {
             Band2UnsolvedCellsInfo unsolvedInfo;
@@ -1281,12 +1320,12 @@ private:
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
-                    unsolvedInfo.type = BlockType::SolvedTwo;
+                    unsolvedInfo.type = BlockType::SolveTwo;
                     unsolvedInfo.ss1 = solved[0];
                     unsolvedInfo.ss2 = solved[1];
                 }
                 else if (solved_cnt == 1) {
-                    unsolvedInfo.type = BlockType::SolvedOne;
+                    unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
                 }
                 else {
@@ -1305,12 +1344,12 @@ private:
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
-                    unsolvedInfo.type = BlockType::SolvedTwo;
+                    unsolvedInfo.type = BlockType::SolveTwo;
                     unsolvedInfo.ss1 = solved[0];
                     unsolvedInfo.ss2 = solved[1];
                 }
                 else if (solved_cnt == 1) {
-                    unsolvedInfo.type = BlockType::SolvedOne;
+                    unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
                 }
                 else {
@@ -1328,12 +1367,12 @@ private:
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
-                    unsolvedInfo.type = BlockType::SolvedTwo;
+                    unsolvedInfo.type = BlockType::SolveTwo;
                     unsolvedInfo.ss1 = solved[0];
                     unsolvedInfo.ss2 = solved[1];
                 }
                 else if (solved_cnt == 1) {
-                    unsolvedInfo.type = BlockType::SolvedOne;
+                    unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
                 }
                 else {
@@ -1350,12 +1389,12 @@ private:
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
-                    unsolvedInfo.type = BlockType::SolvedTwo;
+                    unsolvedInfo.type = BlockType::SolveTwo;
                     unsolvedInfo.ss1 = solved[0];
                     unsolvedInfo.ss2 = solved[1];
                 }
                 else if (solved_cnt == 1) {
-                    unsolvedInfo.type = BlockType::SolvedOne;
+                    unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
                 }
                 else {
@@ -1363,7 +1402,14 @@ private:
                 }
             }
             else if ((cnt1 != 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 != 0)) {
-                unsolvedInfo.type = BlockType::Unchanged;
+                uint32_t lockedBoxColMask = bandLockedBoxColTblB[bits];
+                if (lockedBoxColMask != 0) {
+                    unsolvedInfo.type = BlockType::LockedBoxCol;
+                    unsolvedInfo.lockedBoxColMask = lockedBoxColMask;
+                }
+                else {
+                    unsolvedInfo.type = BlockType::Unchanged;
+                }
             }
             else {
                 assert(false);
@@ -1403,6 +1449,7 @@ private:
 #endif
 
 #if 1
+        general_bandLockedBoxColTbl(&bandLockedBoxColTblA[0], &bandLockedBoxColTblB[0]);
         general_band2UnsolvedCellsTblA(&band2UnsolvedCellsTblA[0]);
         general_band2UnsolvedCellsTblB(&band2UnsolvedCellsTblB[0]);
 #endif
@@ -1628,27 +1675,155 @@ private:
     }
 
     JSTD_FORCE_INLINE
-    void update_band_solved_mask32(State & state, size_t band, size_t pos, size_t num) {
+    void update_band_solved_mask32(State & state, size_t num, size_t band, size_t pos) {
         state.candidates[num].bands[band] &= bandUnsolvedBitsTbl32[pos];
     }
 
     JSTD_FORCE_INLINE
-    void update_band_solved_mask64(State & state, size_t band, size_t pos, size_t num) {
+    void update_band_solved_mask64(State & state, size_t num, size_t band, size_t pos) {
         state.candidates[num].bands64[band] &= bandUnsolvedBitsTbl64[pos];
     }
 
     JSTD_FORCE_INLINE
-    void update_band_solved_mask32(State & state, size_t band, size_t pos, size_t num, uint32_t mask) {
+    void update_band_solved_mask32(State & state, size_t num, size_t band, size_t pos, uint32_t mask) {
         if ((state.candidates[num].bands[band] & mask) != 0) {
             state.candidates[num].bands[band] &= bandUnsolvedBitsTbl32[pos];
         }
     }
 
     JSTD_FORCE_INLINE
-    void update_band_solved_mask64(State & state, size_t band, size_t pos, size_t num, uint64_t mask) {
+    void update_band_solved_mask64(State & state, size_t num, size_t band, size_t pos, uint64_t mask) {
         if ((state.candidates[num].bands64[band] & mask) != 0) {
             state.candidates[num].bands64[band] &= bandUnsolvedBitsTbl64[pos];
         }
+    }
+
+    template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2>
+    JSTD_FORCE_INLINE
+    void update_band_solved_one(State & state, size_t pos) {
+        assert((state.candidates[digit].bands[self] & tables.posToMask[pos]) != 0);
+
+        size_t rowBit = digit * Rows + tables.div9[pos];
+        uint32_t band = tables.div27[rowBit];
+        uint32_t shift = tables.mod27[rowBit];
+        state.solvedRows.bands[band] |= 1U << shift;
+
+        void * pCells16, * pMask16;
+
+        BitVec08x16 solved_cells, fill_mask;
+        pCells16 = (void *)&state.solvedCells;
+        pMask16 = (void *)&Static.fill_mask[pos];
+        solved_cells.loadAligned(pCells16);
+        fill_mask.loadAligned(pMask16);
+        solved_cells |= fill_mask;
+        solved_cells.saveAligned(pCells16);
+#if 1
+        BitVec08x16 cells16, mask16;
+        BitVec08x16 complex_fill_mask;
+        pCells16 = (void *)&state.candidates[digit];
+        pMask16 = (void *)&Static.flip_mask[pos];
+        cells16.loadAligned(pCells16);
+        mask16.loadAligned(pMask16);
+        complex_fill_mask.loadAligned((void *)&Static.complex_fill_mask[pos]);
+        cells16.and_not(mask16);
+        cells16._or(complex_fill_mask);
+        cells16.saveAligned(pCells16);
+#else
+        state.candidates[digit].bands[self]  &= bandUnsolvedBitsTbl32[pos];
+        state.candidates[digit].bands[peer1] &= bandPeerUnsolvedBitsTbl32[pos];
+        state.candidates[digit].bands[peer2] &= bandPeerUnsolvedBitsTbl32[pos];
+        state.candidates[digit].bands[3]     |= bandSolvedRowAndBoxBitsTbl32[pos];
+#endif
+        uint32_t unsolvedCells = ~tables.posToMask[pos];
+        if (digit != 0)
+            state.candidates[0].bands[self] &= unsolvedCells;
+        if (digit != 1)
+            state.candidates[1].bands[self] &= unsolvedCells;
+        if (digit != 2)
+            state.candidates[2].bands[self] &= unsolvedCells;
+        if (digit != 3)
+            state.candidates[3].bands[self] &= unsolvedCells;
+        if (digit != 4)
+            state.candidates[4].bands[self] &= unsolvedCells;
+        if (digit != 5)
+            state.candidates[5].bands[self] &= unsolvedCells;
+        if (digit != 6)
+            state.candidates[6].bands[self] &= unsolvedCells;
+        if (digit != 7)
+            state.candidates[7].bands[self] &= unsolvedCells;
+        if (digit != 8)
+            state.candidates[8].bands[self] &= unsolvedCells;
+    }
+
+    template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2>
+    JSTD_FORCE_INLINE
+    void update_band_solved_two(State & state, size_t pos1, size_t pos2) {
+        assert((state.candidates[digit].bands[self] & tables.posToMask[pos1]) != 0);
+        assert((state.candidates[digit].bands[self] & tables.posToMask[pos2]) != 0);
+
+        size_t rowBit = digit * Rows + tables.div9[pos1];
+        uint32_t band = tables.div27[rowBit];
+        uint32_t shift = tables.mod27[rowBit];
+        state.solvedRows.bands[band] |= 1U << shift;
+
+        rowBit = digit * Rows + tables.div9[pos2];
+        shift = tables.mod27[rowBit];
+        state.solvedRows.bands[band] |= 1U << shift;
+
+        void * pCells16;
+
+        BitVec08x16 solved_cells, fill_mask1, fill_mask2;
+        pCells16 = (void *)&state.solvedCells;
+        solved_cells.loadAligned(pCells16);
+        fill_mask1.loadAligned((void *)&Static.fill_mask[pos1]);
+        fill_mask2.loadAligned((void *)&Static.fill_mask[pos2]);
+        solved_cells |= fill_mask1;
+        solved_cells |= fill_mask2;
+        solved_cells.saveAligned(pCells16);
+#if 1
+        BitVec08x16 cells16, flip_mask1, flip_mask2;
+        BitVec08x16 complex_fill_mask1, complex_fill_mask2;
+        pCells16 = (void *)&state.candidates[digit];
+        cells16.loadAligned(pCells16);
+        flip_mask1.loadAligned((void *)&Static.flip_mask[pos1]);
+        flip_mask2.loadAligned((void *)&Static.flip_mask[pos2]);
+        complex_fill_mask1.loadAligned((void *)&Static.complex_fill_mask[pos1]);
+        complex_fill_mask2.loadAligned((void *)&Static.complex_fill_mask[pos1]);
+        cells16.and_not(flip_mask1);
+        cells16.and_not(flip_mask2);
+        cells16._or(complex_fill_mask1);
+        cells16._or(complex_fill_mask2);
+        cells16.saveAligned(pCells16);
+#else
+        state.candidates[digit].bands[self]  &= bandUnsolvedBitsTbl32[pos1];
+        state.candidates[digit].bands[peer1] &= bandPeerUnsolvedBitsTbl32[pos1];
+        state.candidates[digit].bands[peer2] &= bandPeerUnsolvedBitsTbl32[pos1];
+        state.candidates[digit].bands[3]     |= bandSolvedRowAndBoxBitsTbl32[pos1];
+
+        state.candidates[digit].bands[self]  &= bandUnsolvedBitsTbl32[pos2];
+        state.candidates[digit].bands[peer1] &= bandPeerUnsolvedBitsTbl32[pos2];
+        state.candidates[digit].bands[peer2] &= bandPeerUnsolvedBitsTbl32[pos2];
+        state.candidates[digit].bands[3]     |= bandSolvedRowAndBoxBitsTbl32[pos2];
+#endif
+        uint32_t unsolvedCells = ~(tables.posToMask[pos1] | tables.posToMask[pos2]);
+        if (digit != 0)
+            state.candidates[0].bands[self] &= unsolvedCells;
+        if (digit != 1)
+            state.candidates[1].bands[self] &= unsolvedCells;
+        if (digit != 2)
+            state.candidates[2].bands[self] &= unsolvedCells;
+        if (digit != 3)
+            state.candidates[3].bands[self] &= unsolvedCells;
+        if (digit != 4)
+            state.candidates[4].bands[self] &= unsolvedCells;
+        if (digit != 5)
+            state.candidates[5].bands[self] &= unsolvedCells;
+        if (digit != 6)
+            state.candidates[6].bands[self] &= unsolvedCells;
+        if (digit != 7)
+            state.candidates[7].bands[self] &= unsolvedCells;
+        if (digit != 8)
+            state.candidates[8].bands[self] &= unsolvedCells;
     }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, bool fast_mode>
@@ -1737,6 +1912,11 @@ private:
             return -1;
         }
     }
+    template <uint32_t digit, uint32_t self>
+    JSTD_FORCE_INLINE
+    void save_band_prev_candidates(State & state) {
+        state.prevCandidates[digit].bands[self] = state.candidates[digit].bands[self];
+    }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, uint32_t shift, bool fast_mode>
     JSTD_FORCE_INLINE
@@ -1747,11 +1927,7 @@ private:
         static const uint32_t kSecondTwoTriadsMask = 07700;
         Band2UnsolvedCellsInfo unsolvedInfo;
         int8_t solvedType = solvedInfo.type;
-        if (solvedType == SolvedType::SolvedNone) {
-            int updateType = this->find_and_update_band<digit, self, peer1, peer2, shift, fast_mode>(state, band, solvedRows);
-            return updateType;
-        }
-        else if (solvedType == SolvedType::SolvedOne_A) {
+        if (solvedType == SolvedType::SolvedOne_A) {
             //
             // 000 000 000
             // 111 111 000
@@ -1759,11 +1935,42 @@ private:
             //
             uint32_t bandTriads1 = band >> solvedInfo.s1;
             uint32_t bandTriads2 = band >> solvedInfo.s2;
-            //bandTriads1 = bandTriads1 & kTwoTriadsMask;
-            //bandTriads2 = bandTriads2 & kTwoTriadsMask;
             uint32_t unsolvedBits = (bandTriads1 & kTwoTriadsMask) | ((bandTriads2 & kTwoTriadsMask) << 6U);
             unsolvedInfo = band2UnsolvedCellsTblA[unsolvedBits];
-            return 1;
+            int8_t blockType = unsolvedInfo.type_lbc;
+            if (blockType == BlockType::Unchanged) {
+                return 0;
+            }
+            else if (blockType == BlockType::SolveOne) {
+                uint32_t solvedPos = solvedInfo.s1 + unsolvedInfo.s1;
+                this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos);
+                this->save_band_prev_candidates<digit, self>(state);
+                return 1;
+            }
+            else if (blockType == BlockType::LockedCandidates) {
+                uint32_t lockedCandidatesMask = unsolvedInfo.lockedCandidatesMask << solvedInfo.s1;
+                state.candidates[digit].bands[self] &= lockedCandidatesMask;
+                this->save_band_prev_candidates<digit, self>(state);
+                return 0;
+            }
+            else if (blockType == BlockType::SolveTwo) {
+                uint32_t solvedPos1 = solvedInfo.s1 + unsolvedInfo.ss1;
+                uint32_t solvedPos2 = solvedInfo.s1 + unsolvedInfo.ss2;
+                this->update_band_solved_two<digit, self, peer1, peer2>(state, solvedPos1, solvedPos2);
+                this->save_band_prev_candidates<digit, self>(state);
+                return 1;
+            }
+            else if (blockType == BlockType::LockedBoxCol) {
+                uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << solvedInfo.s1;
+                state.candidates[digit].bands[peer1] &= lockedBoxColMask;
+                state.candidates[digit].bands[peer2] &= lockedBoxColMask;
+                this->save_band_prev_candidates<digit, self>(state);
+                return 1;
+            }
+            else {
+                assert(blockType == BlockType::Invalid);
+                return -1;
+            }
         }
         else if (solvedType == SolvedType::SolvedOne_B) {
             //
@@ -1776,13 +1983,50 @@ private:
             uint32_t unsolvedBits = ((bandTriads1 & kOneTriadsMask) | ((bandTriads1 >> 3U) & kSecondOneTriadsMask)) |
                                    (((bandTriads2 & kOneTriadsMask) | ((bandTriads2 >> 3U) & kSecondOneTriadsMask)) << 6U);
             unsolvedInfo = band2UnsolvedCellsTblB[unsolvedBits];
-            return 1;
+            int8_t blockType = unsolvedInfo.type_lbc;
+            if (blockType == BlockType::Unchanged) {
+                return 0;
+            }
+            else if (blockType == BlockType::SolveOne) {
+                uint32_t solvedPos = solvedInfo.s1 + unsolvedInfo.s1;
+                this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos);
+                this->save_band_prev_candidates<digit, self>(state);
+                return 1;
+            }
+            else if (blockType == BlockType::LockedCandidates) {
+                uint32_t lockedCandidatesMask = unsolvedInfo.lockedCandidatesMask << solvedInfo.s1;
+                state.candidates[digit].bands[self] &= lockedCandidatesMask;
+                this->save_band_prev_candidates<digit, self>(state);
+                return 0;
+            }
+            else if (blockType == BlockType::SolveTwo) {
+                uint32_t solvedPos1 = solvedInfo.s1 + unsolvedInfo.ss1;
+                uint32_t solvedPos2 = solvedInfo.s1 + unsolvedInfo.ss2;
+                this->update_band_solved_two<digit, self, peer1, peer2>(state, solvedPos1, solvedPos2);
+                this->save_band_prev_candidates<digit, self>(state);
+                return 1;
+            }
+            else if (blockType == BlockType::LockedBoxCol) {
+                uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << solvedInfo.s1;
+                state.candidates[digit].bands[peer1] &= lockedBoxColMask;
+                state.candidates[digit].bands[peer2] &= lockedBoxColMask;
+                this->save_band_prev_candidates<digit, self>(state);
+                return 1;
+            }
+            else {
+                assert(blockType == BlockType::Invalid);
+                return -1;
+            }
+        }
+        else if (solvedType == SolvedType::SolvedNone) {
+            int updateType = this->find_and_update_band<digit, self, peer1, peer2, shift, fast_mode>(state, band, solvedRows);
+            return updateType;
         }
         else if (solvedType == SolvedType::SolvedTwo) {
             return 1;
         }
 
-        return -1;
+        return (solvedType == SolvedType::AllSolved) ? 0 : -1;
     }
 
     template <bool fast_mode = false>
@@ -1790,7 +2034,7 @@ private:
     int find_hidden_singles(State & state) {
         register uint32_t numSolvedBits;
         register uint32_t solvedRows;
-        register uint32_t changed;
+        register int changed;
 
         static const uint32_t kBandAllRowBits = 070707;
         static const uint32_t kRowAndBoxBits = 077;
@@ -1815,7 +2059,7 @@ private:
                     BandSolvedInfo solvedInfo = bandSolvedRowAndBoxTbl[bandSolvedBits];
                     assert(solvedInfo.type != (int8_t)-1);
                     int updateType = this->update_band<digit, 0, 1, 2, 0, fast_mode>(state, band, solvedRows, solvedInfo);
-                    changed |= (uint32_t)updateType;
+                    changed |= updateType;
                     if (!fast_mode && (updateType == -1))
                         return Status::Invalid;
                 }
@@ -1827,7 +2071,7 @@ private:
                     BandSolvedInfo solvedInfo = bandSolvedRowAndBoxTbl[bandSolvedBits];
                     assert(solvedInfo.type != (int8_t)-1);
                     int updateType = this->update_band<digit, 1, 0, 2, 3, fast_mode>(state, band, solvedRows, solvedInfo);
-                    changed |= (uint32_t)updateType;
+                    changed |= updateType;
                     if (!fast_mode && (updateType == -1))
                         return Status::Invalid;
                 }
@@ -1839,7 +2083,7 @@ private:
                     BandSolvedInfo solvedInfo = bandSolvedRowAndBoxTbl[bandSolvedBits];
                     assert(solvedInfo.type != (int8_t)-1);
                     int updateType = this->update_band<digit, 2, 0, 1, 6, fast_mode>(state, band, solvedRows, solvedInfo);
-                    changed |= (uint32_t)updateType;
+                    changed |= updateType;
                     if (!fast_mode && (updateType == -1))
                         return Status::Invalid;
                 }
@@ -2272,7 +2516,7 @@ private:
                     for (size_t num = 0; num < Numbers; num++) {
                         uint64_t band_bits = state.candidates[num].bands64[band];
                         if ((band_bits & bit) != 0) {
-                            this->update_band_solved_mask64(state, band, pos, num);
+                            this->update_band_solved_mask64(state, num, band, pos);
                             cell_count++;
                             break;
                         }
@@ -2292,7 +2536,7 @@ private:
                 for (size_t num = 0; num < Numbers; num++) {
                     uint64_t band_bits = state.candidates[num].bands64[0];
                     if ((band_bits & bit) != 0) {
-                        this->update_band_solved_mask64(state, 0, pos, num);
+                        this->update_band_solved_mask64(state, num, 0, pos);
                         cell_count++;
                         break;
                     }
@@ -2311,7 +2555,7 @@ private:
                 for (size_t num = 0; num < Numbers; num++) {
                     uint64_t band_bits = state.candidates[num].bands64[1];
                     if ((band_bits & bit) != 0) {
-                        this->update_band_solved_mask64(state, 1, pos, num);
+                        this->update_band_solved_mask64(state, num, 1, pos);
                         cell_count++;
                         break;
                     }
@@ -2332,7 +2576,7 @@ private:
                     for (size_t num = 0; num < Numbers; num++) {
                         uint32_t band_bits = state.candidates[num].bands[band];
                         if ((band_bits & bit) != 0) {
-                            this->update_band_solved_mask32(state, band, pos, num);
+                            this->update_band_solved_mask32(state, num, band, pos);
                             cell_count++;
                             break;
                         }
@@ -2505,7 +2749,7 @@ private:
                     for (size_t num = 0; num < Numbers; num++) {
                         uint64_t band_bits = state.candidates[num].bands64[band];
                         if ((band_bits & bit) != 0) {
-                            this->update_band_solved_mask64(state, band, pos, num);
+                            this->update_band_solved_mask64(state, num, band, pos);
                             cell_count++;
                             break;
                         }
@@ -2525,7 +2769,7 @@ private:
                 for (size_t num = 0; num < Numbers; num++) {
                     uint64_t band_bits = state.candidates[num].bands64[0];
                     if ((band_bits & bit) != 0) {
-                        this->update_band_solved_mask64(state, 0, pos, num);
+                        this->update_band_solved_mask64(state, num, 0, pos);
                         cell_count++;
                         break;
                     }
@@ -2544,7 +2788,7 @@ private:
                 for (size_t num = 0; num < Numbers; num++) {
                     uint64_t band_bits = state.candidates[num].bands64[1];
                     if ((band_bits & bit) != 0) {
-                        this->update_band_solved_mask64(state, 1, pos, num);
+                        this->update_band_solved_mask64(state, num, 1, pos);
                         cell_count++;
                         break;
                     }
@@ -2565,7 +2809,7 @@ private:
                     for (size_t num = 0; num < Numbers; num++) {
                         uint32_t band_bits = state.candidates[num].bands[band];
                         if ((band_bits & bit) != 0) {
-                            this->update_band_solved_mask32(state, band, pos, num);
+                            this->update_band_solved_mask32(state, num, band, pos);
                             cell_count++;
                             break;
                         }
@@ -2600,7 +2844,7 @@ private:
                             state.candidates[num].bands64[band] ^= mask;
                             basic_solver::num_guesses++;
 
-                            this->update_band_solved_mask64(next_state, band, pos, num, mask);
+                            this->update_band_solved_mask64(next_state, num, band, pos, mask);
 
                             if (this->find_all_single_literals<false>(next_state) != Status::Invalid) {
                                 this->guess_next_cell(next_state, board);
@@ -2608,7 +2852,7 @@ private:
                         }
                         else {
                             // Second of pair
-                            this->update_band_solved_mask64(state, band, pos, num, mask);
+                            this->update_band_solved_mask64(state, num, band, pos, mask);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cell(state, board);
@@ -2638,7 +2882,7 @@ private:
                             state.candidates[num].bands[band] ^= mask;
                             basic_solver::num_guesses++;
 
-                            this->update_band_solved_mask32(next_state, band, pos, num);
+                            this->update_band_solved_mask32(next_state, num, band, pos);
 
                             if (this->find_all_single_literals<false>(next_state) != Status::Invalid) {
                                 this->guess_next_cell(next_state, board);
@@ -2646,7 +2890,7 @@ private:
                         }
                         else {
                             // Second of pair
-                            this->update_band_solved_mask32(state, band, pos, num);
+                            this->update_band_solved_mask32(state, num, band, pos);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cell(state, board);
@@ -2679,7 +2923,7 @@ private:
                     state.candidates[num].bands64[0] ^= mask;
                     basic_solver::num_guesses++;
 
-                    this->update_band_solved_mask64(next_state, 0, pos, num);
+                    this->update_band_solved_mask64(next_state, num, 0, pos);
 
                     if (this->find_all_single_literals<false>(next_state) != Status::Invalid) {
                         this->guess_next_cell(next_state, board);
@@ -2704,7 +2948,7 @@ private:
                     state.candidates[num].bands64[1] ^= mask;
                     basic_solver::num_guesses++;
 
-                    this->update_band_solved_mask64(next_state, 1, pos, num);
+                    this->update_band_solved_mask64(next_state, num, 1, pos);
 
                     if (this->find_all_single_literals<false>(next_state) != Status::Invalid) {
                         this->guess_next_cell(next_state, board);
@@ -2732,7 +2976,7 @@ private:
                     state.candidates[num].bands[band] ^= mask;
                     basic_solver::num_guesses++;
 
-                    this->update_band_solved_mask32(next_state, band, pos, num);
+                    this->update_band_solved_mask32(next_state, num, band, pos);
 
                     if (this->find_all_single_literals<false>(next_state) != Status::Invalid) {
                         this->guess_next_cell(next_state, board);
