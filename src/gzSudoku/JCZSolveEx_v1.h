@@ -809,7 +809,7 @@ private:
     }
 
     static void transform_to_complexBandBoard(const PackedBitSet2D<Rows16, Cols16> & bit_mask,
-                                           BandBoard & band_mask) {
+                                              BandBoard & band_mask) {
         static const uint32_t kBoxCountY32 = (uint32_t)BoxCountY;
         static const uint32_t kBoxCellsY32 = (uint32_t)BoxCellsY;
         uint32_t band;
@@ -2081,7 +2081,18 @@ private:
                 return 1;
             }
             else if (blockType == BlockType::LockedCandidates) {
-                uint32_t lockedCandidateMask = unsolvedInfo.lockedCandidateMask << solvedInfo.s1;
+                uint32_t lockedCandidateMask = unsolvedInfo.lockedCandidateMask;
+                //
+                // Fixed lockedCandidateMask
+                //
+                // 000 111 111
+                // 000 000 000
+                // 000 111 111
+                //
+                if (bandSolvedBits == 012 || bandSolvedBits == 042) {
+                    lockedCandidateMask = (lockedCandidateMask & 0777) | ((lockedCandidateMask & 0777000) << 9U);
+                }
+                lockedCandidateMask <<= solvedInfo.s1;
                 state.candidates[digit].bands[self] &= lockedCandidateMask;
                 this->save_band_prev_candidates<digit, self>(state);
                 return 0;
@@ -2094,7 +2105,7 @@ private:
                 return 1;
             }
             else if (blockType == BlockType::LockedBoxCol) {
-                uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << solvedInfo.s1;
+                uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << (solvedInfo.s1 % Rows);
                 state.candidates[digit].bands[peer1] &= lockedBoxColMask;
                 state.candidates[digit].bands[peer2] &= lockedBoxColMask;
                 this->save_band_prev_candidates<digit, self>(state);
@@ -2155,7 +2166,7 @@ private:
                 return 1;
             }
             else if (blockType == BlockType::LockedBoxCol) {
-                uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << solvedInfo.s1;
+                uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << (solvedInfo.s1 % Rows);
                 state.candidates[digit].bands[peer1] &= lockedBoxColMask;
                 state.candidates[digit].bands[peer2] &= lockedBoxColMask;
                 this->save_band_prev_candidates<digit, self>(state);
