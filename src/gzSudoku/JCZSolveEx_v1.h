@@ -472,7 +472,7 @@ union Band2UnsolvedCellsInfo {
     struct {
         int8_t    type_1;
         uint8_t   s1;
-        uint16_t  reserve_1;
+        uint16_t  is_first;
     };
 
     // SolvedTwo
@@ -1161,6 +1161,7 @@ private:
             Band2UnsolvedCellsInfo unsolvedInfo;
             uint32_t solved_cnt = 0;
             int solved[2];
+            int is_first[2];
             uint32_t part1, part2, part3, part4;
             part1 = bits & 7;
             part2 = (bits >> 3) & 7;
@@ -1179,10 +1180,12 @@ private:
                      ((cnt1 != 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 == 0))) {
                 if (cnt2 == 1) {
                     solved[solved_cnt] = 3 + bitForwardTbl[part2];
+                    is_first[solved_cnt] = 1;
                     solved_cnt++;
                 }
                 if (cnt3 == 1) {
-                    solved[solved_cnt] = 9 + bitForwardTbl[part3];
+                    solved[solved_cnt] = 0 + bitForwardTbl[part3];
+                    is_first[solved_cnt] = 0;
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
@@ -1193,6 +1196,7 @@ private:
                 else if (solved_cnt == 1) {
                     unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
+                    unsolvedInfo.is_first = is_first[0];
                 }
                 else {
                     unsolvedInfo.type = BlockType::LockedCandidates;
@@ -1203,10 +1207,12 @@ private:
                      ((cnt1 != 0 && cnt2 != 0) && (cnt3 == 0 && cnt4 != 0))) {
                 if (cnt1 == 1) {
                     solved[solved_cnt] = 0 + bitForwardTbl[part1];
+                    is_first[solved_cnt] = 1;
                     solved_cnt++;
                 }
                 if (cnt4 == 1) {
-                    solved[solved_cnt] = 12 + bitForwardTbl[part4];
+                    solved[solved_cnt] = 3 + bitForwardTbl[part4];
+                    is_first[solved_cnt] = 0;
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
@@ -1217,6 +1223,7 @@ private:
                 else if (solved_cnt == 1) {
                     unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
+                    unsolvedInfo.is_first = is_first[0];
                 }
                 else {
                     unsolvedInfo.type = BlockType::LockedCandidates;
@@ -1226,10 +1233,12 @@ private:
             else if ((cnt1 == 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 == 0)) {
                 if (cnt2 == 1) {
                     solved[solved_cnt] = 3 + bitForwardTbl[part2];
+                    is_first[solved_cnt] = 1;
                     solved_cnt++;
                 }
                 if (cnt3 == 1) {
-                    solved[solved_cnt] = 9 + bitForwardTbl[part3];
+                    solved[solved_cnt] = 0 + bitForwardTbl[part3];
+                    is_first[solved_cnt] = 0;
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
@@ -1240,6 +1249,7 @@ private:
                 else if (solved_cnt == 1) {
                     unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
+                    unsolvedInfo.is_first = is_first[0];
                 }
                 else {
                     unsolvedInfo.type = BlockType::Unchanged;
@@ -1248,10 +1258,12 @@ private:
             else if ((cnt1 != 0 && cnt2 == 0) && (cnt3 == 0 && cnt4 != 0)) {
                 if (cnt1 == 1) {
                     solved[solved_cnt] = 0 + bitForwardTbl[part1];
+                    is_first[solved_cnt] = 1;
                     solved_cnt++;
                 }
                 if (cnt4 == 1) {
-                    solved[solved_cnt] = 12 + bitForwardTbl[part4];
+                    solved[solved_cnt] = 3 + bitForwardTbl[part4];
+                    is_first[solved_cnt] = 0;
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
@@ -1262,6 +1274,7 @@ private:
                 else if (solved_cnt == 1) {
                     unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
+                    unsolvedInfo.is_first = is_first[0];
                 }
                 else {
                     unsolvedInfo.type = BlockType::Unchanged;
@@ -1292,6 +1305,7 @@ private:
             Band2UnsolvedCellsInfo unsolvedInfo;
             uint32_t solved_cnt = 0;
             int solved[2];
+            int is_first[2];
             uint32_t part1, part2, part3, part4;
             part1 = bits & 7;
             part2 = (bits >> 3) & 7;
@@ -1310,10 +1324,12 @@ private:
                      ((cnt1 != 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 == 0))) {
                 if (cnt2 == 1) {
                     solved[solved_cnt] = 6 + bitForwardTbl[part2];
+                    is_first[solved_cnt] = 1;
                     solved_cnt++;
                 }
                 if (cnt3 == 1) {
                     solved[solved_cnt] = 0 + bitForwardTbl[part3];
+                    is_first[solved_cnt] = 0;
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
@@ -1324,6 +1340,7 @@ private:
                 else if (solved_cnt == 1) {
                     unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
+                    unsolvedInfo.is_first = is_first[0];
                 }
                 else {
                     unsolvedInfo.type = BlockType::LockedCandidates;
@@ -1334,10 +1351,12 @@ private:
                      ((cnt1 != 0 && cnt2 != 0) && (cnt3 == 0 && cnt4 != 0))) {
                 if (cnt1 == 1) {
                     solved[solved_cnt] = 0 + bitForwardTbl[part1];
+                    is_first[solved_cnt] = 1;
                     solved_cnt++;
                 }
                 if (cnt4 == 1) {
                     solved[solved_cnt] = 6 + bitForwardTbl[part4];
+                    is_first[solved_cnt] = 0;
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
@@ -1348,6 +1367,7 @@ private:
                 else if (solved_cnt == 1) {
                     unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
+                    unsolvedInfo.is_first = is_first[0];
                 }
                 else {
                     unsolvedInfo.type = BlockType::LockedCandidates;
@@ -1357,10 +1377,12 @@ private:
             else if ((cnt1 == 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 == 0)) {
                 if (cnt2 == 1) {
                     solved[solved_cnt] = 6 + bitForwardTbl[part2];
+                    is_first[solved_cnt] = 1;
                     solved_cnt++;
                 }
                 if (cnt3 == 1) {
                     solved[solved_cnt] = 0 + bitForwardTbl[part3];
+                    is_first[solved_cnt] = 0;
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
@@ -1371,6 +1393,7 @@ private:
                 else if (solved_cnt == 1) {
                     unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
+                    unsolvedInfo.is_first = is_first[0];
                 }
                 else {
                     unsolvedInfo.type = BlockType::Unchanged;
@@ -1379,10 +1402,12 @@ private:
             else if ((cnt1 != 0 && cnt2 == 0) && (cnt3 == 0 && cnt4 != 0)) {
                 if (cnt1 == 1) {
                     solved[solved_cnt] = 0 + bitForwardTbl[part1];
+                    is_first[solved_cnt] = 1;
                     solved_cnt++;
                 }
                 if (cnt4 == 1) {
                     solved[solved_cnt] = 6 + bitForwardTbl[part4];
+                    is_first[solved_cnt] = 0;
                     solved_cnt++;
                 }
                 if (solved_cnt == 2) {
@@ -1393,6 +1418,7 @@ private:
                 else if (solved_cnt == 1) {
                     unsolvedInfo.type = BlockType::SolveOne;
                     unsolvedInfo.s1 = solved[0];
+                    unsolvedInfo.is_first = is_first[0];
                 }
                 else {
                     unsolvedInfo.type = BlockType::Unchanged;
@@ -1440,7 +1466,7 @@ private:
         print_rowHiddenSingleMaskTbl();
 #endif
 
-#if 0
+#if 1
         general_bandSolvedRowAndBoxTbl(&sBandSolvedRowAndBoxTbl[0]);
         print_bandSolvedRowAndBoxTbl(&sBandSolvedRowAndBoxTbl[0]);
 #endif
@@ -1828,7 +1854,7 @@ private:
 
     JSTD_FORCE_INLINE
     void update_band_solved_one32(State & state, size_t digit, size_t self, size_t pos) {
-        size_t fill_pos = self * 27 + pos;
+        size_t fill_pos = pos;
         assert((state.candidates[digit].bands[self] & tables.posToMask[fill_pos]) != 0);
 
         size_t rowBit = digit * Rows + tables.div9[fill_pos];
@@ -1880,8 +1906,8 @@ private:
 
     JSTD_FORCE_INLINE
     void update_band_solved_one64(State & state, size_t digit, size_t self, size_t pos) {
-        size_t fill_pos = self * 54 + pos;
-        assert((state.candidates[digit].bands64[self] & tables.posToMask[fill_pos]) != 0);
+        size_t fill_pos = pos;
+        //assert((state.candidates[digit].bands64[self] & tables.posToMask[fill_pos]) != 0);
 
         size_t rowBit = digit * Rows + tables.div9[fill_pos];
         uint32_t band = tables.div27[rowBit];
@@ -2047,7 +2073,11 @@ private:
                 return 0;
             }
             else if (blockType == BlockType::SolveOne) {
-                uint32_t solvedPos = solvedInfo.s1 + unsolvedInfo.s1;
+                uint32_t solvedPos;
+                if (unsolvedInfo.is_first == 1)
+                    solvedPos = solvedInfo.s1 + unsolvedInfo.s1;
+                else
+                    solvedPos = solvedInfo.s2 + unsolvedInfo.s1;
                 this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos);
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
@@ -2060,7 +2090,7 @@ private:
             }
             else if (blockType == BlockType::SolveTwo) {
                 uint32_t solvedPos1 = solvedInfo.s1 + unsolvedInfo.ss1;
-                uint32_t solvedPos2 = solvedInfo.s1 + unsolvedInfo.ss2;
+                uint32_t solvedPos2 = solvedInfo.s2 + unsolvedInfo.ss2;
                 this->update_band_solved_two<digit, self, peer1, peer2>(state, solvedPos1, solvedPos2);
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
@@ -2085,6 +2115,10 @@ private:
             //
             uint32_t bandTriads1 = band >> solvedInfo.s1;
             uint32_t bandTriads2 = band >> solvedInfo.s2;
+            uint32_t bandTriads1_0 = bandTriads1 & kOneTriadsMask;
+            uint32_t bandTriads1_1 = (bandTriads1 >> 3U) & kSecondOneTriadsMask;
+            uint32_t bandTriads2_0 = bandTriads2 & kOneTriadsMask;
+            uint32_t bandTriads2_1 = (bandTriads2 >> 3U) & kSecondOneTriadsMask;
             uint32_t unsolvedBits = ((bandTriads1 & kOneTriadsMask) | ((bandTriads1 >> 3U) & kSecondOneTriadsMask)) |
                                    (((bandTriads2 & kOneTriadsMask) | ((bandTriads2 >> 3U) & kSecondOneTriadsMask)) << 6U);
             unsolvedInfo = band2UnsolvedCellsTblB[unsolvedBits];
@@ -2093,7 +2127,11 @@ private:
                 return 0;
             }
             else if (blockType == BlockType::SolveOne) {
-                uint32_t solvedPos = solvedInfo.s1 + unsolvedInfo.s1;
+                uint32_t solvedPos;
+                if (unsolvedInfo.is_first == 1)
+                    solvedPos = solvedInfo.s1 + unsolvedInfo.s1;
+                else
+                    solvedPos = solvedInfo.s2 + unsolvedInfo.s1;
                 this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos);
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
@@ -2139,7 +2177,7 @@ private:
             return updateType;
         }
         else if (solvedType == SolvedType::SolvedTwo) {
-            return 1;
+            return 0;
         }
 
         return (solvedType == SolvedType::AllSolved) ? 0 : -1;
@@ -3154,8 +3192,8 @@ private:
             return Status::Invalid;
 
         do {
-            int status = this->find_hidden_singles<fast_mode>(state);
-            if (!fast_mode && (status == Status::Invalid))
+            int status = this->find_hidden_singles<false>(state);
+            if (/*!fast_mode &&*/ (status == Status::Invalid))
                 return status;
 
             if ((state.solvedCells.bands64[0] == kBitSet27_Double64) &&
