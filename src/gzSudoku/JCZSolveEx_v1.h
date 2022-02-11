@@ -36,7 +36,7 @@
 //
 // Whether search no guess steps only?
 //
-#define JCZEx_V1_ONLY_NO_GUESS        1
+#define JCZEx_V1_ONLY_NO_GUESS        0
 
 namespace gzSudoku {
 namespace JCZEx {
@@ -392,6 +392,12 @@ static const int8_t bandBitPosToPos32[4][32] = {
 
 static const uint32_t popcntTbl[8] = { 0, 1, 1, 2, 1, 2, 2, 3 };
 static const int bitForwardTbl[8] = { -1, 0, 1, 0, 2, 0, 1, 0 };
+
+static const uint32_t bandSolvedBitsTbl[27] = {
+    011, 011, 011, 021, 021, 021, 041, 041, 041,
+    012, 012, 012, 022, 022, 022, 042, 042, 042,
+    014, 014, 014, 024, 024, 024, 044, 044, 044
+};
 
 #pragma pack(push, 1)
 
@@ -2031,9 +2037,27 @@ private:
             uint32_t newSolvedRows = bandSolvedRows << shift;
             uint32_t solvedRows = state.solvedRows.bands[rows_idx];
             if ((solvedRows & (0x007U << shift)) != newSolvedRows) {
+                uint32_t oldSolvedRows = solvedRows;
                 solvedRows |= newSolvedRows;
                 state.solvedRows.bands[rows_idx] = solvedRows;
                 this->update_solved_rows<digit, self>(state, newBand, bandSolvedRows);
+                uint32_t changedRows = ((oldSolvedRows >> shift) & 0x007U) ^ bandSolvedRows;
+                while (changedRows != 0) {
+                    uint32_t row = BitUtils::bsf32(changedRows);
+                    uint32_t row_bit = BitUtils::ls1b32(changedRows);
+                    changedRows ^= row_bit;
+                    newBand = state.candidates[digit].bands[self];
+                    uint32_t pos = (row * 9U);
+                    uint32_t row_bits = (newBand >> pos) & 0777;
+                    assert(row_bits != 0);
+                    assert(BitUtils::popcnt32(row_bits) == 1);
+                    uint32_t col = BitUtils::bsf32(row_bits);
+                    pos += col;
+                    assert(pos < 27);
+                    uint32_t bandSolvedBits = bandSolvedBitsTbl[pos] << (self * 6U);
+                    assert((state.candidates[digit].bands[3] & bandSolvedBits) == 0);
+                    state.candidates[digit].bands[3] |= bandSolvedBits;
+                }
             }
             return 1;
         }
@@ -2041,6 +2065,7 @@ private:
             return -1;
         }
     }
+
     template <uint32_t digit, uint32_t self>
     JSTD_FORCE_INLINE
     void save_band_prev_candidates(State & state) {
