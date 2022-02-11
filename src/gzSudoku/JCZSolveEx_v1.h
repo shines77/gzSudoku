@@ -36,7 +36,7 @@
 //
 // Whether search no guess steps only?
 //
-#define JCZEx_V1_ONLY_NO_GUESS        0
+#define JCZEx_V1_ONLY_NO_GUESS        1
 
 namespace gzSudoku {
 namespace JCZEx {
@@ -461,8 +461,8 @@ union Band2UnsolvedCellsInfo {
 
     // LockedCandidates
     struct {
-        uint32_t  type_lc:8;
-        uint32_t  lockedCandidateMask:24;
+        uint32_t  type_lc:5;
+        uint32_t  lockedCandidateMask:27;
     };
 
     // LockedBoxCol
@@ -1199,7 +1199,7 @@ private:
                 }
                 else {
                     unsolvedInfo.type = BlockType::LockedCandidates;
-                    unsolvedInfo.lockedCandidateMask = 007070;
+                    unsolvedInfo.lockedCandidateMask = 070007;
                 }
             }
             else if (((cnt1 != 0 && cnt2 == 0) && (cnt3 != 0 && cnt4 != 0)) ||
@@ -1226,7 +1226,7 @@ private:
                 }
                 else {
                     unsolvedInfo.type = BlockType::LockedCandidates;
-                    unsolvedInfo.lockedCandidateMask = 070007;
+                    unsolvedInfo.lockedCandidateMask = 007070;
                 }
             }
             else if ((cnt1 == 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 == 0)) {
@@ -1340,7 +1340,7 @@ private:
                 }
                 else {
                     unsolvedInfo.type = BlockType::LockedCandidates;
-                    unsolvedInfo.lockedCandidateMask = 0007700;
+                    unsolvedInfo.lockedCandidateMask = 0700007;
                 }
             }
             else if (((cnt1 != 0 && cnt2 == 0) && (cnt3 != 0 && cnt4 != 0)) ||
@@ -1367,7 +1367,7 @@ private:
                 }
                 else {
                     unsolvedInfo.type = BlockType::LockedCandidates;
-                    unsolvedInfo.lockedCandidateMask = 0700007;
+                    unsolvedInfo.lockedCandidateMask = 0007700;
                 }
             }
             else if ((cnt1 == 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 == 0)) {
@@ -2093,7 +2093,7 @@ private:
                     lockedCandidateMask = (lockedCandidateMask & 0777) | ((lockedCandidateMask & 0777000) << 9U);
                 }
                 lockedCandidateMask <<= solvedInfo.s1;
-                state.candidates[digit].bands[self] &= lockedCandidateMask;
+                state.candidates[digit].bands[self] &= ~lockedCandidateMask;
                 this->save_band_prev_candidates<digit, self>(state);
                 return 0;
             }
@@ -2154,7 +2154,7 @@ private:
                     lockedCandidateMask = (lockedCandidateMask & 0777) | ((lockedCandidateMask & 0777000) << 9U);
                 }
                 lockedCandidateMask <<= solvedInfo.s1;
-                state.candidates[digit].bands[self] &= lockedCandidateMask;
+                state.candidates[digit].bands[self] &= ~lockedCandidateMask;
                 this->save_band_prev_candidates<digit, self>(state);
                 return 0;
             }
