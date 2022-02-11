@@ -36,7 +36,7 @@
 //
 // Whether search no guess steps only?
 //
-#define JCZEx_V1_ONLY_NO_GUESS        0
+#define JCZEx_V1_ONLY_NO_GUESS        1
 
 namespace gzSudoku {
 namespace JCZEx {
