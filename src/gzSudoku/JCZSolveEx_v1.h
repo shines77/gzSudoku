@@ -1462,7 +1462,7 @@ private:
         print_rowHiddenSingleMaskTbl();
 #endif
 
-#if 1
+#if 0
         general_bandSolvedRowAndBoxTbl(&sBandSolvedRowAndBoxTbl[0]);
         print_bandSolvedRowAndBoxTbl(&sBandSolvedRowAndBoxTbl[0]);
 #endif
@@ -1810,7 +1810,7 @@ private:
         flip_mask1.loadAligned((void *)&Static.flip_mask[fill_pos1]);
         flip_mask2.loadAligned((void *)&Static.flip_mask[fill_pos2]);
         complex_fill_mask1.loadAligned((void *)&Static.complex_fill_mask[fill_pos1]);
-        complex_fill_mask2.loadAligned((void *)&Static.complex_fill_mask[fill_pos1]);
+        complex_fill_mask2.loadAligned((void *)&Static.complex_fill_mask[fill_pos2]);
         cells16.and_not(flip_mask1);
         cells16.and_not(flip_mask2);
         cells16._or(complex_fill_mask1);
@@ -1903,8 +1903,8 @@ private:
     JSTD_FORCE_INLINE
     void update_band_solved_one64(State & state, size_t digit, size_t self, size_t pos) {
         size_t fill_pos = pos;
-        size_t band_id = tables.div27[fill_pos];
-        assert((state.candidates[digit].bands[band_id] & tables.posToMask[fill_pos]) != 0);
+        self = tables.div27[fill_pos];
+        assert((state.candidates[digit].bands[self] & tables.posToMask[fill_pos]) != 0);
 
         size_t rowBit = digit * Rows + tables.div9[fill_pos];
         uint32_t band = tables.div27[rowBit];
@@ -2113,12 +2113,6 @@ private:
             //
             uint32_t bandTriads1 = band >> solvedInfo.s1;
             uint32_t bandTriads2 = band >> solvedInfo.s2;
-#if 0
-            uint32_t bandTriads1_0 = bandTriads1 & kOneTriadsMask;
-            uint32_t bandTriads1_1 = (bandTriads1 >> 3U) & kSecondOneTriadsMask;
-            uint32_t bandTriads2_0 = bandTriads2 & kOneTriadsMask;
-            uint32_t bandTriads2_1 = (bandTriads2 >> 3U) & kSecondOneTriadsMask;
-#endif
             uint32_t unsolvedBits = ((bandTriads1 & kOneTriadsMask) | ((bandTriads1 >> 3U) & kSecondOneTriadsMask)) |
                                    (((bandTriads2 & kOneTriadsMask) | ((bandTriads2 >> 3U) & kSecondOneTriadsMask)) << 6U);
             unsolvedInfo = band2UnsolvedCellsTblB[unsolvedBits];
