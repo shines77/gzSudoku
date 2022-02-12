@@ -2280,7 +2280,7 @@ private:
 
             // Number 1
             numSolvedBits = state.candidates[0].bands[3];
-            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 0;
 
@@ -2326,7 +2326,7 @@ private:
 
             // Number 2
             numSolvedBits = state.candidates[1].bands[3];
-            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 1;
 
@@ -2372,7 +2372,7 @@ private:
 
             // Number 3
             numSolvedBits = state.candidates[2].bands[3];
-            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 2;
 
@@ -2422,7 +2422,7 @@ private:
         
             // Number 4
             numSolvedBits = state.candidates[3].bands[3];
-            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 3;
 
@@ -2468,7 +2468,7 @@ private:
 
             // Number 5
             numSolvedBits = state.candidates[4].bands[3];
-            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 4;
 
@@ -2514,7 +2514,7 @@ private:
 
             // Number 6
             numSolvedBits = state.candidates[5].bands[3];
-            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 5;
 
@@ -2564,7 +2564,7 @@ private:
         
             // Number 7
             numSolvedBits = state.candidates[6].bands[3];
-            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 6;
 
@@ -2610,7 +2610,7 @@ private:
 
             // Number 8
             numSolvedBits = state.candidates[7].bands[3];
-            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 7;
 
@@ -2656,7 +2656,7 @@ private:
 
             // Number 9
             numSolvedBits = state.candidates[8].bands[3];
-            if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 8;
 
