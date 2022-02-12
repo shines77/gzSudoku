@@ -1165,8 +1165,8 @@ private:
         for (uint32_t bits = 0; bits < 4096; bits++) {
             Band2UnsolvedCellsInfo unsolvedInfo;
             uint32_t solved_cnt = 0;
-            int solved[2];
-            int is_first[2];
+            int solved[2] = { 0 };
+            int is_first[2] = { 0 };
             uint32_t part1, part2, part3, part4;
             part1 = bits & 7;
             part2 = (bits >> 3) & 7;
@@ -1306,8 +1306,8 @@ private:
         for (uint32_t bits = 0; bits < 4096; bits++) {
             Band2UnsolvedCellsInfo unsolvedInfo;
             uint32_t solved_cnt = 0;
-            int solved[2];
-            int is_first[2];
+            int solved[2] = { 0 };
+            int is_first[2] = { 0 };
             uint32_t part1, part2, part3, part4;
             part1 = bits & 7;
             part2 = (bits >> 3) & 7;
@@ -2081,6 +2081,7 @@ private:
         static const uint32_t kSecondTwoTriadsMask = 07700;
         Band2UnsolvedCellsInfo unsolvedInfo;
         int8_t solvedType = solvedInfo.type;
+        //solvedType = SolvedType::SolvedNone;
         if (solvedType == SolvedType::SolvedOne_A) {
             //
             // 000 000 000
@@ -2115,7 +2116,11 @@ private:
                 // 000 111 111
                 //
                 if (bandSolvedBits == 012 || bandSolvedBits == 042) {
+                    assert(solvedInfo.s1 <= 3);
                     lockedCandidateMask = (lockedCandidateMask & 0777) | ((lockedCandidateMask & 0777000) << 9U);
+                }
+                else {
+                    assert(solvedInfo.s1 <= 12);
                 }
                 lockedCandidateMask <<= solvedInfo.s1;
                 state.candidates[digit].bands[self] &= ~lockedCandidateMask;
@@ -2125,7 +2130,7 @@ private:
             else if (blockType == BlockType::SolveTwo) {
                 uint32_t solvedPos1 = solvedInfo.s1 + unsolvedInfo.ss1;
                 uint32_t solvedPos2 = solvedInfo.s2 + unsolvedInfo.ss2;
-#if 1
+#if 0
                 this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos1);
                 this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos2);
 #else
@@ -2134,12 +2139,18 @@ private:
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
             }
+
             else if (blockType == BlockType::LockedBoxCol) {
+#if 1
+                assert((solvedInfo.s1 % Rows) <= 3);
                 uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << (solvedInfo.s1 % Rows);
                 state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
                 state.candidates[digit].bands[peer2] &= ~lockedBoxColMask;
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
+#else
+                return 0;
+#endif
             }
             else {
                 assert(blockType == BlockType::Invalid);
@@ -2181,7 +2192,11 @@ private:
                 // 111 000 111
                 //
                 if (bandSolvedBits == 022) {
+                    assert(solvedInfo.s1 == 0);
                     lockedCandidateMask = (lockedCandidateMask & 0777) | ((lockedCandidateMask & 0777000) << 9U);
+                }
+                else {
+                    assert(solvedInfo.s1 <= 12);
                 }
                 lockedCandidateMask <<= solvedInfo.s1;
                 state.candidates[digit].bands[self] &= ~lockedCandidateMask;
@@ -2191,7 +2206,7 @@ private:
             else if (blockType == BlockType::SolveTwo) {
                 uint32_t solvedPos1 = solvedInfo.s1 + unsolvedInfo.ss1;
                 uint32_t solvedPos2 = solvedInfo.s2 + unsolvedInfo.ss2;
-#if 1
+#if 0
                 this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos1);
                 this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos2);
 #else
@@ -2201,11 +2216,16 @@ private:
                 return 1;
             }
             else if (blockType == BlockType::LockedBoxCol) {
+#if 1
+                assert((solvedInfo.s1 % Rows) == 0);
                 uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << (solvedInfo.s1 % Rows);
                 state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
                 state.candidates[digit].bands[peer2] &= ~lockedBoxColMask;
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
+#else
+                return 0;
+#endif
             }
             else {
                 assert(blockType == BlockType::Invalid);
@@ -2938,7 +2958,6 @@ private:
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
         R1 &= full_mask;
         R2 &= full_mask;
-        R3 &= full_mask;
         bool is_legal = R1.isEqual(full_mask);
         if (!is_legal) return -1;
 
@@ -3106,7 +3125,7 @@ private:
                             state.candidates[num].bands[band] ^= mask;
                             basic_solver::num_guesses++;
 
-                            this->update_band_solved_one_mask32(next_state, num, band, pos);
+                            this->update_band_solved_one32(next_state, num, band, pos);
 
                             if (this->find_all_single_literals<false>(next_state) != Status::Invalid) {
                                 this->guess_next_cell(next_state, board);
@@ -3114,7 +3133,7 @@ private:
                         }
                         else {
                             // Second of pair
-                            this->update_band_solved_one_mask32(state, num, band, pos);
+                            this->update_band_solved_one32(state, num, band, pos);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cell(state, board);
@@ -3258,8 +3277,8 @@ private:
             return Status::Invalid;
 
         do {
-            int status = this->find_hidden_singles<false>(state);
-            if (/*!fast_mode &&*/ (status == Status::Invalid))
+            int status = this->find_hidden_singles<fast_mode>(state);
+            if (fast_mode && (status == Status::Invalid))
                 return status;
 
             if ((state.solvedCells.bands64[0] == kBitSet27_Double64) &&
