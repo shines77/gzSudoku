@@ -36,11 +36,13 @@
 //
 // Whether search no guess steps only?
 //
-#define JCZEx_V1_ONLY_NO_GUESS        0
+#define JCZEx_V1_ONLY_NO_GUESS        1
 
 namespace gzSudoku {
 namespace JCZEx {
 namespace v1 {
+
+static const bool kCheckSolvedBits = true;
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
@@ -1141,22 +1143,70 @@ private:
             tableB[bits] = 0;
         }
 
-        for (uint32_t L = 0; L < 3; L++) {
-            uint32_t leftLockedBits = lockedBitsTbl[L];
-            uint32_t leftlockedBoxColBits = lockedBoxColBitsTbl[L];
-            for (uint32_t R = 0; R < 3; R++) {
-                uint32_t rightLockedBits = lockedBitsTbl[R] << 3U;
-                uint32_t lockedBits = leftLockedBits | rightLockedBits;
-                assert(lockedBits < 4096);
+        {
+            for (uint32_t L = 0; L < 3; L++) {
+                uint32_t leftBits = lockedBitsTbl[L];
+                uint32_t leftlockedBoxColBits = lockedBoxColBitsTbl[L];
+                for (uint32_t R = 0; R < 3; R++) {
+                    uint32_t rightBits = lockedBitsTbl[R] << 3U;
+                    uint32_t lockedBits = leftBits | rightBits;
+                    assert(lockedBits < 4096);
 
-                uint32_t rightlockedBoxColBitsA = lockedBoxColBitsTbl[R] << 3U;
-                uint32_t rightlockedBoxColBitsB = lockedBoxColBitsTbl[R] << 6U;
+                    uint32_t rightlockedBoxColBitsA = lockedBoxColBitsTbl[R] << 3U;
+                    uint32_t rightlockedBoxColBitsB = lockedBoxColBitsTbl[R] << 6U;
 
-                uint32_t lockedBoxColBitsA = leftlockedBoxColBits | rightlockedBoxColBitsA;
-                uint32_t lockedBoxColBitsB = leftlockedBoxColBits | rightlockedBoxColBitsB;
+                    uint32_t lockedBoxColBitsA = leftlockedBoxColBits | rightlockedBoxColBitsA;
+                    uint32_t lockedBoxColBitsB = leftlockedBoxColBits | rightlockedBoxColBitsB;
 
-                tableA[lockedBits] = lockedBoxColBitsA;
-                tableB[lockedBits] = lockedBoxColBitsB;
+                    tableA[lockedBits] = lockedBoxColBitsA;
+                    tableB[lockedBits] = lockedBoxColBitsB;
+                }
+            }
+        }
+
+        {
+            for (uint32_t L = 0; L < 64; L++) {
+                uint32_t leftBits = (L & 07) | (((L >> 3U) & 07) << 6U);
+                uint32_t leftlockedBoxColBits = 0;
+                for (uint32_t R = 0; R < 3; R++) {
+                    uint32_t rightBits = lockedBitsTbl[R] << 3U;
+                    uint32_t lockedBits = leftBits | rightBits;
+                    assert(lockedBits < 4096);
+
+                    uint32_t rightlockedBoxColBitsA = lockedBoxColBitsTbl[R] << 3U;
+                    uint32_t rightlockedBoxColBitsB = lockedBoxColBitsTbl[R] << 6U;
+
+                    uint32_t lockedBoxColBitsA = leftlockedBoxColBits | rightlockedBoxColBitsA;
+                    uint32_t lockedBoxColBitsB = leftlockedBoxColBits | rightlockedBoxColBitsB;
+
+                    if (tableA[lockedBits] == 0)
+                        tableA[lockedBits] = lockedBoxColBitsA;
+                    if (tableB[lockedBits] == 0)
+                        tableB[lockedBits] = lockedBoxColBitsB;
+                }
+            }
+        }
+
+        {
+            for (uint32_t L = 0; L < 3; L++) {
+                uint32_t leftLockedBits = lockedBitsTbl[L];
+                uint32_t leftlockedBoxColBits = lockedBoxColBitsTbl[L];
+                for (uint32_t R = 0; R < 64; R++) {
+                    uint32_t rightLockedBits = ((R & 07) | (((R >> 3U) & 07) << 6U)) << 3U;
+                    uint32_t lockedBits = leftLockedBits | rightLockedBits;
+                    assert(lockedBits < 4096);
+
+                    uint32_t rightlockedBoxColBitsA = 0;
+                    uint32_t rightlockedBoxColBitsB = 0;
+
+                    uint32_t lockedBoxColBitsA = leftlockedBoxColBits | rightlockedBoxColBitsA;
+                    uint32_t lockedBoxColBitsB = leftlockedBoxColBits | rightlockedBoxColBitsB;
+
+                    if (tableA[lockedBits] == 0)
+                        tableA[lockedBits] = lockedBoxColBitsA;
+                    if (tableB[lockedBits] == 0)
+                        tableB[lockedBits] = lockedBoxColBitsB;
+                }
             }
         }
     }
@@ -1468,7 +1518,7 @@ private:
         print_rowHiddenSingleMaskTbl();
 #endif
 
-#if 1
+#if 0
         general_bandSolvedRowAndBoxTbl(&sBandSolvedRowAndBoxTbl[0]);
         print_bandSolvedRowAndBoxTbl(&sBandSolvedRowAndBoxTbl[0]);
 #endif
@@ -2054,9 +2104,14 @@ private:
                     uint32_t col = BitUtils::bsf32(row_bits);
                     pos += col;
                     assert(pos < 27);
+#if 0
                     uint32_t bandSolvedBits = bandSolvedBitsTbl[pos] << (self * 6U);
                     assert((state.candidates[digit].bands[3] & bandSolvedBits) == 0);
                     state.candidates[digit].bands[3] |= bandSolvedBits;
+#endif
+                    if ((newBand & tables.posToMask[pos]) != 0) {
+                        this->update_band_solved_one<digit, self, peer1, peer2>(state, pos);
+                    }
                 }
             }
             return 1;
@@ -2124,8 +2179,24 @@ private:
                 }
                 lockedCandidateMask <<= solvedInfo.s1;
                 state.candidates[digit].bands[self] &= ~lockedCandidateMask;
+
+#if 0
+                uint32_t newBand = state.candidates[digit].bands[self];
+                uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
+
+                uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
+                state.candidates[digit].bands[peer1] &= colLockedSingleMask;
+                state.candidates[digit].bands[peer2] &= colLockedSingleMask;
+#endif
                 this->save_band_prev_candidates<digit, self>(state);
+#if 1
                 return 0;
+#else
+                if (self == 0)
+                    return 0;
+                else
+                    return 1;
+#endif
             }
             else if (blockType == BlockType::SolveTwo) {
                 uint32_t solvedPos1 = solvedInfo.s1 + unsolvedInfo.ss1;
@@ -2147,7 +2218,10 @@ private:
                 state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
                 state.candidates[digit].bands[peer2] &= ~lockedBoxColMask;
                 this->save_band_prev_candidates<digit, self>(state);
-                return 1;
+                if (self == 0)
+                    return 0;
+                else
+                    return 1;
 #else
                 return 0;
 #endif
@@ -2222,7 +2296,10 @@ private:
                 state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
                 state.candidates[digit].bands[peer2] &= ~lockedBoxColMask;
                 this->save_band_prev_candidates<digit, self>(state);
-                return 1;
+                if (self == 0)
+                    return 0;
+                else
+                    return 1;
 #else
                 return 0;
 #endif
@@ -2245,7 +2322,7 @@ private:
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
             }
-            else if (triad_cnt == 0) {
+            else if (!fast_mode && triad_cnt == 0) {
                 return -1;
             }
             else {
@@ -2256,12 +2333,9 @@ private:
         else if (solvedType == SolvedType::Invalid) {
             return -1;
         }
-
-        assert(solvedType == SolvedType::AllSolved);
-        return (solvedType == SolvedType::AllSolved) ? 0 : -1;
-#else
-        return 0;
 #endif
+        assert(solvedType == SolvedType::AllSolved);
+        return 0;
     }
 
     template <bool fast_mode = false>
@@ -2280,7 +2354,7 @@ private:
 
             // Number 1
             numSolvedBits = state.candidates[0].bands[3];
-            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            if (!kCheckSolvedBits || (numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 0;
 
@@ -2326,7 +2400,7 @@ private:
 
             // Number 2
             numSolvedBits = state.candidates[1].bands[3];
-            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            if (!kCheckSolvedBits || (numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 1;
 
@@ -2372,7 +2446,7 @@ private:
 
             // Number 3
             numSolvedBits = state.candidates[2].bands[3];
-            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            if (!kCheckSolvedBits || (numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 2;
 
@@ -2422,7 +2496,7 @@ private:
         
             // Number 4
             numSolvedBits = state.candidates[3].bands[3];
-            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            if (!kCheckSolvedBits || (numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 3;
 
@@ -2468,7 +2542,7 @@ private:
 
             // Number 5
             numSolvedBits = state.candidates[4].bands[3];
-            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            if (!kCheckSolvedBits || (numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 4;
 
@@ -2514,7 +2588,7 @@ private:
 
             // Number 6
             numSolvedBits = state.candidates[5].bands[3];
-            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            if (!kCheckSolvedBits || (numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 5;
 
@@ -2564,7 +2638,7 @@ private:
         
             // Number 7
             numSolvedBits = state.candidates[6].bands[3];
-            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            if (!kCheckSolvedBits || (numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 6;
 
@@ -2610,7 +2684,7 @@ private:
 
             // Number 8
             numSolvedBits = state.candidates[7].bands[3];
-            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            if (!kCheckSolvedBits || (numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 7;
 
@@ -2656,7 +2730,7 @@ private:
 
             // Number 9
             numSolvedBits = state.candidates[8].bands[3];
-            //if ((numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
+            if (!kCheckSolvedBits || (numSolvedBits & kBandAllRowBits) != kBandAllRowBits)
             {
                 static const uint32_t digit = 8;
 
