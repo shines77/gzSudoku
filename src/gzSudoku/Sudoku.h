@@ -961,18 +961,6 @@ struct Sudoku {
     }
 };
 
-struct SudokuInitor {
-    static Sudoku StaticSudoku;
-
-    SudokuInitor() {
-        Sudoku::initialize();
-    }
-
-    ~SudokuInitor() {
-        Sudoku::finalize();
-    }
-};
-
 bool Sudoku::is_inited = false;
 
 Sudoku::CellInfo *
@@ -995,8 +983,6 @@ Sudoku::ordered_neighbor_cells = nullptr;
 
 Sudoku::BitMaskTable
 Sudoku::neighbors_mask_tbl;
-
-Sudoku SudokuInitor::StaticSudoku;
 
 } // namespace gzSudoku
 

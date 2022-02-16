@@ -81,7 +81,7 @@ Icon?
 *.tlh
 *.tli
 *.tmp
-*.user
+# *.user
 *.vspscc
 # *.vcxproj.user
 
