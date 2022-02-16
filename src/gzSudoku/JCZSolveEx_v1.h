@@ -1233,7 +1233,9 @@ private:
             cnt4 = popcntTbl[part4];
             if ((cnt1 == 0 && cnt3 == 0) || (cnt2 == 0 && cnt4 == 0) ||
                 (cnt1 == 0 && cnt2 == 0) || (cnt3 == 0 && cnt4 == 0)) {
-                unsolvedInfo.type = BlockType::Invalid;
+                unsolvedInfo.type_lbc = BlockType::Invalid;
+                uint32_t lockedBoxColMask = bandLockedBoxColTblA[bits];
+                unsolvedInfo.lockedBoxColMask = lockedBoxColMask;
             }
             else if (((cnt1 == 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 != 0)) ||
                      ((cnt1 != 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 == 0))) {
@@ -1258,7 +1260,7 @@ private:
                     unsolvedInfo.is_first = is_first[0];
                 }
                 else {
-                    unsolvedInfo.type = BlockType::LockedCandidates;
+                    unsolvedInfo.type_lc = BlockType::LockedCandidates;
                     unsolvedInfo.lockedCandidateMask = 070007;
                 }
             }
@@ -1285,7 +1287,7 @@ private:
                     unsolvedInfo.is_first = is_first[0];
                 }
                 else {
-                    unsolvedInfo.type = BlockType::LockedCandidates;
+                    unsolvedInfo.type_lc = BlockType::LockedCandidates;
                     unsolvedInfo.lockedCandidateMask = 007070;
                 }
             }
@@ -1342,7 +1344,7 @@ private:
             else if ((cnt1 != 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 != 0)) {
                 uint32_t lockedBoxColMask = bandLockedBoxColTblA[bits];
                 if (lockedBoxColMask != 0) {
-                    unsolvedInfo.type = BlockType::LockedBoxCol;
+                    unsolvedInfo.type_lbc = BlockType::LockedBoxCol;
                     unsolvedInfo.lockedBoxColMask = lockedBoxColMask;
                 }
                 else {
@@ -1374,7 +1376,9 @@ private:
             cnt4 = popcntTbl[part4];
             if ((cnt1 == 0 && cnt3 == 0) || (cnt2 == 0 && cnt4 == 0) ||
                 (cnt1 == 0 && cnt2 == 0) || (cnt3 == 0 && cnt4 == 0)) {
-                unsolvedInfo.type = BlockType::Invalid;
+                unsolvedInfo.type_lbc = BlockType::Invalid;
+                uint32_t lockedBoxColMask = bandLockedBoxColTblB[bits];
+                unsolvedInfo.lockedBoxColMask = lockedBoxColMask;
             }
             else if (((cnt1 == 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 != 0)) ||
                      ((cnt1 != 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 == 0))) {
@@ -1399,7 +1403,7 @@ private:
                     unsolvedInfo.is_first = is_first[0];
                 }
                 else {
-                    unsolvedInfo.type = BlockType::LockedCandidates;
+                    unsolvedInfo.type_lc = BlockType::LockedCandidates;
                     unsolvedInfo.lockedCandidateMask = 0700007;
                 }
             }
@@ -1426,7 +1430,7 @@ private:
                     unsolvedInfo.is_first = is_first[0];
                 }
                 else {
-                    unsolvedInfo.type = BlockType::LockedCandidates;
+                    unsolvedInfo.type_lc = BlockType::LockedCandidates;
                     unsolvedInfo.lockedCandidateMask = 0007700;
                 }
             }
@@ -1483,7 +1487,7 @@ private:
             else if ((cnt1 != 0 && cnt2 != 0) && (cnt3 != 0 && cnt4 != 0)) {
                 uint32_t lockedBoxColMask = bandLockedBoxColTblB[bits];
                 if (lockedBoxColMask != 0) {
-                    unsolvedInfo.type = BlockType::LockedBoxCol;
+                    unsolvedInfo.type_lbc = BlockType::LockedBoxCol;
                     unsolvedInfo.lockedBoxColMask = lockedBoxColMask;
                 }
                 else {
@@ -2163,10 +2167,7 @@ private:
                     solvedPos = solvedInfo.s2 + unsolvedInfo.s1;
                 this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos);
                 this->save_band_prev_candidates<digit, self>(state);
-                if (digit == 0 && self == 0)
-                    return 0;
-                else
-                    return 1;
+                return 1;
             }
             else if (blockType == BlockType::LockedCandidates) {
                 uint32_t lockedCandidateMask = unsolvedInfo.lockedCandidateMask;
@@ -2201,10 +2202,7 @@ private:
                 this->update_band_solved_two<digit, self, peer1, peer2>(state, solvedPos1, solvedPos2);
 #endif
                 this->save_band_prev_candidates<digit, self>(state);
-                if (digit == 0 && self == 0)
-                    return 0;
-                else
-                    return 1;
+                return 1;
             }
             else if (blockType == BlockType::LockedBoxCol) {
                 assert((solvedInfo.s1 % Rows) <= 3);
@@ -2219,6 +2217,12 @@ private:
             }
             else if (!fast_mode) {
                 assert(blockType == BlockType::Invalid);
+                uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask;
+                if (lockedBoxColMask != 0) {
+                    lockedBoxColMask <<= (solvedInfo.s1 % Rows);
+                    state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
+                    state.candidates[digit].bands[peer2] &= ~lockedBoxColMask;
+                }
                 return -1;
             }
         }
@@ -2245,10 +2249,7 @@ private:
                     solvedPos = solvedInfo.s2 + unsolvedInfo.s1;
                 this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos);
                 this->save_band_prev_candidates<digit, self>(state);
-                if (digit == 0 && self == 0)
-                    return 0;
-                else
-                    return 1;
+                return 1;
             }
             else if (blockType == BlockType::LockedCandidates) {
                 uint32_t lockedCandidateMask = unsolvedInfo.lockedCandidateMask;
@@ -2281,10 +2282,7 @@ private:
                 this->update_band_solved_two<digit, self, peer1, peer2>(state, solvedPos1, solvedPos2);
 #endif
                 this->save_band_prev_candidates<digit, self>(state);
-                if (digit == 0 && self == 0)
-                    return 0;
-                else
-                    return 1;
+                return 1;
             }
             else if (blockType == BlockType::LockedBoxCol) {
                 assert((solvedInfo.s1 % Rows) == 0);
@@ -2299,6 +2297,12 @@ private:
             }
             else if (!fast_mode) {
                 assert(blockType == BlockType::Invalid);
+                uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask;
+                if (lockedBoxColMask != 0) {
+                    lockedBoxColMask <<= (solvedInfo.s1 % Rows);
+                    state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
+                    state.candidates[digit].bands[peer2] &= ~lockedBoxColMask;
+                }
                 return -1;
             }
         }
