@@ -722,13 +722,13 @@ private:
         PackedBitSet3D<BoardSize, Rows16, Cols16>   num_row_mask;
         PackedBitSet3D<BoardSize, Rows16, Cols16>   row_fill_mask;
         
-        bool mask_is_inited;
+        static bool mask_is_inited;
 
-        StaticData() : mask_is_inited(false) {
-            if (!Static.mask_is_inited) {
+        StaticData() {
+            if (!StaticData::mask_is_inited) {
                 Sudoku::initialize();
                 this_type::init_mask();
-                Static.mask_is_inited = true;
+                StaticData::mask_is_inited = true;
             }
         }
     };
@@ -802,6 +802,8 @@ private:
                                        BandBoard & band_mask) {
         static const uint32_t kBoxCountY32 = (uint32_t)BoxCountY;
         static const uint32_t kBoxCellsY32 = (uint32_t)BoxCellsY;
+        band_mask.reset();
+
         uint32_t band;
         for (band = 0; band < kBoxCountY32; band++) {
             uint32_t band_bits = 0;
@@ -820,6 +822,8 @@ private:
                                               BandBoard & band_mask) {
         static const uint32_t kBoxCountY32 = (uint32_t)BoxCountY;
         static const uint32_t kBoxCellsY32 = (uint32_t)BoxCellsY;
+        band_mask.reset();
+
         uint32_t band;
         for (band = 0; band < kBoxCountY32; band++) {
             uint32_t band_bits = 0;
@@ -2787,10 +2791,10 @@ private:
 
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
         R1 &= full_mask;
-        R2 &= full_mask;
+        //R2 &= full_mask;
         bool is_legal = R1.isEqual(full_mask);
-        //assert(is_legal);
-        if (!is_legal) return -1;
+        assert(is_legal);
+        //if (!is_legal) return -1;
 
         BitVec08x16 solved_bits;
         solved_bits.loadAligned((void *)&state.solvedCells);
@@ -2957,9 +2961,6 @@ private:
                             size_t pos = bandBitPosToPos64[i][bit_pos];
                             assert(pos != size_t(-1));
 
-                            //assert(board.cells[pos] == '.');
-                            //board.cells[pos] = (char)(num + '1');
-
                             this->update_peer_cells(state, pos, num);
                             cell_count++;
 
@@ -2974,9 +2975,6 @@ private:
                             size_t bit_pos = BitUtils::bsf32(bits32);
                             size_t pos = bandBitPosToPos32[i][bit_pos];
                             assert(pos != size_t(-1));
-
-                            //assert(board.cells[pos] == '.');
-                            //board.cells[pos] = (char)(num + '1');
 
                             this->update_peer_cells(state, pos, num);
                             cell_count++;
@@ -3406,6 +3404,8 @@ public:
         basic_solver::display_result<kSearchMode>(board, elapsed_time, print_answer, print_all_answers);
     }
 };
+
+bool Solver::StaticData::mask_is_inited = false;
 
 Solver::StaticData Solver::Static;
 

@@ -19,7 +19,7 @@
 #include <bitset>
 #include <cstring>      // For std::memset(), std::memcpy()
 #include <type_traits>
-#include <algorithm>    // For std::sort()
+#include <algorithm>    // For std::sort(), std::fill_n()
 
 #include <atomic>
 
@@ -81,6 +81,11 @@ struct SearchMode {
 
 struct Board {
     char cells[82];
+
+    void reset() {
+        std::fill_n(this->cells, sizeof(this->cells), 0);
+        //std::memset(&this->cells[0], 0, sizeof(this->cells));
+    }
 };
 
 #pragma pack(pop)
@@ -563,6 +568,14 @@ struct Sudoku {
     static NeighborCells *  ordered_neighbor_cells;
     static BitMaskTable     neighbors_mask_tbl;
 
+    Sudoku() {
+        Sudoku::initialize();
+    }
+
+    ~Sudoku() {
+        Sudoku::finalize();
+    }
+
     static void initialize() {
         //
         // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
@@ -948,6 +961,18 @@ struct Sudoku {
     }
 };
 
+struct SudokuInitor {
+    static Sudoku StaticSudoku;
+
+    SudokuInitor() {
+        Sudoku::initialize();
+    }
+
+    ~SudokuInitor() {
+        Sudoku::finalize();
+    }
+};
+
 bool Sudoku::is_inited = false;
 
 Sudoku::CellInfo *
@@ -970,6 +995,8 @@ Sudoku::ordered_neighbor_cells = nullptr;
 
 Sudoku::BitMaskTable
 Sudoku::neighbors_mask_tbl;
+
+Sudoku SudokuInitor::StaticSudoku;
 
 } // namespace gzSudoku
 

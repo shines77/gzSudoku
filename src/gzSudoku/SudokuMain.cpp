@@ -132,13 +132,14 @@ size_t read_sudoku_board(Board & board, char line[256])
                 board.cells[pos] = val;
             else
                 board.cells[pos] = '.';
+            assert(pos < Sudoku::kBoardSize);
             pos++;
-            assert(pos <= Sudoku::kBoardSize);
+            
         }
         else if ((val == '.') || (val == ' ') || (val == '-')) {
             board.cells[pos] = '.';
+            assert(pos < Sudoku::kBoardSize);
             pos++;
-            assert(pos <= Sudoku::kBoardSize);
         }
     }
     assert(pos <= Sudoku::kBoardSize);
@@ -169,10 +170,11 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
 
             while (!ifs.eof()) {
                 char line[256];
-                std::memset(line, 0, 16);
+                std::fill_n(line, sizeof(line), 0);
                 ifs.getline(line, sizeof(line) - 1);
 
                 Board board;
+                board.reset();
                 size_t num_grids = read_sudoku_board(board, line);
                 // Sudoku::BoardSize = 81
                 if (num_grids >= Sudoku::kBoardSize) {
@@ -200,6 +202,7 @@ template <typename SudokuSlover>
 void run_solver_testcase(size_t index)
 {
     Board board, solution;
+    board.reset();
     make_sudoku_board(board, index);
 
     SudokuSlover solver;
@@ -351,7 +354,7 @@ void run_all_benchmark(const char * filename)
     // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
     //
     std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
-    jtest::CPU::warmup(2000);
+    jtest::CPU::warmup(1000);
     std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
 
 #if defined(NDEBUG)
@@ -397,7 +400,7 @@ int main(int argc, char * argv [])
 //  std::atomic_thread_fence(std::memory_order_release);        // x86: _compile_barrier(), arm: _memory_barrier()
 //  std::atomic_thread_fence(std::memory_order_seq_cst);        // CPU: mfence
 
-    Sudoku::initialize();
+    //Sudoku::initialize();
 
     if (1)
     {
