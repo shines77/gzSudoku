@@ -2099,6 +2099,7 @@ private:
                 solvedRows |= newSolvedRows;
                 state.solvedRows.bands[rows_idx] = solvedRows;
                 this->update_solved_rows<digit, self>(state, newBand, bandSolvedRows);
+#if 0
                 uint32_t changedRows = ((oldSolvedRows >> shift) & 0x007U) ^ bandSolvedRows;
                 while (changedRows != 0) {
                     uint32_t row = BitUtils::bsf32(changedRows);
@@ -2121,6 +2122,7 @@ private:
                     this->update_band_solved_one<digit, self, peer1, peer2>(state, pos);
 #endif
                 }
+#endif
             }
             return 1;
         }
@@ -2260,8 +2262,8 @@ private:
                 }
                 else {
                     assert(solvedInfo.s1 <= 12);
+                    lockedCandidateMask <<= solvedInfo.s1;
                 }
-                lockedCandidateMask <<= solvedInfo.s1;
                 state.candidates[digit].bands[self] &= ~lockedCandidateMask;
                 this->save_band_prev_candidates<digit, self>(state);
                 return 0;
