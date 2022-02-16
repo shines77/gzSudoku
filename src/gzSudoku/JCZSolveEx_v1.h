@@ -2790,7 +2790,7 @@ private:
 
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
         R1 &= full_mask;
-        //R2 &= full_mask;
+        R2 &= full_mask;
         bool is_legal = R1.isEqual(full_mask);
         assert(is_legal);
         //if (!is_legal) return -1;
@@ -3018,6 +3018,7 @@ private:
         BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
         R1 &= full_mask;
         R2 &= full_mask;
+        R3 &= full_mask;
         bool is_legal = R1.isEqual(full_mask);
         if (!is_legal) return -1;
 
@@ -3339,7 +3340,7 @@ private:
 
         do {
             int status = this->find_hidden_singles<fast_mode>(state);
-            if (fast_mode && (status == Status::Invalid))
+            if (!fast_mode && (status == Status::Invalid))
                 return status;
 
             if ((state.solvedCells.bands64[0] == kBitSet27_Double64) &&
