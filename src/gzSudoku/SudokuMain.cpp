@@ -400,7 +400,7 @@ int main(int argc, char * argv [])
 //  std::atomic_thread_fence(std::memory_order_release);        // x86: _compile_barrier(), arm: _memory_barrier()
 //  std::atomic_thread_fence(std::memory_order_seq_cst);        // CPU: mfence
 
-    //Sudoku::initialize();
+    Sudoku::initialize();
 
     if (1)
     {
