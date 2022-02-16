@@ -2104,14 +2104,14 @@ private:
                     uint32_t col = BitUtils::bsf32(row_bits);
                     pos += col;
                     assert(pos < 27);
-#if 0
+#if 1
                     uint32_t bandSolvedBits = bandSolvedBitsTbl[pos] << (self * 6U);
                     assert((state.candidates[digit].bands[3] & bandSolvedBits) == 0);
                     state.candidates[digit].bands[3] |= bandSolvedBits;
+#else
+                    assert((newBand & tables.posToMask[pos]) != 0)
+                    this->update_band_solved_one<digit, self, peer1, peer2>(state, pos);
 #endif
-                    if ((newBand & tables.posToMask[pos]) != 0) {
-                        this->update_band_solved_one<digit, self, peer1, peer2>(state, pos);
-                    }
                 }
             }
             return 1;
@@ -2159,7 +2159,10 @@ private:
                     solvedPos = solvedInfo.s2 + unsolvedInfo.s1;
                 this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos);
                 this->save_band_prev_candidates<digit, self>(state);
-                return 1;
+                if (digit == 0 && self == 0)
+                    return 0;
+                else
+                    return 1;
             }
             else if (blockType == BlockType::LockedCandidates) {
                 uint32_t lockedCandidateMask = unsolvedInfo.lockedCandidateMask;
@@ -2180,23 +2183,9 @@ private:
                 lockedCandidateMask <<= solvedInfo.s1;
                 state.candidates[digit].bands[self] &= ~lockedCandidateMask;
 
-#if 0
-                uint32_t newBand = state.candidates[digit].bands[self];
-                uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
-
-                uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
-                state.candidates[digit].bands[peer1] &= colLockedSingleMask;
-                state.candidates[digit].bands[peer2] &= colLockedSingleMask;
-#endif
                 this->save_band_prev_candidates<digit, self>(state);
-#if 1
                 return 0;
-#else
-                if (self == 0)
-                    return 0;
-                else
-                    return 1;
-#endif
+
             }
             else if (blockType == BlockType::SolveTwo) {
                 uint32_t solvedPos1 = solvedInfo.s1 + unsolvedInfo.ss1;
@@ -2208,11 +2197,12 @@ private:
                 this->update_band_solved_two<digit, self, peer1, peer2>(state, solvedPos1, solvedPos2);
 #endif
                 this->save_band_prev_candidates<digit, self>(state);
-                return 1;
+                if (digit == 0 && self == 0)
+                    return 0;
+                else
+                    return 1;
             }
-
             else if (blockType == BlockType::LockedBoxCol) {
-#if 1
                 assert((solvedInfo.s1 % Rows) <= 3);
                 uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << (solvedInfo.s1 % Rows);
                 state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
@@ -2222,11 +2212,8 @@ private:
                     return 0;
                 else
                     return 1;
-#else
-                return 0;
-#endif
             }
-            else {
+            else if (!fast_mode) {
                 assert(blockType == BlockType::Invalid);
                 return -1;
             }
@@ -2254,7 +2241,10 @@ private:
                     solvedPos = solvedInfo.s2 + unsolvedInfo.s1;
                 this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos);
                 this->save_band_prev_candidates<digit, self>(state);
-                return 1;
+                if (digit == 0 && self == 0)
+                    return 0;
+                else
+                    return 1;
             }
             else if (blockType == BlockType::LockedCandidates) {
                 uint32_t lockedCandidateMask = unsolvedInfo.lockedCandidateMask;
@@ -2287,10 +2277,12 @@ private:
                 this->update_band_solved_two<digit, self, peer1, peer2>(state, solvedPos1, solvedPos2);
 #endif
                 this->save_band_prev_candidates<digit, self>(state);
-                return 1;
+                if (digit == 0 && self == 0)
+                    return 0;
+                else
+                    return 1;
             }
             else if (blockType == BlockType::LockedBoxCol) {
-#if 1
                 assert((solvedInfo.s1 % Rows) == 0);
                 uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << (solvedInfo.s1 % Rows);
                 state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
@@ -2300,11 +2292,8 @@ private:
                     return 0;
                 else
                     return 1;
-#else
-                return 0;
-#endif
             }
-            else {
+            else if (!fast_mode) {
                 assert(blockType == BlockType::Invalid);
                 return -1;
             }
