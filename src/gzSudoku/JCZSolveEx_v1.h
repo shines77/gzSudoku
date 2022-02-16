@@ -2145,8 +2145,7 @@ private:
         static const uint32_t kTwoTriadsMask = 077;
         static const uint32_t kSecondTwoTriadsMask = 07700;
         Band2UnsolvedCellsInfo unsolvedInfo;
-        int8_t solvedType = solvedInfo.type;
-        //solvedType = SolvedType::SolvedNone;
+        int32_t solvedType = solvedInfo.type;
         if (solvedType == SolvedType::SolvedNone) {
             int updateType = this->find_and_update_band<digit, rows_idx, self, peer1, peer2, shift, fast_mode>(state, band);
             return updateType;
@@ -2161,14 +2160,15 @@ private:
             uint32_t bandTriads2 = band >> solvedInfo.s2;
             uint32_t unsolvedBits = (bandTriads1 & kTwoTriadsMask) | ((bandTriads2 & kTwoTriadsMask) << 6U);
             unsolvedInfo = band2UnsolvedCellsTblA[unsolvedBits];
-            int8_t blockType = unsolvedInfo.type_lbc;
-            if (blockType == BlockType::SolveOne) {
+            int32_t blockType = unsolvedInfo.type_lbc;
+            switch (blockType) {
+            case BlockType::SolveOne: {
                 uint32_t solvedPos = ((unsolvedInfo.is_first == 1) ? solvedInfo.s1 : solvedInfo.s2) + unsolvedInfo.s1;
                 this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos);
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
             }
-            else if (blockType == BlockType::LockedCandidates) {
+            case BlockType::LockedCandidates: {
                 uint32_t lockedCandidateMask = unsolvedInfo.lockedCandidateMask;
                 //
                 // Fixed lockedCandidateMask
@@ -2190,10 +2190,10 @@ private:
                 this->save_band_prev_candidates<digit, self>(state);
                 return 0;
             }
-            else if (blockType == BlockType::Unchanged) {
+            case BlockType::Unchanged: {
                 return 0;
             }
-            else if (blockType == BlockType::SolveTwo) {
+            case BlockType::SolveTwo: {
                 uint32_t solvedPos1 = solvedInfo.s1 + unsolvedInfo.ss1;
                 uint32_t solvedPos2 = solvedInfo.s2 + unsolvedInfo.ss2;
 #if 0
@@ -2205,7 +2205,7 @@ private:
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
             }
-            else if (blockType == BlockType::LockedBoxCol) {
+            case BlockType::LockedBoxCol: {
                 assert((solvedInfo.s1 % Rows) <= 3);
                 uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << (solvedInfo.s1 % Rows);
                 state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
@@ -2216,17 +2216,23 @@ private:
                 else
                     return 1;
             }
-            else if (!fast_mode) {
-                assert(blockType == BlockType::Invalid);
+            case BlockType::Invalid: {
+                if (!fast_mode) {
+                    assert(blockType == BlockType::Invalid);
 #if 0
-                uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask;
-                if (lockedBoxColMask != 0) {
-                    lockedBoxColMask <<= (solvedInfo.s1 % Rows);
-                    state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
-                    state.candidates[digit].bands[peer2] &= ~lockedBoxColMask;
-                }
+                    uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask;
+                    if (lockedBoxColMask != 0) {
+                        lockedBoxColMask <<= (solvedInfo.s1 % Rows);
+                        state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
+                        state.candidates[digit].bands[peer2] &= ~lockedBoxColMask;
+                    }
 #endif
-                return -1;
+                    return -1;
+                }
+                break;
+            }
+            default:
+                break;
             }
         }
         else if (solvedType == SolvedType::SolvedOne_B) {
@@ -2240,14 +2246,15 @@ private:
             uint32_t unsolvedBits = ((bandTriads1 & kOneTriadsMask) | ((bandTriads1 >> 3U) & kSecondOneTriadsMask)) |
                                    (((bandTriads2 & kOneTriadsMask) | ((bandTriads2 >> 3U) & kSecondOneTriadsMask)) << 6U);
             unsolvedInfo = band2UnsolvedCellsTblB[unsolvedBits];
-            int8_t blockType = unsolvedInfo.type_lbc;
-            if (blockType == BlockType::SolveOne) {
+            int32_t blockType = unsolvedInfo.type_lbc;
+            switch (blockType) {
+            case BlockType::SolveOne: {
                 uint32_t solvedPos = ((unsolvedInfo.is_first == 1) ? solvedInfo.s1 : solvedInfo.s2) + unsolvedInfo.s1;
                 this->update_band_solved_one<digit, self, peer1, peer2>(state, solvedPos);
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
             }
-            else if (blockType == BlockType::LockedCandidates) {
+            case BlockType::LockedCandidates: {
                 uint32_t lockedCandidateMask = unsolvedInfo.lockedCandidateMask;
                 //
                 // Fixed lockedCandidateMask
@@ -2268,10 +2275,10 @@ private:
                 this->save_band_prev_candidates<digit, self>(state);
                 return 0;
             }
-            else if (blockType == BlockType::Unchanged) {
+            case BlockType::Unchanged: {
                 return 0;
             }
-            else if (blockType == BlockType::SolveTwo) {
+            case BlockType::SolveTwo: {
                 uint32_t solvedPos1 = solvedInfo.s1 + unsolvedInfo.ss1;
                 uint32_t solvedPos2 = solvedInfo.s2 + unsolvedInfo.ss2;
 #if 0
@@ -2283,7 +2290,7 @@ private:
                 this->save_band_prev_candidates<digit, self>(state);
                 return 1;
             }
-            else if (blockType == BlockType::LockedBoxCol) {
+            case BlockType::LockedBoxCol: {
                 assert((solvedInfo.s1 % Rows) == 0);
                 uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask << (solvedInfo.s1 % Rows);
                 state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
@@ -2294,17 +2301,23 @@ private:
                 else
                     return 1;
             }
-            else if (!fast_mode) {
-                assert(blockType == BlockType::Invalid);
+            case BlockType::Invalid: {
+                if (!fast_mode) {
+                    assert(blockType == BlockType::Invalid);
 #if 0
-                uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask;
-                if (lockedBoxColMask != 0) {
-                    lockedBoxColMask <<= (solvedInfo.s1 % Rows);
-                    state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
-                    state.candidates[digit].bands[peer2] &= ~lockedBoxColMask;
-                }
+                    uint32_t lockedBoxColMask = unsolvedInfo.lockedBoxColMask;
+                    if (lockedBoxColMask != 0) {
+                        lockedBoxColMask <<= (solvedInfo.s1 % Rows);
+                        state.candidates[digit].bands[peer1] &= ~lockedBoxColMask;
+                        state.candidates[digit].bands[peer2] &= ~lockedBoxColMask;
+                    }
 #endif
-                return -1;
+                    return -1;
+                }
+                break;
+            }
+            default:
+                break;
             }
         }
         else if (solvedType == SolvedType::SolvedTwo) {
