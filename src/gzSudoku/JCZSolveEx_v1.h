@@ -42,7 +42,7 @@ namespace gzSudoku {
 namespace JCZEx {
 namespace v1 {
 
-static const bool kCheckSolvedBits = true;
+static const bool kCheckSolvedBits = false;
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
