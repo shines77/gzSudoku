@@ -1,6 +1,6 @@
 
-#ifndef GZ_SUDOKU_JCZSOLVE_V1_H
-#define GZ_SUDOKU_JCZSOLVE_V1_H
+#ifndef GZ_SUDOKU_JCZSOLVE_V0_H
+#define GZ_SUDOKU_JCZSOLVE_V0_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -32,7 +32,7 @@
 
 namespace gzSudoku {
 namespace JCZ {
-namespace v1 {
+namespace v0 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
@@ -1270,8 +1270,8 @@ Next_Search:
 
 Solver::StaticData Solver::Static;
 
-} // namespace v1
+} // namespace v0
 } // namespace JCZ
 } // namespace gzSudoku
 
-#endif // GZ_SUDOKU_JCZSOLVE_V1_H
+#endif // GZ_SUDOKU_JCZSOLVE_V0_H
