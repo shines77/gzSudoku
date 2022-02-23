@@ -36,7 +36,7 @@
 //
 // Whether use 64 bit band struct?
 //
-#define JCZ_V1_USE_64BIT_BANDS      0
+#define JCZ_V1_USE_64BIT_BANDS      1
 
 //
 // Whether search no guess steps only?
