@@ -33,7 +33,10 @@
 //
 #define JCZ_V1_ENABLE_R1_COUNT      0
 
-#define JCZ_V1_USE_64BIT_BANDS      1
+//
+// Whether use 64 bit band struct?
+//
+#define JCZ_V1_USE_64BIT_BANDS      0
 
 //
 // Whether search no guess steps only?
@@ -510,7 +513,7 @@ private:
         }
     };
 
-    struct State {
+    struct alignas(32) State {
         BandBoard candidates[Numbers];
         BandBoard prevCandidates[Numbers];
         BandBoard solvedCells;
@@ -1919,8 +1922,8 @@ private:
             state->pairs.bands[band] = R2;
 
             while (R1 != 0) {
-                size_t bit_pos = BitUtils::bsf32(bits32);
-                uint32_t bit = BitUtils::ls1b32(bits32);
+                size_t bit_pos = BitUtils::bsf32(R1);
+                uint32_t bit = BitUtils::ls1b32(R1);
                 R1 ^= bit;
 
                 size_t pos = bandBitPosToPos32[band][bit_pos];
