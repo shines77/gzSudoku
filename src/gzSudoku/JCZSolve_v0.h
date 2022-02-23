@@ -28,7 +28,7 @@
 #include "BitArray.h"
 #include "BitVec.h"
 
-#define JCZ_V1_USE_SIMD_INIT   1
+#define JCZ_V0_USE_SIMD_INIT   1
 
 namespace gzSudoku {
 namespace JCZ {
@@ -395,14 +395,14 @@ private:
     }
 
     static void init_mask() {
-        printf("JCZ::v1::Solver::StaticData::init_mask()\n");
+        printf("JCZ::v0::Solver::StaticData::init_mask()\n");
 
         init_peer_boxes();
         init_flip_mask();
     }
 
     size_t init_board(const Board & board) {
-#if JCZ_V1_USE_SIMD_INIT
+#if JCZ_V0_USE_SIMD_INIT
         BitVec16x16_AVX full_mask;
         full_mask.fill_u16(kAllColBits);
 
