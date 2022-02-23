@@ -348,11 +348,11 @@ static const uint64_t bandUnsolvedMaskTbl64[81] = {
     0xFFFFFFFF1C007E3F
 };
 
-static const int bandPeer1Tbl[4] = { 1, 0, 0, 0 };
+static const uint32_t bandPeer1Tbl[4] = { 1, 0, 0, 0 };
 
-static const int bandPeer2Tbl[4] = { 2, 2, 1, 0 };
+static const uint32_t bandPeer2Tbl[4] = { 2, 2, 1, 0 };
 
-static const unsigned int bandOtherUnsolvedMaskTbl[81] = {
+static const uint32_t bandOtherUnsolvedMaskTbl[81] = {
     0x3FFBFDFE, 0x3FF7FBFD, 0x3FEFF7FB, 0x3FDFEFF7, 0x3FBFDFEF, 0x3F7FBFDF, 0x3EFF7FBF, 0x3DFEFF7F,
     0x3BFDFEFF, 0x3FFBFDFE, 0x3FF7FBFD, 0x3FEFF7FB, 0x3FDFEFF7, 0x3FBFDFEF, 0x3F7FBFDF, 0x3EFF7FBF,
     0x3DFEFF7F, 0x3BFDFEFF, 0x3FFBFDFE, 0x3FF7FBFD, 0x3FEFF7FB, 0x3FDFEFF7, 0x3FBFDFEF, 0x3F7FBFDF,
@@ -837,13 +837,14 @@ private:
         assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
 
         uint32_t band = tables.div27[fill_pos];
+        assert(band < 3);
         uint32_t mask = tables.posToMask[fill_pos];
         uint32_t verify_bit = state->candidates[fill_num].bands[band] & mask;
         if (verify_bit != 0) {
             state->candidates[fill_num].bands[band] &= bandUnsolvedMaskTbl32[fill_pos];
             uint32_t bandOtherUnsolvedMask = bandOtherUnsolvedMaskTbl[fill_pos];
-            int peer1 = bandPeer1Tbl[band];
-            int peer2 = bandPeer2Tbl[band];
+            uint32_t peer1 = bandPeer1Tbl[band];
+            uint32_t peer2 = bandPeer2Tbl[band];
             state->candidates[fill_num].bands[peer1] &= bandOtherUnsolvedMask;
             state->candidates[fill_num].bands[peer2] &= bandOtherUnsolvedMask;
 
@@ -1469,8 +1470,8 @@ private:
             }
 #else
             R1 = state->candidates[0].bands64;
-            band_bits = state->candidates[1].bands64;
 
+            band_bits = state->candidates[1].bands64;
             R2 = R1 & band_bits;
             R1 |= band_bits;
 
@@ -1543,8 +1544,8 @@ private:
             }
 #else
             R1 = state->candidates[0].bands32;
-            band_bits = state->candidates[1].bands32;
 
+            band_bits = state->candidates[1].bands32;
             R2 = R1 & band_bits;
             R1 |= band_bits;
 
@@ -1616,8 +1617,8 @@ private:
             }
 #else
             R1 = state->candidates[0].bands[band];
-            band_bits = state->candidates[1].bands[band];
 
+            band_bits = state->candidates[1].bands[band];
             R2 = R1 & band_bits;
             R1 |= band_bits;
 
@@ -1657,8 +1658,8 @@ private:
             R1 &= ~solved_bits;
 
             while (R1 != 0) {
-                size_t bit_pos = BitUtils::bsf32(bits32);
-                uint32_t bit = BitUtils::ls1b32(bits32);
+                size_t bit_pos = BitUtils::bsf32(R1);
+                uint32_t bit = BitUtils::ls1b32(R1);
                 R1 ^= bit;
 
                 size_t pos = bandBitPosToPos32[band][bit_pos];
@@ -1699,8 +1700,8 @@ private:
             }
 #else
             R1 = state->candidates[0].bands64;
-            band_bits = state->candidates[1].bands64;
 
+            band_bits = state->candidates[1].bands64;
             R2 = R1 & band_bits;
             R1 |= band_bits;
 
@@ -1725,6 +1726,7 @@ private:
             R1 |= band_bits;
 
             band_bits = state->candidates[6].bands64;
+            R3 |= R2 & band_bits;
             R2 |= R1 & band_bits;
             R1 |= band_bits;
 
@@ -1783,8 +1785,8 @@ private:
             }
 #else
             R1 = state->candidates[0].bands32;
-            band_bits = state->candidates[1].bands32;
 
+            band_bits = state->candidates[1].bands32;
             R2 = R1 & band_bits;
             R1 |= band_bits;
 
@@ -1867,8 +1869,8 @@ private:
             }
 #else
             R1 = state->candidates[0].bands[band];
-            band_bits = state->candidates[1].bands[band];
 
+            band_bits = state->candidates[1].bands[band];
             R2 = R1 & band_bits;
             R1 |= band_bits;
 
@@ -2114,7 +2116,7 @@ private:
                     ++state;
                     basic_solver::num_guesses++;
 
-                    this->update_band_solved_mask64<1>(state, pos, num);
+                    this->update_band_solved_mask32(state, 2, pos, num);
 
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cell(state, board);
