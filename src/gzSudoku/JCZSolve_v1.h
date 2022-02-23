@@ -520,16 +520,33 @@ private:
         void init() {
 #if JCZ_V1_USE_64BIT_BANDS && (defined(WIN64) || defined(_WIN64) || defined(_M_X64) \
  || defined(_M_AMD64) || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__))
+            // this->candidates[num].set();
             uint64_t * p = (uint64_t *)&this->candidates[0];
-            uint64_t * end = (uint64_t *)&this->candidates[Numbers];
+            uint64_t * end = (uint64_t *)&this->candidates[Numbers - 1];
             do {
                 *p++ = kBitSet27_Double64;
-                *p++ = kBitSet27_Single64;
+                *p++ = kBitSet27_Double64;
+                *p++ = kBitSet27_Double64;
+            } while (p < end);
+
+            *p++ = kBitSet27_Double64;
+            *(uint32_t *)p = kBitSet27;
+
+            // this->prevCandidates[num].reset();
+            p = (uint64_t *)&this->prevCandidates[0];
+            end = (uint64_t *)&this->prevCandidates[Numbers - 1];
+            do {
+                *p++ = 0;
+                *p++ = 0;
                 *p++ = 0;
             } while (p < end);
 
+            *p++ = 0;
+            *(uint32_t *)p = 0;
+
             // this->solvedCells.reset();
             // this->solvedRows.reset();
+            p = (uint64_t *)&this->solvedCells;
             *p++ = 0;
             *p++ = 0;
             *p++ = 0;
@@ -1725,7 +1742,10 @@ private:
 
             uint64_t solved_bits = state->solvedCells.bands64;
             R1 &= ~R2;
+            R2 &= ~R3;
             R1 &= ~solved_bits;
+
+            state->pairs.bands64 = R2;
 
             while (R1 != 0) {
                 size_t bit_pos = BitUtils::bsf64(R1);
@@ -1807,7 +1827,10 @@ private:
 
             uint32_t solved_bits = state->solvedCells.bands32;
             R1 &= ~R2;
+            R2 &= ~R3;
             R1 &= ~solved_bits;
+
+            state->pairs.bands32 = R2;
 
             while (R1 != 0) {
                 size_t bit_pos = BitUtils::bsf32(R1);
@@ -1888,7 +1911,10 @@ private:
 
             uint32_t solved_bits = state->solvedCells.bands[band];
             R1 &= ~R2;
+            R2 &= ~R3;
             R1 &= ~solved_bits;
+
+            state->pairs.bands[band] = R2;
 
             while (R1 != 0) {
                 size_t bit_pos = BitUtils::bsf32(bits32);
