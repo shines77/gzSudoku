@@ -300,7 +300,7 @@ static const unsigned int solvedRowsReverseBitMaskTbl[8] = {
     0777777777, 0777777000, 0777000777, 0777000000, 0777777, 0777000, 0777, 00
 };
 
-static const uint32_t bandUnsolvedBitsTbl32[81] = {
+static const uint32_t bandUnsolvedMaskTbl32[81] = {
     0x37E3F001, 0x37E3F002, 0x37E3F004, 0x371F8E08, 0x371F8E10, 0x371F8E20, 0x30FC7E40, 0x30FC7E80,
     0x30FC7F00, 0x2FE003F8, 0x2FE005F8, 0x2FE009F8, 0x2F1C11C7, 0x2F1C21C7, 0x2F1C41C7, 0x28FC803F,
     0x28FD003F, 0x28FE003F, 0x1807F1F8, 0x180BF1F8, 0x1813F1F8, 0x18238FC7, 0x18438FC7, 0x18838FC7,
@@ -314,7 +314,7 @@ static const uint32_t bandUnsolvedBitsTbl32[81] = {
     0x1C007E3F
 };
 
-static const uint64_t bandUnsolvedBitsTbl64[81] = {
+static const uint64_t bandUnsolvedMaskTbl64[81] = {
     0xFFFFFFFF37E3F001, 0xFFFFFFFF37E3F002, 0xFFFFFFFF37E3F004, 0xFFFFFFFF371F8E08,
     0xFFFFFFFF371F8E10, 0xFFFFFFFF371F8E20, 0xFFFFFFFF30FC7E40, 0xFFFFFFFF30FC7E80,
 
@@ -1759,25 +1759,25 @@ private:
 
     JSTD_FORCE_INLINE
     void update_band_solved_mask32(State & state, size_t num, size_t band, size_t pos) {
-        state.candidates[num].bands[band] &= bandUnsolvedBitsTbl32[pos];
+        state.candidates[num].bands[band] &= bandUnsolvedMaskTbl32[pos];
     }
 
     JSTD_FORCE_INLINE
     void update_band_solved_mask64(State & state, size_t num, size_t band, size_t pos) {
-        state.candidates[num].bands64[band] &= bandUnsolvedBitsTbl64[pos];
+        state.candidates[num].bands64[band] &= bandUnsolvedMaskTbl64[pos];
     }
 
     JSTD_FORCE_INLINE
     void update_band_solved_mask32(State & state, size_t num, size_t band, size_t pos, uint32_t mask) {
         if ((state.candidates[num].bands[band] & mask) != 0) {
-            state.candidates[num].bands[band] &= bandUnsolvedBitsTbl32[pos];
+            state.candidates[num].bands[band] &= bandUnsolvedMaskTbl32[pos];
         }
     }
 
     JSTD_FORCE_INLINE
     void update_band_solved_mask64(State & state, size_t num, size_t band, size_t pos, uint64_t mask) {
         if ((state.candidates[num].bands64[band] & mask) != 0) {
-            state.candidates[num].bands64[band] &= bandUnsolvedBitsTbl64[pos];
+            state.candidates[num].bands64[band] &= bandUnsolvedMaskTbl64[pos];
         }
     }
 
@@ -1813,7 +1813,7 @@ private:
         cells16._or(complex_fill_mask);
         cells16.saveAligned(pCells16);
 #else
-        state.candidates[digit].bands[self]  &= bandUnsolvedBitsTbl32[pos];
+        state.candidates[digit].bands[self]  &= bandUnsolvedMaskTbl32[pos];
         state.candidates[digit].bands[peer1] &= bandPeerUnsolvedBitsTbl32[pos];
         state.candidates[digit].bands[peer2] &= bandPeerUnsolvedBitsTbl32[pos];
         state.candidates[digit].bands[3]     |= bandSolvedRowAndBoxBitsTbl32[pos];
@@ -1881,12 +1881,12 @@ private:
         cells16._or(complex_fill_mask2);
         cells16.saveAligned(pCells16);
 #else
-        state.candidates[digit].bands[self]  &= bandUnsolvedBitsTbl32[pos1];
+        state.candidates[digit].bands[self]  &= bandUnsolvedMaskTbl32[pos1];
         state.candidates[digit].bands[peer1] &= bandPeerUnsolvedBitsTbl32[pos1];
         state.candidates[digit].bands[peer2] &= bandPeerUnsolvedBitsTbl32[pos1];
         state.candidates[digit].bands[3]     |= bandSolvedRowAndBoxBitsTbl32[pos1];
 
-        state.candidates[digit].bands[self]  &= bandUnsolvedBitsTbl32[pos2];
+        state.candidates[digit].bands[self]  &= bandUnsolvedMaskTbl32[pos2];
         state.candidates[digit].bands[peer1] &= bandPeerUnsolvedBitsTbl32[pos2];
         state.candidates[digit].bands[peer2] &= bandPeerUnsolvedBitsTbl32[pos2];
         state.candidates[digit].bands[3]     |= bandSolvedRowAndBoxBitsTbl32[pos2];

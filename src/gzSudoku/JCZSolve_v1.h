@@ -300,7 +300,7 @@ static const unsigned int solvedRowsReverseBitMaskTbl[8] = {
     0777777777, 0777777000, 0777000777, 0777000000, 0777777, 0777000, 0777, 00
 };
 
-static const uint32_t bandUnsolvedBitsTbl32[81] = {
+static const uint32_t bandUnsolvedMaskTbl32[81] = {
     0x37E3F001, 0x37E3F002, 0x37E3F004, 0x371F8E08, 0x371F8E10, 0x371F8E20, 0x30FC7E40, 0x30FC7E80,
     0x30FC7F00, 0x2FE003F8, 0x2FE005F8, 0x2FE009F8, 0x2F1C11C7, 0x2F1C21C7, 0x2F1C41C7, 0x28FC803F,
     0x28FD003F, 0x28FE003F, 0x1807F1F8, 0x180BF1F8, 0x1813F1F8, 0x18238FC7, 0x18438FC7, 0x18838FC7,
@@ -314,7 +314,7 @@ static const uint32_t bandUnsolvedBitsTbl32[81] = {
     0x1C007E3F
 };
 
-static const uint64_t bandUnsolvedBitsTbl64[81] = {
+static const uint64_t bandUnsolvedMaskTbl64[81] = {
     0xFFFFFFFF37E3F001, 0xFFFFFFFF37E3F002, 0xFFFFFFFF37E3F004, 0xFFFFFFFF371F8E08,
     0xFFFFFFFF371F8E10, 0xFFFFFFFF371F8E20, 0xFFFFFFFF30FC7E40, 0xFFFFFFFF30FC7E80,
 
@@ -346,6 +346,24 @@ static const uint64_t bandUnsolvedBitsTbl64[81] = {
     0xFFFFFFFF18438FC7, 0xFFFFFFFF18838FC7, 0xFFFFFFFF19007E3F, 0xFFFFFFFF1A007E3F,
 
     0xFFFFFFFF1C007E3F
+};
+
+static const int bandPeer1Tbl[4] = { 1, 0, 0, 0 };
+
+static const int bandPeer2Tbl[4] = { 2, 2, 1, 0 };
+
+static const unsigned int bandOtherUnsolvedMaskTbl[81] = {
+    0x3FFBFDFE, 0x3FF7FBFD, 0x3FEFF7FB, 0x3FDFEFF7, 0x3FBFDFEF, 0x3F7FBFDF, 0x3EFF7FBF, 0x3DFEFF7F,
+    0x3BFDFEFF, 0x3FFBFDFE, 0x3FF7FBFD, 0x3FEFF7FB, 0x3FDFEFF7, 0x3FBFDFEF, 0x3F7FBFDF, 0x3EFF7FBF,
+    0x3DFEFF7F, 0x3BFDFEFF, 0x3FFBFDFE, 0x3FF7FBFD, 0x3FEFF7FB, 0x3FDFEFF7, 0x3FBFDFEF, 0x3F7FBFDF,
+    0x3EFF7FBF, 0x3DFEFF7F, 0x3BFDFEFF, 0x3FFBFDFE, 0x3FF7FBFD, 0x3FEFF7FB, 0x3FDFEFF7, 0x3FBFDFEF,
+    0x3F7FBFDF, 0x3EFF7FBF, 0x3DFEFF7F, 0x3BFDFEFF, 0x3FFBFDFE, 0x3FF7FBFD, 0x3FEFF7FB, 0x3FDFEFF7,
+    0x3FBFDFEF, 0x3F7FBFDF, 0x3EFF7FBF, 0x3DFEFF7F, 0x3BFDFEFF, 0x3FFBFDFE, 0x3FF7FBFD, 0x3FEFF7FB,
+    0x3FDFEFF7, 0x3FBFDFEF, 0x3F7FBFDF, 0x3EFF7FBF, 0x3DFEFF7F, 0x3BFDFEFF, 0x3FFBFDFE, 0x3FF7FBFD,
+    0x3FEFF7FB, 0x3FDFEFF7, 0x3FBFDFEF, 0x3F7FBFDF, 0x3EFF7FBF, 0x3DFEFF7F, 0x3BFDFEFF, 0x3FFBFDFE,
+    0x3FF7FBFD, 0x3FEFF7FB, 0x3FDFEFF7, 0x3FBFDFEF, 0x3F7FBFDF, 0x3EFF7FBF, 0x3DFEFF7F, 0x3BFDFEFF,
+    0x3FFBFDFE, 0x3FF7FBFD, 0x3FEFF7FB, 0x3FDFEFF7, 0x3FBFDFEF, 0x3F7FBFDF, 0x3EFF7FBF, 0x3DFEFF7F,
+    0x3BFDFEFF,
 };
 
 static const int8_t bandBitPosToPos64[2][64] = {
@@ -781,124 +799,129 @@ private:
 
         state->init();
 
-        register BitVec08x16 solved_cells;
-        solved_cells.setAllZeros();
-
         int candidates = 0;
         for (size_t pos = 0; pos < BoardSize; pos++) {
             unsigned char val = board.cells[pos];
             if (val != '.') {
                 size_t num = val - '1';
                 assert(num >= (Sudoku::kMinNumber - 1) && num <= (Sudoku::kMaxNumber - 1));
-                int validity = this->update_peer_cells(state, solved_cells, pos, num);
+                int validity = this->update_peer_cells_init(state, pos, num);
                 if (validity == Status::Invalid)
                     return -1;
                 candidates++;
             }
         }
 
-        void * pCells16 = (void *)&state->solvedCells;
-        solved_cells.saveAligned(pCells16);
-
         return candidates;
     }
 
-    inline int update_peer_cells(State * state, BitVec08x16 & solved_cells, size_t fill_pos, size_t fill_num) {
+    inline int update_peer_cells_init(State * state, size_t fill_pos, size_t fill_num) {
         assert(fill_pos < Sudoku::kBoardSize);
         assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
 
-        BitVec08x16 cells16, mask16;
-        void * pCells16, * pMask16;
+        uint32_t band = tables.div27[fill_pos];
+        uint32_t mask = tables.posToMask[fill_pos];
+        uint32_t verify_bit = state->candidates[fill_num].bands[band] & mask;
+        if (verify_bit != 0) {
+            state->candidates[fill_num].bands[band] &= bandUnsolvedMaskTbl32[fill_pos];
+            uint32_t bandOtherUnsolvedMask = bandOtherUnsolvedMaskTbl[fill_pos];
+            int peer1 = bandPeer1Tbl[band];
+            int peer2 = bandPeer2Tbl[band];
+            state->candidates[fill_num].bands[peer1] &= bandOtherUnsolvedMask;
+            state->candidates[fill_num].bands[peer2] &= bandOtherUnsolvedMask;
 
-        BitVec08x16 candidates;
-        pCells16 = (void *)&state->candidates[fill_num];
-        candidates.loadAligned(pCells16);
+            state->solvedCells.bands[band] |= mask;
 
-        BitVec08x16 fill_mask;
-        pMask16 = (void *)&Static.fill_mask[fill_pos];
-        fill_mask.loadAligned(pMask16);
+            size_t rowBit = fill_num * Rows + tables.div9[fill_pos];
+            uint32_t rowBand = tables.div27[rowBit];
+            uint32_t shift = tables.mod27[rowBit];
+            state->solvedRows.bands[rowBand] |= 1U << shift;
 
-        BitVec08x16 verify_bit = candidates & fill_mask;
-        if (verify_bit.isAllZeros())
-            return Status::Invalid;
+            uint32_t unsolved_bits = ~mask;
+#if 0
+            for (size_t num = 0; num < Numbers; num++) {
+                state->candidates[num].bands[band] &= unsolved_bits;
+            }
+#else
+            state->candidates[0].bands[band] &= unsolved_bits;
+            state->candidates[1].bands[band] &= unsolved_bits;
+            state->candidates[2].bands[band] &= unsolved_bits;
+            state->candidates[3].bands[band] &= unsolved_bits;
+            state->candidates[4].bands[band] &= unsolved_bits;
+            state->candidates[5].bands[band] &= unsolved_bits;
+            state->candidates[6].bands[band] &= unsolved_bits;
+            state->candidates[7].bands[band] &= unsolved_bits;
+            state->candidates[8].bands[band] &= unsolved_bits;
+#endif
+            state->candidates[fill_num].bands[band] |= mask;
 
-        size_t rowBit = fill_num * Rows + tables.div9[fill_pos];
-        uint32_t band = tables.div27[rowBit];
-        uint32_t shift = tables.mod27[rowBit];
-        state->solvedRows.bands[band] |= 1U << shift;
-
-        solved_cells |= fill_mask;
-
-        for (size_t num = 0; num < Numbers; num++) {
-            pCells16 = (void *)&state->candidates[num];
-            cells16.loadAligned(pCells16);
-            cells16.and_not(fill_mask);
-            cells16.saveAligned(pCells16);
+            return Status::Success;
         }
-
-        pMask16 = (void *)&Static.flip_mask[fill_pos];
-        mask16.loadAligned(pMask16);
-        candidates.and_not(mask16);
-        candidates._or(fill_mask);
-        candidates.saveAligned((void *)&state->candidates[fill_num]);
-
-        return Status::Success;
+        else {
+            return Status::Invalid;
+        }
     }
 
     inline void update_peer_cells(State * state, size_t fill_pos, size_t fill_num) {
         assert(fill_pos < Sudoku::kBoardSize);
         assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
 
+        uint32_t band = tables.div27[fill_pos];
+        uint32_t mask = tables.posToMask[fill_pos];
+        uint32_t verify_bit = state->candidates[fill_num].bands[band] & mask;
+        assert(verify_bit != 0);
+
+        state->candidates[fill_num].bands[band] &= bandUnsolvedMaskTbl32[fill_pos];
+        uint32_t bandOtherUnsolvedMask = bandOtherUnsolvedMaskTbl[fill_pos];
+        int peer1 = bandPeer1Tbl[band];
+        int peer2 = bandPeer2Tbl[band];
+        state->candidates[fill_num].bands[peer1] &= bandOtherUnsolvedMask;
+        state->candidates[fill_num].bands[peer2] &= bandOtherUnsolvedMask;
+
+        state->solvedCells.bands[band] |= mask;
+
         size_t rowBit = fill_num * Rows + tables.div9[fill_pos];
-        uint32_t band = tables.div27[rowBit];
+        uint32_t rowBand = tables.div27[rowBit];
         uint32_t shift = tables.mod27[rowBit];
-        state->solvedRows.bands[band] |= 1U << shift;
+        state->solvedRows.bands[rowBand] |= 1U << shift;
 
-        BitVec08x16 cells16, mask16;
-        void * pCells16, * pMask16;
-
-        BitVec08x16 fill_mask, solved_cells;
-        pCells16 = (void *)&state->solvedCells;
-        pMask16 = (void *)&Static.fill_mask[fill_pos];
-        solved_cells.loadAligned(pCells16);
-        fill_mask.loadAligned(pMask16);
-        solved_cells |= fill_mask;
-        solved_cells.saveAligned(pCells16);
-
+        uint32_t unsolved_bits = ~mask;
+#if 0
         for (size_t num = 0; num < Numbers; num++) {
-            pCells16 = (void *)&state->candidates[num];
-            cells16.loadAligned(pCells16);
-            cells16.and_not(fill_mask);
-            cells16.saveAligned(pCells16);
+            state->candidates[num].bands[band] &= unsolved_bits;
         }
-
-        pCells16 = (void *)&state->candidates[fill_num];
-        pMask16 = (void *)&Static.flip_mask[fill_pos];
-        cells16.loadAligned(pCells16);
-        mask16.loadAligned(pMask16);
-        cells16.and_not(mask16);
-        cells16._or(fill_mask);
-        cells16.saveAligned(pCells16);
+#else
+        state->candidates[0].bands[band] &= unsolved_bits;
+        state->candidates[1].bands[band] &= unsolved_bits;
+        state->candidates[2].bands[band] &= unsolved_bits;
+        state->candidates[3].bands[band] &= unsolved_bits;
+        state->candidates[4].bands[band] &= unsolved_bits;
+        state->candidates[5].bands[band] &= unsolved_bits;
+        state->candidates[6].bands[band] &= unsolved_bits;
+        state->candidates[7].bands[band] &= unsolved_bits;
+        state->candidates[8].bands[band] &= unsolved_bits;
+#endif
+        state->candidates[fill_num].bands[band] |= mask;
     }
 
     JSTD_FORCE_INLINE
     void update_band_solved_mask32(State * state, size_t band, size_t pos, size_t num) {
-        state->candidates[num].bands[band] &= bandUnsolvedBitsTbl32[pos];
+        state->candidates[num].bands[band] &= bandUnsolvedMaskTbl32[pos];
     }
 
     template <size_t band>
     JSTD_FORCE_INLINE
     void update_band_solved_mask64(State * state, size_t pos, size_t num) {
         if (band == 0)
-            state->candidates[num].bands64 &= bandUnsolvedBitsTbl64[pos];
+            state->candidates[num].bands64 &= bandUnsolvedMaskTbl64[pos];
         else
-            state->candidates[num].bands32 &= bandUnsolvedBitsTbl32[pos];
+            state->candidates[num].bands32 &= bandUnsolvedMaskTbl32[pos];
     }
 
     JSTD_FORCE_INLINE
     void update_band_solved_mask32(State * state, size_t band, size_t pos, size_t num, uint32_t mask) {
         if ((state->candidates[num].bands[band] & mask) != 0) {
-            state->candidates[num].bands[band] &= bandUnsolvedBitsTbl32[pos];
+            state->candidates[num].bands[band] &= bandUnsolvedMaskTbl32[pos];
         }
     }
 
@@ -907,12 +930,12 @@ private:
     void update_band_solved_mask64(State * state, size_t pos, size_t num, uint64_t mask) {
         if (band == 0) {
             if ((state->candidates[num].bands64 & mask) != 0) {
-                state->candidates[num].bands64 &= bandUnsolvedBitsTbl64[pos];
+                state->candidates[num].bands64 &= bandUnsolvedMaskTbl64[pos];
             }
         }
         else {
             if ((state->candidates[num].bands32 & (uint32_t)mask) != 0) {
-                state->candidates[num].bands32 &= bandUnsolvedBitsTbl32[pos];
+                state->candidates[num].bands32 &= bandUnsolvedMaskTbl32[pos];
             }
         }
     }
