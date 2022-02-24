@@ -49,7 +49,7 @@ namespace v2 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
-static const bool kUseFastMode = false;
+static const bool kUseFastMode = true;
 
 // Kill all in other blocks locked column / box
 static const uint32_t colLockedSingleMaskTbl[512] = {
@@ -1967,7 +1967,7 @@ private:
                 return Status::Solved;
             }
 
-            int naked_singles = this->find_naked_singles<fast_mode>(state);
+            int naked_singles = this->find_naked_singles<false>(state);
             if (naked_singles == 0)
                 break;
             if (naked_singles < 0)
@@ -1980,7 +1980,7 @@ private:
 public:
     int search(State *& state, Board & board) {
         int status;
-        if (kUseFastMode) {
+        if (false && kUseFastMode) {
             int naked_singles = this->find_naked_singles<false>(state);
             if (naked_singles > 0) {
                 status = this->find_all_single_literals<false>(state);
@@ -2010,7 +2010,7 @@ public:
             this->extract_solution(state, solution);
             return 1;
         }
-        else if (!kUseFastMode && (status == Status::Invalid)) {
+        else if (status == Status::Invalid) {
             return 0;
         }
 
