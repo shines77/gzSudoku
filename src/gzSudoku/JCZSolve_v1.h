@@ -49,7 +49,7 @@ namespace v1 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
-static const bool kUseFastMode = false;
+static const bool kUseFastMode = true;
 
 // Kill all in other blocks locked column / box
 static const uint32_t colLockedSingleMaskTbl[512] = {
@@ -2500,6 +2500,9 @@ public:
                 status = this->find_all_single_literals<false>(state);
                 if (status == Status::Invalid)
                     return status;
+            }
+            else if (naked_singles < 0) {
+                return Status::Invalid;
             }
         }
         status = this->guess_next_cell(state, board);

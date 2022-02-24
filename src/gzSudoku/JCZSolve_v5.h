@@ -49,6 +49,8 @@ namespace v5 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
+static const bool kUseFastMode = false;
+
 // Kill all in other blocks locked column / box
 static const uint32_t colLockedSingleMaskTbl[512] = {
     07777777777, 07776776776, 07775775775, 07777777777, 07773773773, 07777777777, 07777777777, 07777777777,
@@ -3275,11 +3277,16 @@ private:
 public:
     int search(State & state, Board & board) {
         int status;
-        int naked_singles = this->find_naked_singles<false>(state);
-        if (naked_singles > 0) {
-            status = this->find_all_single_literals<false>(state);
-            if (status == Status::Invalid)
-                return status;
+        if (kUseFastMode) {
+            int naked_singles = this->find_naked_singles<false>(state);
+            if (naked_singles > 0) {
+                status = this->find_all_single_literals<false>(state);
+                if (status == Status::Invalid)
+                    return status;
+            }
+            else if (naked_singles < 0) {
+                return Status::Invalid;
+            }
         }
         status = this->guess_next_cell(state, board);
         return status;
@@ -3295,12 +3302,12 @@ public:
         if (candidates < (int)Sudoku::kMinInitCandidates)
             return -1;
 
-        int status = this->find_all_single_literals<true>(state);
+        int status = this->find_all_single_literals<kUseFastMode>(state);
         if (status == Status::Solved) {
             this->extract_solution(state, solution);
             return 1;
         }
-        else if (status == Status::Invalid) {
+        else if (!kUseFastMode && (status == Status::Invalid)) {
             return 0;
         }
 
