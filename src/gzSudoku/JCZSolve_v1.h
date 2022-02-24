@@ -49,7 +49,7 @@ namespace v1 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
-static const bool kFindNakedSinglesUseBiValue = true;
+static const bool kUseFastMode = false;
 
 // Kill all in other blocks locked column / box
 static const uint32_t colLockedSingleMaskTbl[512] = {
@@ -2460,10 +2460,7 @@ private:
     int find_naked_singles(State * state) {
         int naked_singles;
         if (fast_mode)
-            if (kFindNakedSinglesUseBiValue)
-                naked_singles = this->fast_find_naked_singles_v2(state);
-            else
-                naked_singles = this->fast_find_naked_singles(state);
+            naked_singles = this->fast_find_naked_singles(state);
         else
             naked_singles = this->normal_find_naked_singles(state);
         return naked_singles;
@@ -2497,11 +2494,13 @@ private:
 public:    
     int search(State *& state, Board & board) {
         int status;
-        int naked_singles = this->find_naked_singles<false>(state);
-        if (kFindNakedSinglesUseBiValue || (naked_singles > 0)) {
-            status = this->find_all_single_literals<false>(state);
-            if (status == Status::Invalid)
-                return status;
+        if (kUseFastMode) {
+            int naked_singles = this->find_naked_singles<false>(state);
+            if (naked_singles > 0) {
+                status = this->find_all_single_literals<false>(state);
+                if (status == Status::Invalid)
+                    return status;
+            }
         }
         status = this->guess_next_cell(state, board);
         return status;
@@ -2517,12 +2516,12 @@ public:
         if (candidates < (int)Sudoku::kMinInitCandidates)
             return -1;
 
-        int status = this->find_all_single_literals<true>(state);
+        int status = this->find_all_single_literals<kUseFastMode>(state);
         if (status == Status::Solved) {
             this->extract_solution(state, solution);
             return 1;
         }
-        else if (status == Status::Invalid) {
+        else if (!kUseFastMode && (status == Status::Invalid)) {
             return 0;
         }
 
