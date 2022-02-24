@@ -36,7 +36,7 @@
 //
 // Whether use 64 bit band struct?
 //
-#define JCZ_V1_USE_64BIT_BANDS      0
+#define JCZ_V1_USE_64BIT_BANDS      1
 
 //
 // Whether search no guess steps only?
@@ -48,6 +48,8 @@ namespace JCZ {
 namespace v1 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
+
+static const bool kFindNakedSinglesUseBiValue = true;
 
 // Kill all in other blocks locked column / box
 static const uint32_t colLockedSingleMaskTbl[512] = {
@@ -1682,6 +1684,267 @@ private:
         return cell_count;
     }
 
+    int fast_find_naked_singles_v2(State * state) {
+        register int cell_count = 0;
+#if JCZ_V1_USE_64BIT_BANDS && (defined(WIN64) || defined(_WIN64) || defined(_M_X64) \
+ || defined(_M_AMD64) || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__))
+        // Bands64: 0
+        {
+            register uint64_t R1, R2, R3;
+            register uint64_t band_bits;
+#if 0
+            R1 = state->candidates[0].bands64;
+            R2 = 0;
+            R3 = 0;
+
+            for (size_t num = 1; num < Numbers; num++) {
+                band_bits = state->candidates[num].bands64;
+                R3 |= R2 & band_bits;
+                R2 |= R1 & band_bits;
+                R1 |= band_bits;
+            }
+#else
+            R1 = state->candidates[0].bands64;
+
+            band_bits = state->candidates[1].bands64;
+            R2 = R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[2].bands64;
+            R3 = R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[3].bands64;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[4].bands64;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[5].bands64;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[6].bands64;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[7].bands64;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[8].bands64;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+#endif
+            assert(R1 == kBitSet27_Double64);
+
+            uint64_t solved_bits = state->solvedCells.bands64;
+            R1 &= ~R2;
+            R2 &= ~R3;
+            R1 &= ~solved_bits;
+
+            state->pairs.bands64 = R2;
+
+            while (R1 != 0) {
+                size_t bit_pos = BitUtils::bsf64(R1);
+                uint64_t bit = BitUtils::ls1b64(R1);
+                R1 ^= bit;
+
+                size_t pos = bandBitPosToPos64[0][bit_pos];
+                assert(pos != size_t(-1));
+
+                for (size_t num = 0; num < Numbers; num++) {
+                    uint64_t band_bits = state->candidates[num].bands64;
+                    if ((band_bits & bit) != 0) {
+                        this->update_band_solved_mask64<0>(state, pos, num);
+                        cell_count++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Bands64: 1
+        {
+            register uint32_t R1, R2, R3;
+            register uint32_t band_bits;
+#if 0
+            R1 = state->candidates[0].bands32;
+            R2 = 0;
+            R3 = 0;
+
+            for (size_t num = 1; num < Numbers; num++) {
+                band_bits = state->candidates[num].bands32;
+                R3 |= R2 & band_bits;
+                R2 |= R1 & band_bits;
+                R1 |= band_bits;
+            }
+#else
+            R1 = state->candidates[0].bands32;
+
+            band_bits = state->candidates[1].bands32;
+            R2 = R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[2].bands32;
+            R3 = R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[3].bands32;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[4].bands32;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[5].bands32;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[6].bands32;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[7].bands32;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[8].bands32;
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+#endif
+            assert(R1 == kBitSet27);
+
+            uint32_t solved_bits = state->solvedCells.bands32;
+            R1 &= ~R2;
+            R2 &= ~R3;
+            R1 &= ~solved_bits;
+
+            state->pairs.bands32 = R2;
+
+            while (R1 != 0) {
+                size_t bit_pos = BitUtils::bsf32(R1);
+                uint32_t bit = BitUtils::ls1b32(R1);
+                R1 ^= bit;
+
+                size_t pos = bandBitPosToPos32[2][bit_pos];
+                assert(pos != size_t(-1));
+
+                for (size_t num = 0; num < Numbers; num++) {
+                    uint32_t band_bits = state->candidates[num].bands32;
+                    if ((band_bits & bit) != 0) {
+                        this->update_band_solved_mask32(state, 2, pos, num);
+                        cell_count++;
+                        break;
+                    }
+                }
+            }
+        }
+#else // !__amd64__
+        for (int band = 0; band < 3; band++) {
+            register uint32_t R1, R2, R3;
+            register uint32_t band_bits;
+#if 0
+            R1 = state->candidates[0].bands[band];
+            R2 = 0;
+            R3 = 0;
+
+            for (size_t num = 1; num < Numbers; num++) {
+                band_bits = state->candidates[num].bands[band];
+                R3 |= R2 & band_bits;
+                R2 |= R1 & band_bits;
+                R1 |= band_bits;
+            }
+#else
+            R1 = state->candidates[0].bands[band];
+
+            band_bits = state->candidates[1].bands[band];
+            R2 = R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[2].bands[band];
+            R3 = R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[3].bands[band];
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[4].bands[band];
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[5].bands[band];
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[6].bands[band];
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[7].bands[band];
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+
+            band_bits = state->candidates[8].bands[band];
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+#endif
+            assert(R1 == kBitSet27);
+
+            uint32_t solved_bits = state->solvedCells.bands[band];
+            R1 &= ~R2;
+            R2 &= ~R3;
+            R1 &= ~solved_bits;
+
+            state->pairs.bands[band] = R2;
+
+            while (R1 != 0) {
+                size_t bit_pos = BitUtils::bsf32(R1);
+                uint32_t bit = BitUtils::ls1b32(R1);
+                R1 ^= bit;
+
+                size_t pos = bandBitPosToPos32[band][bit_pos];
+                assert(pos != size_t(-1));
+
+                for (size_t num = 0; num < Numbers; num++) {
+                    uint32_t band_bits = state->candidates[num].bands[band];
+                    if ((band_bits & bit) != 0) {
+                        this->update_band_solved_mask32(state, band, pos, num);
+                        cell_count++;
+                        break;
+                    }
+                }
+            }
+        }
+#endif // __amd64__
+        return cell_count;
+    }
+
     int normal_find_naked_singles(State * state) {
         register int cell_count = 0;
 #if JCZ_V1_USE_64BIT_BANDS && (defined(WIN64) || defined(_WIN64) || defined(_M_X64) \
@@ -2197,7 +2460,10 @@ private:
     int find_naked_singles(State * state) {
         int naked_singles;
         if (fast_mode)
-            naked_singles = this->fast_find_naked_singles(state);
+            if (kFindNakedSinglesUseBiValue)
+                naked_singles = this->fast_find_naked_singles_v2(state);
+            else
+                naked_singles = this->fast_find_naked_singles(state);
         else
             naked_singles = this->normal_find_naked_singles(state);
         return naked_singles;
@@ -2221,18 +2487,18 @@ private:
             int naked_singles = this->find_naked_singles<fast_mode>(state);
             if (naked_singles == 0)
                 break;
-            if (naked_singles < 0)
+            if (!fast_mode && (naked_singles < 0))
                 return Status::Invalid;
         } while (1);
 
         return Status::Success;
     }
 
-public:
+public:    
     int search(State *& state, Board & board) {
         int status;
         int naked_singles = this->find_naked_singles<false>(state);
-        if (naked_singles > 0) {
+        if (kFindNakedSinglesUseBiValue || (naked_singles > 0)) {
             status = this->find_all_single_literals<false>(state);
             if (status == Status::Invalid)
                 return status;
