@@ -1970,7 +1970,7 @@ private:
             int naked_singles = this->find_naked_singles<false>(state);
             if (naked_singles == 0)
                 break;
-            if (naked_singles < 0)
+            else if (naked_singles < 0)
                 return Status::Invalid;
         } while (1);
 

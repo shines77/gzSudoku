@@ -2323,7 +2323,7 @@ public:
                 if (status == Status::Invalid)
                     return status;
             }
-            else if (naked_singles < 0) {
+            else if (!fast_mode && (naked_singles < 0))
                 return Status::Invalid;
             }
         }
