@@ -36,7 +36,7 @@
 //
 // Whether use 64 bit band struct?
 //
-#define JCZ_V1_USE_64BIT_BANDS      1
+#define JCZ_V1_USE_64BIT_BANDS      0
 
 //
 // Whether search no guess steps only?
@@ -49,7 +49,7 @@ namespace v1 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
-static const bool kUseFastMode = true;
+static const bool kUseFastMode = false;
 
 // Kill all in other blocks locked column / box
 static const uint32_t colLockedSingleMaskTbl[512] = {
