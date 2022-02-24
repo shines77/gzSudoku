@@ -49,7 +49,7 @@ namespace v2 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
-static const bool kUseFastMode = true;
+static const bool kUseFastMode = false;
 
 // Kill all in other blocks locked column / box
 static const uint32_t colLockedSingleMaskTbl[512] = {
