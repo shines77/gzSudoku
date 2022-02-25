@@ -49,7 +49,7 @@ namespace v2 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
-static const bool kUseFastMode = true;
+static const bool kUseFastMode = false;
 
 // Kill all in other blocks locked column / box
 static const uint32_t colLockedSingleMaskTbl[512] = {
@@ -641,7 +641,7 @@ private:
 
     void extract_solution(State * state, Board & board) {
         assert(state != nullptr);
-#if 1
+#if 0
 #if !defined(NDEBUG)
         for (size_t pos = 0; pos < BoardSize; pos++) {
             board.cells[pos] = '.';
