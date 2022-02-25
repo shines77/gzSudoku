@@ -849,11 +849,6 @@ private:
 
     void extract_solution(State & state, Board & board) {
 #if 1
-#if !defined(NDEBUG)
-        for (size_t pos = 0; pos < BoardSize; pos++) {
-            board.cells[pos] = '.';
-        }
-#endif
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -1658,7 +1653,6 @@ private:
         R1.saveAligned((void *)&R1_bits);
 
         register int cell_count = 0;
-        //if (R1_bits.bands64[0] != 0 || R1_bits.bands64[1] != 0)
         {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -1744,7 +1738,6 @@ private:
                 }
             }
 #endif // __amd64__
-            //assert(cell_count > 0);
         }
 
         return cell_count;
@@ -1992,7 +1985,6 @@ private:
         R1.saveAligned((void *)&R1_bits);
 
         register int cell_count = 0;
-        //if (R1_bits.bands64[0] != 0 || R1_bits.bands64[1] != 0)
         {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -2078,7 +2070,6 @@ private:
                 }
             }
 #endif // __amd64__
-            //assert(cell_count > 0);
         }
 
         return cell_count;
