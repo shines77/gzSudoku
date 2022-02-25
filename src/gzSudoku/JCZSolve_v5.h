@@ -49,6 +49,7 @@ namespace v5 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
+static const bool kCheckSolvedRows = false;
 static const bool kUseFastMode = false;
 
 // Kill all in other blocks locked column / box
@@ -1586,7 +1587,7 @@ private:
 
             /********* Number 1-3 Start *********/
             solvedRows = state.solvedRows.bands[0];        
-            if ((solvedRows & kFullRowBits) != kFullRowBits) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits) != kFullRowBits) {
                 // Number 1
                 {
                     static const uint32_t digit = 0;
@@ -1612,7 +1613,7 @@ private:
                 }
             }
 
-            if ((solvedRows & kFullRowBits_1) != kFullRowBits_1) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_1) != kFullRowBits_1) {
                 // Number 2
                 {
                     static const uint32_t digit = 1;
@@ -1638,7 +1639,7 @@ private:
                 }
             }
 
-            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_2) != kFullRowBits_2) {
                 // Number 3
                 {
                     static const uint32_t digit = 2;
@@ -1669,7 +1670,7 @@ private:
 
             /********* Number 4-6 Start *********/
             solvedRows = state.solvedRows.bands[1];
-            if ((solvedRows & kFullRowBits) != kFullRowBits) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits) != kFullRowBits) {
                 // Number 4
                 {
                     static const uint32_t digit = 3;
@@ -1695,7 +1696,7 @@ private:
                 }
             }
   
-            if ((solvedRows & kFullRowBits_1) != kFullRowBits_1) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_1) != kFullRowBits_1) {
                 // Number 5
                 {
                     static const uint32_t digit = 4;
@@ -1721,7 +1722,7 @@ private:
                 }
             }
 
-            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_2) != kFullRowBits_2) {
                 // Number 6
                 {
                     static const uint32_t digit = 5;
@@ -1752,7 +1753,7 @@ private:
 
             /********* Number 7-9 Start *********/
             solvedRows = state.solvedRows.bands[2];
-            if ((solvedRows & kFullRowBits) != kFullRowBits) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits) != kFullRowBits) {
                 // Number 7
                 {
                     static const uint32_t digit = 6;
@@ -1778,7 +1779,7 @@ private:
                 }
             }
 
-            if ((solvedRows & kFullRowBits_1) != kFullRowBits_1) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_1) != kFullRowBits_1) {
                 // Number 8
                 {
                     static const uint32_t digit = 7;
@@ -1804,7 +1805,7 @@ private:
                 }
             }
 
-            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_2) != kFullRowBits_2) {
                 // Number 9 rowTriadsMask
                 this->getRowTriadsMask_SSE2<8>(state, &rowTriadsMaskAll);
 
@@ -1853,7 +1854,7 @@ private:
 
             /********* Number 1-2 Start *********/
             solvedRows = state.solvedRows.bands[0];        
-            if ((solvedRows & kFullRowBits_01) != kFullRowBits_01) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_01) != kFullRowBits_01) {
                 // Number 1-2 rowTriadsMask
                 this->getRowTriadsMask_AVX2<0>(state, &rowTriadsMaskAll.board[0]);
 
@@ -1904,7 +1905,7 @@ private:
             /********* Number 3-4 Start *********/
             uint32_t inited = 0;
             updated = 0;
-            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_2) != kFullRowBits_2) {
                 // Number 3-4 rowTriadsMask
                 this->getRowTriadsMask_AVX2<2>(state, &rowTriadsMaskAll.board[0]);
                 inited = 1;                
@@ -1933,7 +1934,7 @@ private:
             state.solvedRows.bands[0] = solvedRows;
 
             solvedRows = state.solvedRows.bands[1];
-            if ((solvedRows & kFullRowBits) != kFullRowBits) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits) != kFullRowBits) {
                 // Number 3-4 rowTriadsMask
                 updated ^= 1;
                 if (inited == 0 || updated != 0) {
@@ -1963,7 +1964,7 @@ private:
             /********* Number 3-4 End *********/
         
             /********* Number 5-6 Start *********/   
-            if ((solvedRows & kFullRowBits_12) != kFullRowBits_12) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_12) != kFullRowBits_12) {
                 // Number 5-6 rowTriadsMask
                 this->getRowTriadsMask_AVX2<4>(state, &rowTriadsMaskAll.board[0]);
 
@@ -2015,7 +2016,7 @@ private:
 
             /********* Number 7-8 Start *********/
             solvedRows = state.solvedRows.bands[2];        
-            if ((solvedRows & kFullRowBits_01) != kFullRowBits_01) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_01) != kFullRowBits_01) {
                 // Number 7-8 rowTriadsMask
                 this->getRowTriadsMask_AVX2<6>(state, &rowTriadsMaskAll.board[0]);
 
@@ -2064,7 +2065,7 @@ private:
             /********* Number 7-8 End *********/
 
             /********* Number 9 Start *********/
-            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_2) != kFullRowBits_2) {
                 // Number 9 rowTriadsMask
                 this->getRowTriadsMask_SSE2<8>(state, &rowTriadsMaskAll.board[0]);
 
@@ -2109,7 +2110,7 @@ private:
         
             // Number 1
             solvedRows = state.solvedRows.bands[0];        
-            if ((solvedRows & kFullRowBits) != kFullRowBits) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits) != kFullRowBits) {
                 static const uint32_t digit = 0;
 
                 // Number 1 - band 0
@@ -2153,7 +2154,7 @@ private:
             }
 
             // Number 2
-            if ((solvedRows & kFullRowBits_1) != kFullRowBits_1) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_1) != kFullRowBits_1) {
                 static const uint32_t digit = 1;
 
                 // Number 2 - band 0
@@ -2197,7 +2198,7 @@ private:
             }
 
             // Number 3
-            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_2) != kFullRowBits_2) {
                 static const uint32_t digit = 2;
 
                 // Number 3 - band 0
@@ -2248,7 +2249,7 @@ private:
         
             // Number 4
             solvedRows = state.solvedRows.bands[1];        
-            if ((solvedRows & kFullRowBits) != kFullRowBits) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits) != kFullRowBits) {
                 static const uint32_t digit = 3;
 
                 // Number 4 - band 0
@@ -2292,7 +2293,7 @@ private:
             }
 
             // Number 5
-            if ((solvedRows & kFullRowBits_1) != kFullRowBits_1) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_1) != kFullRowBits_1) {
                 static const uint32_t digit = 4;
 
                 // Number 5 - band 0
@@ -2336,7 +2337,7 @@ private:
             }
 
             // Number 6
-            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_2) != kFullRowBits_2) {
                 static const uint32_t digit = 5;
 
                 // Number 6 - band 0
@@ -2387,7 +2388,7 @@ private:
         
             // Number 7
             solvedRows = state.solvedRows.bands[2];        
-            if ((solvedRows & kFullRowBits) != kFullRowBits) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits) != kFullRowBits) {
                 static const uint32_t digit = 6;
 
                 // Number 7 - band 0
@@ -2431,7 +2432,7 @@ private:
             }
 
             // Number 8
-            if ((solvedRows & kFullRowBits_1) != kFullRowBits_1) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_1) != kFullRowBits_1) {
                 static const uint32_t digit = 7;
 
                 // Number 8 - band 0
@@ -2475,7 +2476,7 @@ private:
             }
 
             // Number 9
-            if ((solvedRows & kFullRowBits_2) != kFullRowBits_2) {
+            if (!kCheckSolvedRows || (solvedRows & kFullRowBits_2) != kFullRowBits_2) {
                 static const uint32_t digit = 8;
 
                 // Number 9 - band 0
