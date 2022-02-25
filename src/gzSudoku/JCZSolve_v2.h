@@ -642,7 +642,7 @@ private:
 
     void extract_solution(State * state, Board & board) {
         assert(state != nullptr);
-#if 0
+#if 1
 #if !defined(NDEBUG)
         for (size_t pos = 0; pos < BoardSize; pos++) {
             board.cells[pos] = '.';
