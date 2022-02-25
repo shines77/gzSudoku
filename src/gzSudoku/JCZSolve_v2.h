@@ -49,7 +49,7 @@ namespace v2 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
-static const bool kUseFastMode = false;
+static const bool kUseFastMode = true;
 
 // Kill all in other blocks locked column / box
 static const uint32_t colLockedSingleMaskTbl[512] = {
@@ -749,6 +749,7 @@ private:
         board.cells[BoardSize] = 0;
     }
 
+    JSTD_FORCE_INLINE
     int init_board(State * state, const Board & board) {
         if (kSearchMode > SearchMode::OneSolution) {
             this->answers_.clear();
@@ -1380,6 +1381,7 @@ private:
         return Status::Success;
     }
 
+    JSTD_NO_INLINE
     int fast_find_naked_singles(State * state) {
         BitVec08x16 R1, R2;
 
@@ -1411,7 +1413,6 @@ private:
         R1.saveAligned((void *)&R1_bits);
 
         register int cell_count = 0;
-        //if (R1_bits.bands64[0] != 0 || R1_bits.bands64[1] != 0)
         {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -1497,12 +1498,12 @@ private:
                 }
             }
 #endif // __amd64__
-            //assert(cell_count > 0);
         }
 
         return cell_count;
     }
 
+    JSTD_NO_INLINE
     int fast_find_naked_singles_v2(State * state) {
         BitVec08x16 R1, R2;
 
@@ -1607,17 +1608,65 @@ private:
         return cell_count;
     }
 
+    JSTD_NO_INLINE
+    void find_naked_singles_only_pair(State * state) {
+        BitVec08x16 R1, R2, R3;
+        BitVec08x16 band_bits;
+
+        R1.loadAligned((void *)&state->candidates[0]);
+
+        band_bits.loadAligned((void *)&state->candidates[1]);
+        R2 = R1 & band_bits;
+        R1 |= band_bits;
+
+        band_bits.loadAligned((void *)&state->candidates[2]);
+        R3 = R2 & band_bits;
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        for (size_t num = 3; num < Numbers; num++) {
+            void * pCells16 = (void *)&state->candidates[num];
+            band_bits.loadAligned(pCells16);
+
+            R3 |= R2 & band_bits;
+            R2 |= R1 & band_bits;
+            R1 |= band_bits;
+        }
+
+        BitVec08x16 full_mask(kBitSet27, kBitSet27, kBitSet27, 0);
+        bool is_legal = R1.isEqual(full_mask);
+        assert(is_legal);
+
+        BitVec08x16 solved_bits;
+        solved_bits.loadAligned((void *)&state->solvedCells);
+
+        R1.and_not(R2);
+        R2.and_not(R3);
+        R1.and_not(solved_bits);
+
+        R2.saveAligned((void *)&state->pairs);
+
+        assert(R1.isAllZeros());
+    }
+
+    JSTD_NO_INLINE
     int normal_find_naked_singles(State * state) {
         BitVec08x16 R1, R2, R3;
+        BitVec08x16 band_bits;
 
-        void * pCells16 = (void *)&state->candidates[0];
-        R1.loadAligned(pCells16);
-        R2.setAllZeros();
-        R3.setAllZeros();
+        R1.loadAligned((void *)&state->candidates[0]);
 
-        for (size_t num = 1; num < Numbers; num++) {
-            BitVec08x16 band_bits;
-            pCells16 = (void *)&state->candidates[num];
+        band_bits.loadAligned((void *)&state->candidates[1]);
+        R2 = R1 & band_bits;
+        R1 |= band_bits;
+
+        band_bits.loadAligned((void *)&state->candidates[2]);
+        R3 = R2 & band_bits;
+        R2 |= R1 & band_bits;
+        R1 |= band_bits;
+
+        for (size_t num = 3; num < Numbers; num++) {
+            void * pCells16 = (void *)&state->candidates[num];
             band_bits.loadAligned(pCells16);
 
             R3 |= R2 & band_bits;
@@ -1642,7 +1691,6 @@ private:
         R1.saveAligned((void *)&R1_bits);
 
         register int cell_count = 0;
-        //if (R1_bits.bands64[0] != 0 || R1_bits.bands64[1] != 0)
         {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -1728,12 +1776,12 @@ private:
                 }
             }
 #endif // __amd64__
-            //assert(cell_count > 0);
         }
 
         return cell_count;
     }
 
+    JSTD_NO_INLINE
     int guess_bivalue_cells(State *& state, Board & board) {
         assert(state != nullptr);
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
@@ -1821,6 +1869,7 @@ private:
         return Status::Failed;
     }
 
+    JSTD_NO_INLINE
     int guess_first_cell(State *& state, Board & board) {
         assert(state != nullptr);
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
@@ -1913,10 +1962,11 @@ private:
         return Status::Failed;
     }
 
+    template <bool NeedCheckSolved = true>
+    JSTD_FORCE_INLINE
     int guess_next_cell(State *& state, Board & board) {
         assert(state != nullptr);
-        if ((state->solvedCells.bands64[0] == kBitSet27_Double64) &&
-            (state->solvedCells.bands64[1] == kBitSet27_Single64)) {
+        if (NeedCheckSolved && this->is_solved(state)) {
             if (kSearchMode > SearchMode::OneSolution) {
                 this->extract_solution(state, board);
                 this->answers_.push_back(board);
@@ -1942,7 +1992,6 @@ private:
     }
 
     template <bool fast_mode>
-    JSTD_FORCE_INLINE
     int find_naked_singles(State * state) {
         int naked_singles;
         if (fast_mode)
@@ -1953,6 +2002,7 @@ private:
     }
 
     template <bool fast_mode>
+    JSTD_NO_INLINE
     int find_all_single_literals(State * state) {
         if (!fast_mode && (this->numSolutions_ >= this->limitSolutions_))
             return Status::Invalid;
@@ -1962,8 +2012,7 @@ private:
             if (!fast_mode && (status == Status::Invalid))
                 return status;
 
-            if ((state->solvedCells.bands64[0] == kBitSet27_Double64) &&
-                (state->solvedCells.bands64[1] == kBitSet27_Single64)) {
+            if (this->is_solved(state)) {
                 return Status::Solved;
             }
 
@@ -1977,24 +2026,31 @@ private:
         return Status::Success;
     }
 
+    JSTD_FORCE_INLINE
+    bool is_solved(State * state) {
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+        return ((state->solvedCells.bands64[0] == kBitSet27_Double64) &&
+                (state->solvedCells.bands64[1] == kBitSet27_Single64));
+#else
+        return ((state->solvedCells.bands[0] == kBitSet27) &&
+                (state->solvedCells.bands[1] == kBitSet27) &&
+                (state->solvedCells.bands[2] == kBitSet27));
+#endif
+    }
+
 public:
+    JSTD_FORCE_INLINE
     int search(State *& state, Board & board) {
         int status;
-        if (false && kUseFastMode) {
-            int naked_singles = this->find_naked_singles<false>(state);
-            if (naked_singles > 0) {
-                status = this->find_all_single_literals<false>(state);
-                if (status == Status::Invalid)
-                    return status;
-            }
-            else if (naked_singles < 0) {
-                return Status::Invalid;
-            }
+        if (kUseFastMode) {
+            this->find_naked_singles_only_pair(state);
         }
-        status = this->guess_next_cell(state, board);
+        status = this->guess_next_cell<kUseFastMode>(state, board);
         return status;
     }
 
+    JSTD_NO_INLINE
     int solve(const Board & board, Board & solution, int limitSolutions = 1) {
         this->numSolutions_ = 0;
         this->limitSolutions_ = limitSolutions;
@@ -2010,7 +2066,7 @@ public:
             this->extract_solution(state, solution);
             return 1;
         }
-        else if (status == Status::Invalid) {
+        else if (!kUseFastMode && (status == Status::Invalid)) {
             return 0;
         }
 

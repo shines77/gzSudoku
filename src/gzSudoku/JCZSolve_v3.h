@@ -1944,7 +1944,6 @@ private:
     }
 
     template <bool fast_mode>
-    JSTD_FORCE_INLINE
     int find_naked_singles(State & state) {
         int naked_singles;
         if (fast_mode)
@@ -1955,6 +1954,7 @@ private:
     }
 
     template <bool fast_mode>
+    JSTD_FORCE_INLINE
     int find_all_single_literals(State & state) {
         if (!fast_mode && (this->numSolutions_ >= this->limitSolutions_))
             return Status::Invalid;
@@ -1980,6 +1980,7 @@ private:
     }
 
 public:
+    JSTD_FORCE_INLINE
     int search(State & state, Board & board) {
         int status;
         if (kUseFastMode) {
@@ -1997,6 +1998,7 @@ public:
         return status;
     }
 
+    JSTD_NO_INLINE
     int solve(const Board & board, Board & solution, int limitSolutions = 1) {
         this->numSolutions_ = 0;
         this->limitSolutions_ = limitSolutions;
