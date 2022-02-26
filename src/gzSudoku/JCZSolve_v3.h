@@ -760,6 +760,7 @@ private:
         board.cells[BoardSize] = 0;
     }
 
+    JSTD_FORCE_INLINE
     int init_board(State & state, const Board & board) {
         if (kSearchMode > SearchMode::OneSolution) {
             this->answers_.clear();
@@ -1391,6 +1392,7 @@ private:
         return Status::Success;
     }
 
+    JSTD_NO_INLINE
     int fast_find_naked_singles(State & state) {
         BitVec08x16 R1, R2;
 
@@ -1422,7 +1424,6 @@ private:
         R1.saveAligned((void *)&R1_bits);
 
         register int cell_count = 0;
-        //if (R1_bits.bands64[0] != 0 || R1_bits.bands64[1] != 0)
         {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -1508,7 +1509,6 @@ private:
                 }
             }
 #endif // __amd64__
-            //assert(cell_count > 0);
         }
 
         return cell_count;
@@ -1618,6 +1618,7 @@ private:
         return cell_count;
     }
 
+    JSTD_NO_INLINE
     int normal_find_naked_singles(State & state) {
         BitVec08x16 R1, R2, R3;
 
@@ -1653,7 +1654,6 @@ private:
         R1.saveAligned((void *)&R1_bits);
 
         register int cell_count = 0;
-        //if (R1_bits.bands64[0] != 0 || R1_bits.bands64[1] != 0)
         {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -1739,12 +1739,12 @@ private:
                 }
             }
 #endif // __amd64__
-            //assert(cell_count > 0);
         }
 
         return cell_count;
     }
 
+    JSTD_NO_INLINE
     int guess_bivalue_cells(State & state, Board & board) {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -1827,6 +1827,7 @@ private:
         return Status::Failed;
     }
 
+    JSTD_NO_INLINE
     int guess_first_cell(State & state, Board & board) {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -1912,6 +1913,7 @@ private:
         return Status::Failed;
     }
 
+    JSTD_FORCE_INLINE
     int guess_next_cell(State & state, Board & board) {
         if ((state.solvedCells.bands64[0] == kBitSet27_Double64) &&
             (state.solvedCells.bands64[1] == kBitSet27_Single64)) {
