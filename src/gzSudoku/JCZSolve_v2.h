@@ -471,11 +471,11 @@ private:
 #pragma pack(push, 1)
 
     struct alignas(32) Counter {
-        uint16_t digits[16];
+        int16_t digits[16];
     };
 
     struct alignas(32) BoxCounter {
-        uint16_t boxes[16];
+        int16_t boxes[16];
     };
 
     union alignas(16) BandBoard {
@@ -670,7 +670,7 @@ private:
                     size_t pos = bandBitPosToPos64[0][bit_pos];
                     assert(pos != size_t(-1));
 
-                    assert(board.cells[pos] == '.');
+                    //assert(board.cells[pos] == '.');
                     board.cells[pos] = (char)('1' + num);
                 }
             }
@@ -686,7 +686,7 @@ private:
                     size_t pos = bandBitPosToPos64[1][bit_pos];
                     assert(pos != size_t(-1));
 
-                    assert(board.cells[pos] == '.');
+                    //assert(board.cells[pos] == '.');
                     board.cells[pos] = (char)('1' + num);
                 }
             }
@@ -1991,7 +1991,7 @@ private:
                 ++state;
                 basic_solver::num_guesses++;
 
-                this->update_band_solved_mask32(state, band, pos, digit);
+                this->update_band_solved_mask32(state, band, pos, digit, mask);
 
                 if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                     this->guess_next_cell(state, board);
@@ -2000,7 +2000,7 @@ private:
             }
             else {
                 // Second of pair
-                this->update_band_solved_mask32(state, band, pos, digit);
+                this->update_band_solved_mask32(state, band, pos, digit, mask);
 
                 if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                     this->guess_next_cell(state, board);
@@ -2030,7 +2030,7 @@ private:
             ++state;
             basic_solver::num_guesses++;
 
-            this->update_band_solved_mask32(state, band, pos, digit);
+            this->update_band_solved_mask32(state, band, pos, digit, mask);
 
             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                 this->guess_next_cell(state, board);
@@ -2089,23 +2089,25 @@ private:
                             BitUtils::popcnt32(state->candidates[8].bands[2]);
 #endif
         Counter total_min, total_box;
+        BoxCounter box_cnt;
 
         int cnt = Numbers;
         do {
             // Find the least number of candidates among all the digits
             BitVec08x16 counter8, minpos16;
             counter8.loadAligned((void *)&counter.digits[0]);
+            // Exclude 0-9 candidates in a digit
+            counter8 = _mm_sub_epi16(counter8.m128, _mm_set1_epi16(10));
             minpos16 = _mm_minpos_epu16(counter8.m128);
             uint32_t min_and_index = (uint32_t)_mm_cvtsi128_si32(minpos16.m128);
             uint32_t min_candidates = min_and_index & 0xFFFFU;
             uint32_t min_digit;
-            if (min_candidates <= (uint32_t)counter.digits[8])
+            if (min_candidates <= (uint32_t)(counter.digits[8] - 10))
                 min_digit = min_and_index >> 16U;
             else
                 min_digit = 8;
 
             // Count the total number of candidates under each box in one digit.
-            BoxCounter box_cnt;
             uint32_t band_bits = state->candidates[min_digit].bands[0];
             box_cnt.boxes[0] = BitUtils::popcnt32(band_bits & 0007007007);
             box_cnt.boxes[1] = BitUtils::popcnt32(band_bits & 0070070070);
@@ -2123,19 +2125,21 @@ private:
 
             // Find the cell of the first two candidates in a box
             counter8.loadAligned((void *)&box_cnt.boxes[0]);
+            // Exclude 0 or 1 candidates in a box
+            counter8 = _mm_sub_epi16(counter8.m128, _mm_set1_epi16(2));
             minpos16 = _mm_minpos_epu16(counter8.m128);
             min_and_index = (uint32_t)_mm_cvtsi128_si32(minpos16.m128);
             min_candidates = min_and_index & 0xFFFFU;
             uint32_t min_box;
-            if (min_candidates <= (uint32_t)box_cnt.boxes[8]) {
+            if (min_candidates <= (uint32_t)(box_cnt.boxes[8] - 2)) {
                 min_box = min_and_index >> 16U;
             }
             else {
                 min_box = 8;
-                min_candidates = box_cnt.boxes[8];
+                min_candidates = (box_cnt.boxes[8] - 2);
             }
 
-            if (min_candidates == 2) {
+            if (min_candidates == 0) {
                 return this->guess_box_cell_pair(state, board, min_digit, min_box);
             }
 

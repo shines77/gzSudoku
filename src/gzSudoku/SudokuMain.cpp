@@ -279,6 +279,7 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
     double total_time = 0.0;
 
     Board solution;
+    solution.reset();
     SudokuSolver solver;
     BasicSolver basicSolver;
     jtest::StopWatch sw;
@@ -378,7 +379,8 @@ void run_all_benchmark(const char * filename)
 //  run_sudoku_test<JCZ::v2::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
 //  run_sudoku_test<JCZ::v4::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v4");
 //  run_sudoku_test<JCZ::v5::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v5");
-    run_sudoku_test<JCZ::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v1");
+    //run_sudoku_test<JCZ::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v1");
+    run_sudoku_test<JCZ::v2::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
     //run_sudoku_test<JCZEx::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZEx::v1");
 #endif
 }
