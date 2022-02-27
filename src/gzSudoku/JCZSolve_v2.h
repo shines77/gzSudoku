@@ -2078,7 +2078,7 @@ private:
 
     JSTD_NO_INLINE
     int guess_some_cell(State *& state, Board & board) {
-#if 1
+#if 0
         uint8_t band_order[4];
         uint32_t band_solved_0 = BitUtils::popcnt32(state->solvedCells.bands[0]);
         uint32_t band_solved_1 = BitUtils::popcnt32(state->solvedCells.bands[1]);
@@ -2124,8 +2124,8 @@ private:
         UNUSED_VARIANT(min_unsolved_band);
 
         for (uint32_t i = 0; i < 3; i++) {
-            uint32_t band = band_order[i];
-            //uint32_t band = i;
+            //uint32_t band = band_order[i];
+            uint32_t band = i;
             uint32_t unsolvedCells = state->solvedCells.bands[band] ^ kBitSet27;
             if (unsolvedCells == 0)
                 continue;
@@ -2192,7 +2192,7 @@ private:
                 }
                 --state;
 
-                if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
+                if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
                     return Status::Success;
             }
             else {
@@ -2236,7 +2236,7 @@ private:
             }
             --state;
 
-            if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
+            if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
                 return Status::Success;
         }
 
@@ -2430,7 +2430,7 @@ private:
         }
 
         if (this->guess_bivalue_cells(state, board) == Status::Failed) {
-            this->guess_min_box_cells(state, board);
+            this->guess_some_cell(state, board);
         }
 
         return Status::Success;
