@@ -52,6 +52,8 @@ static const size_t kSearchMode = SearchMode::OneSolution;
 static const bool kCheckSolvedRows = false;
 static const bool kUseFastMode = false;
 
+static const bool kReachSolutionsLimitToExit = false;
+
 // Kill all in other blocks locked column / box
 static const uint32_t colLockedSingleMaskTbl[512] = {
     07777777777, 07776776776, 07775775775, 07777777777, 07773773773, 07777777777, 07777777777, 07777777777,
@@ -1820,7 +1822,7 @@ private:
                             }
                             --state;
 
-                            if (this->numSolutions_ >= this->limitSolutions_)
+                            if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
                                 return Status::Success;
                         }
                         else {
@@ -1863,7 +1865,7 @@ private:
                             }
                             --state;
 
-                            if (this->numSolutions_ >= this->limitSolutions_)
+                            if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
                                 return Status::Success;
                         }
                         else {
@@ -1911,7 +1913,7 @@ private:
                     }
                     --state;
 
-                    if (this->numSolutions_ >= this->limitSolutions_)
+                    if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
                         return Status::Success;
                 }
             }
@@ -1941,7 +1943,7 @@ private:
                     }
                     --state;
 
-                    if (this->numSolutions_ >= this->limitSolutions_)
+                    if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
                         return Status::Success;
                 }
             }
@@ -1974,7 +1976,7 @@ private:
                     }
                     --state;
 
-                    if (this->numSolutions_ >= this->limitSolutions_)
+                    if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
                         return Status::Success;
                 }
             }
@@ -2015,7 +2017,7 @@ private:
                     }
                     --state;
 
-                    if (this->numSolutions_ >= this->limitSolutions_)
+                    if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
                         return Status::Success;
                 }
                 else {
@@ -2054,7 +2056,7 @@ private:
                     }
                     --state;
 
-                    if (this->numSolutions_ >= this->limitSolutions_)
+                    if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
                         return Status::Success;
                 }
                 else {
@@ -2189,7 +2191,7 @@ private:
                 }
                 --state;
 
-                if (this->numSolutions_ >= this->limitSolutions_)
+                if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
                     return Status::Success;
             }
             else {
@@ -2233,7 +2235,7 @@ private:
             }
             --state;
 
-            if (this->numSolutions_ >= this->limitSolutions_)
+            if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
                 return Status::Success;
         }
 
