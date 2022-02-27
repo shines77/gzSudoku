@@ -1972,6 +1972,8 @@ private:
 
     JSTD_FORCE_INLINE
     int guess_box_cell_pair(State *& state, Board & board, uint32_t digit, uint32_t box) {
+        assert(digit >= 0 && digit < Numbers);
+        assert(box >= 0 && box < Boxes);
         uint32_t band = box / 3;
         uint32_t box_idx = box % 3;
         uint32_t box_bits = state->candidates[digit].bands[band] & boxesMaskTbl[box_idx];
@@ -1991,7 +1993,7 @@ private:
                 ++state;
                 basic_solver::num_guesses++;
 
-                this->update_band_solved_mask32(state, band, pos, digit, mask);
+                this->update_band_solved_mask32(state, band, pos, digit);
 
                 if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                     this->guess_next_cell(state, board);
@@ -2000,7 +2002,7 @@ private:
             }
             else {
                 // Second of pair
-                this->update_band_solved_mask32(state, band, pos, digit, mask);
+                this->update_band_solved_mask32(state, band, pos, digit);
 
                 if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                     this->guess_next_cell(state, board);
@@ -2014,6 +2016,8 @@ private:
 
     JSTD_FORCE_INLINE
     int guess_box_cell(State *& state, Board & board, uint32_t digit, uint32_t box) {
+        assert(digit >= 0 && digit < (uint32_t)Numbers);
+        assert(box >= 0 && box < (uint32_t)Boxes);
         uint32_t band = box / 3;
         uint32_t box_idx = box % 3;
         uint32_t box_bits = state->candidates[digit].bands[band] & boxesMaskTbl[box_idx];
@@ -2030,7 +2034,7 @@ private:
             ++state;
             basic_solver::num_guesses++;
 
-            this->update_band_solved_mask32(state, band, pos, digit, mask);
+            this->update_band_solved_mask32(state, band, pos, digit);
 
             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                 this->guess_next_cell(state, board);
@@ -2102,11 +2106,21 @@ private:
             uint32_t min_and_index = (uint32_t)_mm_cvtsi128_si32(minpos16.m128);
             uint32_t min_candidates = min_and_index & 0xFFFFU;
             uint32_t min_digit;
-            if (min_candidates <= (uint32_t)(counter.digits[8] - 10))
+            if (min_candidates <= (uint32_t)(counter.digits[8] - 10)) {
                 min_digit = min_and_index >> 16U;
-            else
+            }
+            else {
                 min_digit = 8;
+                min_candidates = (uint32_t)(counter.digits[8] - 10);
+            }
 
+            assert(min_candidates != (99 - 10));
+            if (min_candidates >= (81 - 10)) {
+                return Status::Failed;
+            }
+
+            assert(min_candidates <= (32 * 3 - 10));
+           
             // Count the total number of candidates under each box in one digit.
             uint32_t band_bits = state->candidates[min_digit].bands[0];
             box_cnt.boxes[0] = BitUtils::popcnt32(band_bits & 0007007007);
@@ -2136,7 +2150,7 @@ private:
             }
             else {
                 min_box = 8;
-                min_candidates = (box_cnt.boxes[8] - 2);
+                min_candidates = (uint32_t)(box_cnt.boxes[8] - 2);
             }
 
             if (min_candidates == 0) {
@@ -2148,7 +2162,7 @@ private:
 
             counter.digits[min_digit] = 99;
             cnt--;
-        } while (cnt == 0);
+        } while (cnt != 0);
 
         // Find the least number of candidates among all the boxes each digits
         {
@@ -2158,12 +2172,23 @@ private:
             uint32_t min_and_index = (uint32_t)_mm_cvtsi128_si32(minpos16.m128);
             uint32_t min_candidates = min_and_index & 0xFFFFU;
             uint32_t min_digit;
-            if (min_candidates <= (uint32_t)total_min.digits[8])
+            if (min_candidates <= (uint32_t)total_min.digits[8]) {
                 min_digit = min_and_index >> 16U;
-            else
+            }
+            else {
                 min_digit = 8;
-            uint32_t min_box = total_box.digits[min_digit];
-            return this->guess_box_cell(state, board, min_digit, min_box);
+                min_candidates = (uint32_t)total_min.digits[8];
+            }
+
+            if (min_candidates <= (9 - 2)) {
+                assert(min_digit >= 0 && min_digit < Numbers);
+                uint32_t min_box = total_box.digits[min_digit];
+                assert(min_box != uint32_t(-1));
+                return this->guess_box_cell(state, board, min_digit, min_box);
+            }
+            else {
+                return Status::Failed;
+            }
         }
     }
 

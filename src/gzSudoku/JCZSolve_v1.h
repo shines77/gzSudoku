@@ -723,7 +723,7 @@ private:
                     size_t pos = bandBitPosToPos64[0][bit_pos];
                     assert(pos != size_t(-1));
 
-                    assert(board.cells[pos] == '.');
+                    //assert(board.cells[pos] == '.');
                     board.cells[pos] = (char)('1' + num);
                 }
             }
@@ -739,7 +739,7 @@ private:
                     size_t pos = bandBitPosToPos64[1][bit_pos];
                     assert(pos != size_t(-1));
 
-                    assert(board.cells[pos] == '.');
+                    //assert(board.cells[pos] == '.');
                     board.cells[pos] = (char)('1' + num);
                 }
             }
