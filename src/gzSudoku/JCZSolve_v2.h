@@ -53,6 +53,7 @@ static const bool kCheckSolvedRows = false;
 static const bool kUseFastMode = false;
 
 static const bool kReachSolutionsLimitToExit = false;
+static const bool kReachSolutionsLimitToExit2 = true;
 
 // Kill all in other blocks locked column / box
 static const uint32_t colLockedSingleMaskTbl[512] = {
@@ -1913,7 +1914,7 @@ private:
                     }
                     --state;
 
-                    if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
+                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
                         return Status::Success;
                 }
             }
@@ -1943,7 +1944,7 @@ private:
                     }
                     --state;
 
-                    if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
+                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
                         return Status::Success;
                 }
             }
@@ -1976,7 +1977,7 @@ private:
                     }
                     --state;
 
-                    if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
+                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
                         return Status::Success;
                 }
             }
@@ -2017,7 +2018,7 @@ private:
                     }
                     --state;
 
-                    if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
+                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
                         return Status::Success;
                 }
                 else {
@@ -2056,7 +2057,7 @@ private:
                     }
                     --state;
 
-                    if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
+                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
                         return Status::Success;
                 }
                 else {
