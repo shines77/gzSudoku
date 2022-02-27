@@ -2052,7 +2052,7 @@ private:
 
     JSTD_NO_INLINE
     int guess_some_cell(State *& state, Board & board) {
-#if 0
+#if 1
         uint8_t band_order[4];
         uint32_t band_solved_0 = BitUtils::popcnt32(state->solvedCells.bands[0]);
         uint32_t band_solved_1 = BitUtils::popcnt32(state->solvedCells.bands[1]);
@@ -2060,10 +2060,13 @@ private:
         uint32_t * order = (uint32_t *)&band_order[0];
         if (band_solved_0 >= band_solved_1) {
             if (band_solved_0 >= band_solved_2) {
+                *order = make_band_order<0, 1, 2>();
+                /*
                 if (band_solved_1 >= band_solved_2)
                     *order = make_band_order<0, 1, 2>();
                 else
                     *order = make_band_order<0, 2, 1>();
+                //*/
             }
             else {
                 // band_solved_0 < band_solved_2
@@ -2077,10 +2080,13 @@ private:
             }
             else {
                 // band_solved_0 < band_solved_2
+                *order = make_band_order<1, 2, 0>();
+                /*
                 if (band_solved_1 >= band_solved_2)
                     *order = make_band_order<1, 2, 0>();
                 else
                     *order = make_band_order<2, 1, 0>();
+                //*/
             }
         }
 #endif
@@ -2088,9 +2094,12 @@ private:
         uint32_t min_unsolved_pos;
         uint32_t min_unsolved_band;
 
+        UNUSED_VARIANT(min_unsolved_pos);
+        UNUSED_VARIANT(min_unsolved_band);
+
         for (uint32_t i = 0; i < 3; i++) {
-            //uint32_t band = band_order[i];
-            uint32_t band = i;
+            uint32_t band = band_order[i];
+            //uint32_t band = i;
             uint32_t unsolvedCells = state->solvedCells.bands[band] ^ kBitSet27;
             if (unsolvedCells == 0)
                 continue;
