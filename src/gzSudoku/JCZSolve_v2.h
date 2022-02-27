@@ -1813,7 +1813,7 @@ private:
                             ++state;
                             basic_solver::num_guesses++;
 
-                            this->update_band_solved_mask64(state, band, pos, num, mask);
+                            this->update_band_solved_mask64(state, band, pos, num);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cell(state, board);
@@ -1822,7 +1822,7 @@ private:
                         }
                         else {
                             // Second of pair
-                            this->update_band_solved_mask64(state, band, pos, num, mask);
+                            this->update_band_solved_mask64(state, band, pos, num);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cell(state, board);
@@ -1968,6 +1968,163 @@ private:
         }
 #endif
         return Status::Failed;
+    }
+
+    template <uint32_t v1, uint32_t v2, uint32_t v3>
+    inline
+    uint32_t make_band_order() {
+#if GZ_SUDOKU_ENDIAN == GZ_LITTLE_ENDIAN
+        uint32_t order = v1 | (v2 << 8U) | (v3 << 16U);
+#else
+        uint32_t order = (v1 << 24U) | (v2 << 16U) | (v3 << 8U);
+#endif
+        return order;
+    }
+
+    JSTD_FORCE_INLINE
+    int guess_three_candidates_cell(State *& state, Board & board, uint32_t band, uint32_t pos, uint32_t mask) {
+        int tries = 3;
+        for (size_t num = 0; num < Numbers; num++) {
+            if ((state->candidates[num].bands[band] & mask) != 0) {
+                if (--tries) {
+                    // The First and second digit
+                    std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
+                    state->candidates[num].bands[band] ^= mask;
+                    ++state;
+                    basic_solver::num_guesses++;
+
+                    this->update_band_solved_mask32(state, band, pos, num);
+
+                    if (this->find_all_single_literals<false>(state) != Status::Invalid) {
+                        this->guess_next_cell(state, board);
+                    }
+                    --state;
+                }
+                else {
+                    // The last digit
+                    this->update_band_solved_mask32(state, band, pos, num);
+
+                    if (this->find_all_single_literals<false>(state) != Status::Invalid) {
+                        this->guess_next_cell(state, board);
+                    }
+                    return Status::Success;
+                }
+            }
+        }
+
+        return Status::Failed;
+    }
+
+    JSTD_FORCE_INLINE
+    int guess_more_than_4_cell(State *& state, Board & board, uint32_t band, uint32_t pos, int candidates) {
+        int tries = candidates;
+        uint32_t mask = tables.posToMask[pos];
+        for (size_t num = 0; num < Numbers; num++) {
+            if ((state->candidates[num].bands[band] & mask) != 0) {
+                if (--tries) {
+                    // The front of digits
+                    std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
+                    state->candidates[num].bands[band] ^= mask;
+                    ++state;
+                    basic_solver::num_guesses++;
+
+                    this->update_band_solved_mask32(state, band, pos, num);
+
+                    if (this->find_all_single_literals<false>(state) != Status::Invalid) {
+                        this->guess_next_cell(state, board);
+                    }
+                    --state;
+                }
+                else {
+                    // The last digit
+                    this->update_band_solved_mask32(state, band, pos, num);
+
+                    if (this->find_all_single_literals<false>(state) != Status::Invalid) {
+                        this->guess_next_cell(state, board);
+                    }
+                    return Status::Success;
+                }
+            }
+        }
+
+        return Status::Failed;
+    }
+
+    JSTD_NO_INLINE
+    int guess_some_cell(State *& state, Board & board) {
+#if 0
+        uint8_t band_order[4];
+        uint32_t band_solved_0 = BitUtils::popcnt32(state->solvedCells.bands[0]);
+        uint32_t band_solved_1 = BitUtils::popcnt32(state->solvedCells.bands[1]);
+        uint32_t band_solved_2 = BitUtils::popcnt32(state->solvedCells.bands[2]);
+        uint32_t * order = (uint32_t *)&band_order[0];
+        if (band_solved_0 >= band_solved_1) {
+            if (band_solved_0 >= band_solved_2) {
+                if (band_solved_1 >= band_solved_2)
+                    *order = make_band_order<0, 1, 2>();
+                else
+                    *order = make_band_order<0, 2, 1>();
+            }
+            else {
+                // band_solved_0 < band_solved_2
+                *order = make_band_order<2, 0, 1>();
+            }
+        }
+        else {
+            // band_solved_0 < band_solved_1
+            if (band_solved_0 >= band_solved_2) {
+                *order = make_band_order<1, 0, 2>();
+            }
+            else {
+                // band_solved_0 < band_solved_2
+                if (band_solved_1 >= band_solved_2)
+                    *order = make_band_order<1, 2, 0>();
+                else
+                    *order = make_band_order<2, 1, 0>();
+            }
+        }
+#endif
+        uint32_t min_unsolved_cnt = (uint32_t)-1;
+        uint32_t min_unsolved_pos;
+        uint32_t min_unsolved_band;
+
+        for (uint32_t i = 0; i < 3; i++) {
+            //uint32_t band = band_order[i];
+            uint32_t band = i;
+            uint32_t unsolvedCells = state->solvedCells.bands[band] ^ kBitSet27;
+            if (unsolvedCells == 0)
+                continue;
+
+            uint32_t bit_pos = BitUtils::bsf32(unsolvedCells);
+            uint32_t mask = BitUtils::ls1b32(unsolvedCells);
+
+            uint32_t pos = bandBitPosToPos32[band][bit_pos];
+            assert(pos != uint32_t(-1));
+
+            uint32_t unsolved_cnt = 0;
+            for (size_t num = 0; num < Numbers; num++) {
+                if ((state->candidates[num].bands[band] & mask) != 0) {
+                    unsolved_cnt++;
+                }
+            }
+
+            assert(unsolved_cnt >= 3);
+            if (unsolved_cnt == 3) {
+                return this->guess_three_candidates_cell(state, board, band, pos, mask);
+            }
+            else if (unsolved_cnt < min_unsolved_cnt) {
+                min_unsolved_cnt = unsolved_cnt;
+                min_unsolved_pos = pos;
+                min_unsolved_band = band;
+            }
+        }
+
+        if (min_unsolved_cnt != (uint32_t)-1) {
+            return this->guess_more_than_4_cell(state, board, min_unsolved_band, min_unsolved_pos, min_unsolved_cnt);
+        }
+        else {
+            return Status::Failed;
+        }
     }
 
     JSTD_FORCE_INLINE
@@ -2232,7 +2389,7 @@ private:
         }
 
         if (this->guess_bivalue_cells(state, board) == Status::Failed) {
-            this->guess_min_box_cells(state, board);
+            this->guess_some_cell(state, board);
         }
 
         return Status::Success;

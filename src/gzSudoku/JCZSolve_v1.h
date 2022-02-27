@@ -2181,7 +2181,7 @@ private:
                             ++state;
                             basic_solver::num_guesses++;
 
-                            this->update_band_solved_mask64<0>(state, pos, num, mask);
+                            this->update_band_solved_mask64<0>(state, pos, num);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cell(state, board);
@@ -2190,7 +2190,7 @@ private:
                         }
                         else {
                             // Second of pair
-                            this->update_band_solved_mask64<0>(state, pos, num, mask);
+                            this->update_band_solved_mask64<0>(state, pos, num);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cell(state, board);
@@ -2222,7 +2222,7 @@ private:
                             ++state;
                             basic_solver::num_guesses++;
 
-                            this->update_band_solved_mask32(state, 2, pos, num, mask);
+                            this->update_band_solved_mask32(state, 2, pos, num);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cell(state, board);
@@ -2231,7 +2231,7 @@ private:
                         }
                         else {
                             // Second of pair
-                            this->update_band_solved_mask32(state, 2, pos, num, mask);
+                            this->update_band_solved_mask32(state, 2, pos, num);
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cell(state, board);

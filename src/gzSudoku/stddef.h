@@ -327,4 +327,12 @@
         (void)var; \
     } while (0)
 
+//
+// Little-Endian or Big-Endian
+//
+#define GZ_LITTLE_ENDIAN    0
+#define GZ_BIG_ENDIAN       1
+
+#define GZ_SUDOKU_ENDIAN    GZ_LITTLE_ENDIAN
+
 #endif // JSTD_BASIC_STDDEF_H
