@@ -2161,6 +2161,10 @@ private:
             total_min.digits[min_digit] = min_candidates;
             total_box.digits[min_digit] = min_box;
 
+            cnt--;
+            if (cnt == 0)
+                break;
+
             counter.digits[min_digit] = 99;
 
             // Find the least number of candidates among all the digits
@@ -2178,8 +2182,7 @@ private:
                 min_candidates = (uint32_t)counter.digits[8];
             }
             assert(int16_t(min_candidates) != int16_t(-1));
-            cnt--;
-        } while (cnt != 0);
+        } while (1);
 
         // Find the least number of candidates among all the boxes each digits
         {
