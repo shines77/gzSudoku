@@ -2055,6 +2055,7 @@ private:
                                   BitUtils::popcnt32(state->candidates[num].bands[1]) +
                                   BitUtils::popcnt32(state->candidates[num].bands[2]);
         }
+        counter.digits[Numbers - 1] -= 10;
 #else
         counter.digits[0] = BitUtils::popcnt32(state->candidates[0].bands[0]) +
                             BitUtils::popcnt32(state->candidates[0].bands[1]) +
@@ -2090,37 +2091,37 @@ private:
 
         counter.digits[8] = BitUtils::popcnt32(state->candidates[8].bands[0]) +
                             BitUtils::popcnt32(state->candidates[8].bands[1]) +
-                            BitUtils::popcnt32(state->candidates[8].bands[2]);
+                            BitUtils::popcnt32(state->candidates[8].bands[2]) - 10;
 #endif
         Counter total_min, total_box;
         BoxCounter box_cnt;
 
-        int cnt = Numbers;
-        do {
-            // Find the least number of candidates among all the digits
-            BitVec08x16 counter8, minpos16;
-            counter8.loadAligned((void *)&counter.digits[0]);
-            // Exclude 0-9 candidates in a digit
-            counter8 = _mm_sub_epi16(counter8.m128, _mm_set1_epi16(10));
-            minpos16 = _mm_minpos_epu16(counter8.m128);
-            uint32_t min_and_index = (uint32_t)_mm_cvtsi128_si32(minpos16.m128);
-            uint32_t min_candidates = min_and_index & 0xFFFFU;
-            uint32_t min_digit;
-            if (min_candidates <= (uint32_t)(counter.digits[8] - 10)) {
-                min_digit = min_and_index >> 16U;
-            }
-            else {
-                min_digit = 8;
-                min_candidates = (uint32_t)(counter.digits[8] - 10);
-            }
+        // Find the least number of candidates among all the digits
+        BitVec08x16 counter8, minpos16;
+        counter8.loadAligned((void *)&counter.digits[0]);
+        // Exclude 0-9 candidates in a digit
+        counter8 = _mm_sub_epi16(counter8.m128, _mm_set1_epi16(10));
+        minpos16 = _mm_minpos_epu16(counter8.m128);
+        uint32_t min_and_index = (uint32_t)_mm_cvtsi128_si32(minpos16.m128);
+        uint32_t min_candidates = min_and_index & 0xFFFFU;
+        if (min_candidates >= (81 - 10)) {
+            return Status::Failed;
+        }
 
-            assert(min_candidates != (99 - 10));
+        uint32_t min_digit;
+        if (min_candidates <= (uint32_t)counter.digits[8]) {
+            min_digit = min_and_index >> 16U;
+        }
+        else {
+            min_digit = 8;
+            min_candidates = (uint32_t)counter.digits[8];
             if (min_candidates >= (81 - 10)) {
                 return Status::Failed;
             }
+        }
 
-            assert(min_candidates <= (32 * 3 - 10));
-           
+        int cnt = Numbers;
+        do {          
             // Count the total number of candidates under each box in one digit.
             uint32_t band_bits = state->candidates[min_digit].bands[0];
             box_cnt.boxes[0] = BitUtils::popcnt32(band_bits & 0007007007);
@@ -2135,7 +2136,7 @@ private:
             band_bits = state->candidates[min_digit].bands[2];
             box_cnt.boxes[6] = BitUtils::popcnt32(band_bits & 0007007007);
             box_cnt.boxes[7] = BitUtils::popcnt32(band_bits & 0070070070);
-            box_cnt.boxes[8] = BitUtils::popcnt32(band_bits & 0700700700);
+            box_cnt.boxes[8] = BitUtils::popcnt32(band_bits & 0700700700) - 2;
 
             // Find the cell of the first two candidates in a box
             counter8.loadAligned((void *)&box_cnt.boxes[0]);
@@ -2145,12 +2146,12 @@ private:
             min_and_index = (uint32_t)_mm_cvtsi128_si32(minpos16.m128);
             min_candidates = min_and_index & 0xFFFFU;
             uint32_t min_box;
-            if (min_candidates <= (uint32_t)(box_cnt.boxes[8] - 2)) {
+            if (min_candidates <= (uint32_t)box_cnt.boxes[8]) {
                 min_box = min_and_index >> 16U;
             }
             else {
                 min_box = 8;
-                min_candidates = (uint32_t)(box_cnt.boxes[8] - 2);
+                min_candidates = (uint32_t)box_cnt.boxes[8];
             }
 
             if (min_candidates == 0) {
@@ -2161,6 +2162,22 @@ private:
             total_box.digits[min_digit] = min_box;
 
             counter.digits[min_digit] = 99;
+
+            // Find the least number of candidates among all the digits
+            counter8.loadAligned((void *)&counter.digits[0]);
+            // Exclude 0-9 candidates in a digit
+            counter8 = _mm_sub_epi16(counter8.m128, _mm_set1_epi16(10));
+            minpos16 = _mm_minpos_epu16(counter8.m128);
+            min_and_index = (uint32_t)_mm_cvtsi128_si32(minpos16.m128);
+            min_candidates = min_and_index & 0xFFFFU;
+            if (min_candidates <= (uint32_t)counter.digits[8]) {
+                min_digit = min_and_index >> 16U;
+            }
+            else {
+                min_digit = 8;
+                min_candidates = (uint32_t)counter.digits[8];
+            }
+            assert(int16_t(min_candidates) != int16_t(-1));
             cnt--;
         } while (cnt != 0);
 
