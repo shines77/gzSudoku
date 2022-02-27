@@ -2104,10 +2104,6 @@ private:
         minpos16 = _mm_minpos_epu16(counter8.m128);
         uint32_t min_and_index = (uint32_t)_mm_cvtsi128_si32(minpos16.m128);
         uint32_t min_candidates = min_and_index & 0xFFFFU;
-        if (min_candidates >= (81 - 10)) {
-            return Status::Failed;
-        }
-
         uint32_t min_digit;
         if (min_candidates <= (uint32_t)counter.digits[8]) {
             min_digit = min_and_index >> 16U;
@@ -2115,9 +2111,10 @@ private:
         else {
             min_digit = 8;
             min_candidates = (uint32_t)counter.digits[8];
-            if (min_candidates >= (81 - 10)) {
-                return Status::Failed;
-            }
+        }
+
+        if (min_candidates >= (81 - 10)) {
+            return Status::Failed;
         }
 
         int cnt = Numbers;
@@ -2179,7 +2176,7 @@ private:
             }
             else {
                 min_digit = 8;
-                min_candidates = (uint32_t)counter.digits[8];
+                //min_candidates = (uint32_t)counter.digits[8];
             }
             assert(int16_t(min_candidates) != int16_t(-1));
         } while (1);
