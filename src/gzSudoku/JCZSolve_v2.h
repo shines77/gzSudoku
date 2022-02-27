@@ -52,7 +52,7 @@ static const size_t kSearchMode = SearchMode::OneSolution;
 static const bool kCheckSolvedRows = false;
 static const bool kUseFastMode = false;
 
-static const bool kReachSolutionsLimitToExit = false;
+static const bool kReachSolutionsLimitToExit = true;
 static const bool kReachSolutionsLimitToExit2 = true;
 
 // Kill all in other blocks locked column / box
@@ -2430,7 +2430,7 @@ private:
         }
 
         if (this->guess_bivalue_cells(state, board) == Status::Failed) {
-            this->guess_some_cell(state, board);
+            this->guess_min_box_cells(state, board);
         }
 
         return Status::Success;
