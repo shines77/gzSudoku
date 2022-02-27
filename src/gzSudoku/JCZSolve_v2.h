@@ -1904,6 +1904,9 @@ private:
                         this->guess_next_cell(state, board);
                     }
                     --state;
+
+                    if (this->numSolutions_ >= this->limitSolutions_)
+                        return Status::Failed;
                 }
             }
 
@@ -1931,6 +1934,9 @@ private:
                         this->guess_next_cell(state, board);
                     }
                     --state;
+
+                    if (this->numSolutions_ >= this->limitSolutions_)
+                        return Status::Failed;
                 }
             }
 
@@ -1961,6 +1967,9 @@ private:
                         this->guess_next_cell(state, board);
                     }
                     --state;
+
+                    if (this->numSolutions_ >= this->limitSolutions_)
+                        return Status::Failed;
                 }
             }
 
@@ -1999,6 +2008,9 @@ private:
                         this->guess_next_cell(state, board);
                     }
                     --state;
+
+                    if (this->numSolutions_ >= this->limitSolutions_)
+                        return Status::Failed;
                 }
                 else {
                     // The last digit
@@ -2007,6 +2019,10 @@ private:
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cell(state, board);
                     }
+
+                    if (this->numSolutions_ >= this->limitSolutions_)
+                        return Status::Failed;
+
                     return Status::Success;
                 }
             }
@@ -2034,6 +2050,9 @@ private:
                         this->guess_next_cell(state, board);
                     }
                     --state;
+
+                    if (this->numSolutions_ >= this->limitSolutions_)
+                        return Status::Failed;
                 }
                 else {
                     // The last digit
@@ -2042,6 +2061,10 @@ private:
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cell(state, board);
                     }
+
+                    if (this->numSolutions_ >= this->limitSolutions_)
+                        return Status::Failed;
+
                     return Status::Success;
                 }
             }
