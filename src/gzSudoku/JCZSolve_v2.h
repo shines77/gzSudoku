@@ -1821,7 +1821,7 @@ private:
                             --state;
 
                             if (this->numSolutions_ >= this->limitSolutions_)
-                                return Status::Failed;
+                                return Status::Success;
                         }
                         else {
                             // Second of pair
@@ -1864,7 +1864,7 @@ private:
                             --state;
 
                             if (this->numSolutions_ >= this->limitSolutions_)
-                                return Status::Failed;
+                                return Status::Success;
                         }
                         else {
                             // Second of pair
@@ -1912,7 +1912,7 @@ private:
                     --state;
 
                     if (this->numSolutions_ >= this->limitSolutions_)
-                        return Status::Failed;
+                        return Status::Success;
                 }
             }
 
@@ -1942,7 +1942,7 @@ private:
                     --state;
 
                     if (this->numSolutions_ >= this->limitSolutions_)
-                        return Status::Failed;
+                        return Status::Success;
                 }
             }
 
@@ -1975,7 +1975,7 @@ private:
                     --state;
 
                     if (this->numSolutions_ >= this->limitSolutions_)
-                        return Status::Failed;
+                        return Status::Success;
                 }
             }
 
@@ -2016,7 +2016,7 @@ private:
                     --state;
 
                     if (this->numSolutions_ >= this->limitSolutions_)
-                        return Status::Failed;
+                        return Status::Success;
                 }
                 else {
                     // The last digit
@@ -2055,7 +2055,7 @@ private:
                     --state;
 
                     if (this->numSolutions_ >= this->limitSolutions_)
-                        return Status::Failed;
+                        return Status::Success;
                 }
                 else {
                     // The last digit
@@ -2190,7 +2190,7 @@ private:
                 --state;
 
                 if (this->numSolutions_ >= this->limitSolutions_)
-                    return Status::Failed;
+                    return Status::Success;
             }
             else {
                 // Second of pair
@@ -2234,7 +2234,7 @@ private:
             --state;
 
             if (this->numSolutions_ >= this->limitSolutions_)
-                return Status::Failed;
+                return Status::Success;
         }
 
         return Status::Success;
@@ -2474,12 +2474,8 @@ private:
     bool is_solved(State * state) {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
-#if 1
-        return ((state->solvedCells.bands64[0] & state->solvedCells.bands64[1]) == kBitSet27_Double64);
-#else
         return ((state->solvedCells.bands64[0] == kBitSet27_Double64) &&
                 (state->solvedCells.bands64[1] == kBitSet27_Single64));
-#endif
 #else
         return ((state->solvedCells.bands[0] == kBitSet27) &&
                 (state->solvedCells.bands[1] == kBitSet27) &&
