@@ -2407,6 +2407,85 @@ private:
         }
     }
 
+    JSTD_NO_INLINE
+    int guess_min_box_cells_v2(State *& state, Board & board) {
+        Counter total_min, total_box;
+        BoxCounter box_cnt;
+        BitVec08x16 counter8, minpos16;
+
+        uint32_t min_and_index, min_candidates;
+
+        int digit = 0;
+        do {          
+            // Count the total number of candidates under each box in one digit.
+            uint32_t band_bits = state->candidates[digit].bands[0];
+            box_cnt.boxes[0] = BitUtils::popcnt32(band_bits & 0007007007);
+            box_cnt.boxes[1] = BitUtils::popcnt32(band_bits & 0070070070);
+            box_cnt.boxes[2] = BitUtils::popcnt32(band_bits & 0700700700);
+
+            band_bits = state->candidates[digit].bands[1];
+            box_cnt.boxes[3] = BitUtils::popcnt32(band_bits & 0007007007);
+            box_cnt.boxes[4] = BitUtils::popcnt32(band_bits & 0070070070);
+            box_cnt.boxes[5] = BitUtils::popcnt32(band_bits & 0700700700);
+
+            band_bits = state->candidates[digit].bands[2];
+            box_cnt.boxes[6] = BitUtils::popcnt32(band_bits & 0007007007);
+            box_cnt.boxes[7] = BitUtils::popcnt32(band_bits & 0070070070);
+            box_cnt.boxes[8] = BitUtils::popcnt32(band_bits & 0700700700) - 2;
+
+            // Find the cell of the first two candidates in a box
+            counter8.loadAligned((void *)&box_cnt.boxes[0]);
+            // Exclude 0 or 1 candidates in a box
+            counter8 = _mm_sub_epi16(counter8.m128, _mm_set1_epi16(2));
+            minpos16 = _mm_minpos_epu16(counter8.m128);
+            min_and_index = (uint32_t)_mm_cvtsi128_si32(minpos16.m128);
+            min_candidates = min_and_index & 0xFFFFU;
+            uint32_t min_box;
+            if (min_candidates <= (uint32_t)box_cnt.boxes[8]) {
+                min_box = min_and_index >> 16U;
+            }
+            else {
+                min_box = 8;
+                min_candidates = (uint32_t)box_cnt.boxes[8];
+            }
+
+            if (min_candidates == 0) {
+                return this->guess_box_cell_pair(state, board, digit, min_box);
+            }
+
+            total_min.digits[digit] = min_candidates;
+            total_box.digits[digit] = min_box;
+
+            digit++;
+        } while (digit < Numbers);
+
+        // Find the least number of candidates among all the boxes each digits
+        {
+            counter8.loadAligned((void *)&total_min.digits[0]);
+            minpos16 = _mm_minpos_epu16(counter8.m128);
+            uint32_t min_and_index = (uint32_t)_mm_cvtsi128_si32(minpos16.m128);
+            uint32_t min_candidates = min_and_index & 0xFFFFU;
+            uint32_t min_digit;
+            if (min_candidates <= (uint32_t)total_min.digits[8]) {
+                min_digit = min_and_index >> 16U;
+            }
+            else {
+                min_digit = 8;
+                min_candidates = (uint32_t)total_min.digits[8];
+            }
+
+            if (min_candidates <= (9 - 2)) {
+                assert(min_digit >= 0 && min_digit < Numbers);
+                uint32_t min_box = total_box.digits[min_digit];
+                assert(min_box != uint32_t(-1));
+                return this->guess_box_cell(state, board, min_digit, min_box);
+            }
+            else {
+                return Status::Failed;
+            }
+        }
+    }
+
     template <bool NeedCheckSolved = true>
     JSTD_FORCE_INLINE
     int guess_next_cell(State *& state, Board & board) {
@@ -2430,7 +2509,8 @@ private:
         }
 
         if (this->guess_bivalue_cells(state, board) == Status::Failed) {
-            this->guess_some_cell(state, board);
+            //this->guess_some_cell(state, board);
+            this->guess_min_box_cells_v2(state, board);
         }
 
         return Status::Success;
