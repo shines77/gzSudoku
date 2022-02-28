@@ -101,11 +101,11 @@ else()
     set(EXTRA_LIBS ${EXTRA_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
-include_directories(include)
-include_directories(src)
+include_directories(../include)
+include_directories(../src)
 
 set(SOURCE_FILES
-    src/gzSudoku/SudokuMain.cpp
+    ../src/gzSudoku/SudokuMain.cpp
     )
 
 add_custom_target(release
