@@ -405,6 +405,12 @@ static const uint32_t boxesMaskTbl[4] = {
     0007007007, 0070070070, 0700700700, 0
 };
 
+static const uint32_t boxToBoxesMaskTbl[9] = {
+    0007007007, 0007007007, 0007007007,
+    0070070070, 0070070070, 0070070070,
+    0700700700, 0700700700, 0700700700
+};
+
 class Solver : public BasicSolver {
 public:
     typedef BasicSolver                         basic_solver;
@@ -2166,9 +2172,8 @@ private:
     int guess_box_cell_pair(State *& state, Board & board, uint32_t digit, uint32_t box) {
         assert(digit >= 0 && digit < Numbers);
         assert(box >= 0 && box < Boxes);
-        uint32_t band = box / 3;
-        uint32_t box_idx = box % 3;
-        uint32_t box_bits = state->candidates[digit].bands[band] & boxesMaskTbl[box_idx];
+        uint32_t band = tables.div3[box];
+        uint32_t box_bits = state->candidates[digit].bands[band] & boxToBoxesMaskTbl[box];
         while (box_bits != 0) {
             size_t bit_pos = BitUtils::bsf32(box_bits);
             uint32_t mask = BitUtils::ls1b32(box_bits);
@@ -2213,9 +2218,8 @@ private:
     int guess_box_cell(State *& state, Board & board, uint32_t digit, uint32_t box) {
         assert(digit >= 0 && digit < (uint32_t)Numbers);
         assert(box >= 0 && box < (uint32_t)Boxes);
-        uint32_t band = box / 3;
-        uint32_t box_idx = box % 3;
-        uint32_t box_bits = state->candidates[digit].bands[band] & boxesMaskTbl[box_idx];
+        uint32_t band = tables.div3[box];
+        uint32_t box_bits = state->candidates[digit].bands[band] & boxToBoxesMaskTbl[box];
         while (box_bits != 0) {
             size_t bit_pos = BitUtils::bsf32(box_bits);
             uint32_t mask = BitUtils::ls1b32(box_bits);
@@ -2415,7 +2419,7 @@ private:
 
         uint32_t min_and_index, min_candidates;
 
-        int digit = 0;
+        uint32_t digit = 0;
         do {          
             // Count the total number of candidates under each box in one digit.
             uint32_t band_bits = state->candidates[digit].bands[0];
@@ -2457,7 +2461,7 @@ private:
             total_box.digits[digit] = min_box;
 
             digit++;
-        } while (digit < Numbers);
+        } while (digit < (uint32_t)Numbers);
 
         // Find the least number of candidates among all the boxes each digits
         {
