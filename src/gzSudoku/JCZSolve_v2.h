@@ -2248,7 +2248,7 @@ private:
     }
 
     JSTD_NO_INLINE
-    int guess_min_box_cells(State *& state, Board & board) {
+    int guess_min_box_cells_v1(State *& state, Board & board) {
         // Count the total number of candidates under each digit.
         Counter counter;
 #if 0
@@ -2412,7 +2412,7 @@ private:
     }
 
     JSTD_NO_INLINE
-    int guess_min_box_cells_v2(State *& state, Board & board) {
+    int guess_min_box_cells(State *& state, Board & board) {
         Counter total_min, total_box;
         BoxCounter box_cnt;
         BitVec08x16 counter8, minpos16;
@@ -2514,7 +2514,7 @@ private:
 
         if (this->guess_bivalue_cells(state, board) == Status::Failed) {
             //this->guess_some_cell(state, board);
-            this->guess_min_box_cells_v2(state, board);
+            this->guess_min_box_cells(state, board);
         }
 
         return Status::Success;
