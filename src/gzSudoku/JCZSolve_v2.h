@@ -491,15 +491,32 @@ private:
         uint32_t bands[4];
         uint64_t bands64[2];
 
-        void reset() {
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+        void clear() {
             this->bands64[0] = 0;
             this->bands64[1] = 0;
         }
 
-        void set() {
+        void full() {
             this->bands64[0] = kBitSet27_Double64;
             this->bands64[1] = kBitSet27_Single64;
         }
+#else
+        void clear() {
+            this->bands[0] = 0;
+            this->bands[1] = 0;
+            this->bands[2] = 0;
+            this->bands[3] = 0;
+        }
+
+        void full() {
+            this->bands[0] = kBitSet27;
+            this->bands[1] = kBitSet27;
+            this->bands[2] = kBitSet27;
+            this->bands[3] = 0;
+        }
+#endif
     };
 
     struct alignas(16) State {
@@ -514,15 +531,15 @@ private:
 
         void init() {
             for (size_t num = 0; num < Numbers; num++) {
-                this->candidates[num].set();
-                this->prevCandidates[num].reset();
+                this->candidates[num].full();
+                this->prevCandidates[num].clear();
 #if JCZ_V2_COMP_COLCOMBBITS
-                this->colCombBits[num].reset();
+                this->colCombBits[num].clear();
 #endif
             }            
-            this->solvedCells.reset();
-            this->solvedRows.reset();
-            this->pairs.reset();
+            this->solvedCells.clear();
+            this->solvedRows.clear();
+            this->pairs.clear();
         }
     };
 
@@ -664,6 +681,11 @@ private:
     void extract_solution(State * state, Board & board) {
         assert(state != nullptr);
 #if 1
+#if !defined(NDEBUG)
+        for (size_t pos = 0; pos < BoardSize; pos++) {
+            board.cells[pos] = '.';
+        }
+#endif
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -679,7 +701,7 @@ private:
                     size_t pos = bandBitPosToPos64[0][bit_pos];
                     assert(pos != size_t(-1));
 
-                    //assert(board.cells[pos] == '.');
+                    assert(board.cells[pos] == '.');
                     board.cells[pos] = (char)('1' + num);
                 }
             }
@@ -695,7 +717,7 @@ private:
                     size_t pos = bandBitPosToPos64[1][bit_pos];
                     assert(pos != size_t(-1));
 
-                    //assert(board.cells[pos] == '.');
+                    assert(board.cells[pos] == '.');
                     board.cells[pos] = (char)('1' + num);
                 }
             }

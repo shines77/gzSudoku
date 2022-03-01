@@ -173,6 +173,7 @@
     <ClInclude Include="..\..\..\src\gzSudoku\JCZSolve_v4.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\JCZSolve_v3.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\JCZSolve_v5.h" />
+    <ClInclude Include="..\..\..\src\gzSudoku\JCZSolve_v6.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\msvc_x86intrin.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\PackedBitSet.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\PowerOf2.h" />
