@@ -1262,18 +1262,19 @@ private:
         uint32_t locked1 = colBands0.band1 | colBands1.band1 | colBands2.band1;
         uint32_t locked2 = colBands0.band2 | colBands1.band2 | colBands2.band2;
 
+        assert(locked0 != 0 && locked1 != 0 && locked2 != 0);
+
         uint32_t newBand0 = band0 & locked0;
         uint32_t newBand1 = band1 & locked1;
         uint32_t newBand2 = band2 & locked2;
 
-        if ((newBand0 != band0) || (newBand1 != band1) || (newBand2 != band2)) {
+        //if ((newBand0 != band0) || (newBand1 != band1) || (newBand2 != band2)) {
             state->candidates[digit].bands[0] = newBand0;
             state->candidates[digit].bands[1] = newBand1;
             state->candidates[digit].bands[2] = newBand2;
-            return Status::Success;
-        }
+        //}
 
-        return -1;
+        return Status::Success;
     }
 
     template <uint32_t digit>
@@ -1299,18 +1300,19 @@ private:
         uint32_t locked1 = lockedCandidates0.band1 | lockedCandidates1.band1 | lockedCandidates2.band1;
         uint32_t locked2 = lockedCandidates0.band2 | lockedCandidates1.band2 | lockedCandidates2.band2;
 
+        assert(locked0 != 0 && locked1 != 0 && locked2 != 0);
+
         uint32_t newBand0 = band0 & locked0;
         uint32_t newBand1 = band1 & locked1;
         uint32_t newBand2 = band2 & locked2;
 
-        if ((newBand0 != band0) || (newBand1 != band1) || (newBand2 != band2)) {
+        //if ((newBand0 != band0) || (newBand1 != band1) || (newBand2 != band2)) {
             state->candidates[digit].bands[0] = newBand0;
             state->candidates[digit].bands[1] = newBand1;
             state->candidates[digit].bands[2] = newBand2;
-            return Status::Success;
-        }
+        //}
 
-        return -1;
+        return Status::Success;
     }
 
     template <bool fast_mode = false>
