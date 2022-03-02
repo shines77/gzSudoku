@@ -402,7 +402,7 @@ static const uint32_t boxToBoxesMaskTbl[9] = {
 };
 
 static const uint16_t kAll = 0777;
-static const uint32_t kAllConfig = 077;
+static const uint32_t kAllConfig = 0b00111111;
 
 static const uint8_t None = 0;
 static const uint8_t Have = 1;
@@ -499,6 +499,59 @@ struct ColBands {
     ColBands(uint32_t b0 = 0, uint32_t b1 = 0, uint32_t b2 = 0)
         : band0(b0), band1(b1), band2(b2) {
     }
+
+    ColBands(const ColBands & src)
+        : band0(src.band0), band1(src.band1), band2(src.band2) {        
+    }
+
+    ColBands & operator = (const ColBands & rhs) {
+        this->band0 = rhs.band0;
+        this->band1 = rhs.band1;
+        this->band2 = rhs.band2;
+        return *this;
+    }
+
+    ColBands & operator & (const ColBands & rhs) {
+        this->band0 &= rhs.band0;
+        this->band1 &= rhs.band1;
+        this->band2 &= rhs.band2;
+        return *this;
+    }
+
+    ColBands & operator | (const ColBands & rhs) {
+        this->band0 |= rhs.band0;
+        this->band1 |= rhs.band1;
+        this->band2 |= rhs.band2;
+        return *this;
+    }
+
+    ColBands & operator ^ (const ColBands & rhs) {
+        this->band0 ^= rhs.band0;
+        this->band1 ^= rhs.band1;
+        this->band2 ^= rhs.band2;
+        return *this;
+    }
+
+    ColBands & operator &= (const ColBands & rhs) {
+        this->band0 &= rhs.band0;
+        this->band1 &= rhs.band1;
+        this->band2 &= rhs.band2;
+        return *this;
+    }
+
+    ColBands & operator |= (const ColBands & rhs) {
+        this->band0 |= rhs.band0;
+        this->band1 |= rhs.band1;
+        this->band2 |= rhs.band2;
+        return *this;
+    }
+
+    ColBands & operator ^= (const ColBands & rhs) {
+        this->band0 ^= rhs.band0;
+        this->band1 ^= rhs.band1;
+        this->band2 ^= rhs.band2;
+        return *this;
+    }
 };
 
 //
@@ -511,7 +564,7 @@ struct ColBands {
 //   peer2    | . . X | X . . | . X . | X . . | . X . | . . X |
 //            +-------+-------+-------+-------+-------+-------+
 //
-static const ColBands configMaskToColumnBandsTbl[3][6] = {
+static const ColBands configMaskToColumnBandsMaskTbl[3][6] = {
     {
         { 0001001001, 0002002002, 0004004004 },
         { 0002002002, 0004004004, 0001001001 },
@@ -537,6 +590,10 @@ static const ColBands configMaskToColumnBandsTbl[3][6] = {
         { 0200200200, 0100100100, 0400400400 }
     }
 };
+
+static ColBands configMaskToColumnBandsTbl0[64];
+static ColBands configMaskToColumnBandsTbl1[64];
+static ColBands configMaskToColumnBandsTbl2[64];
 
 // The column config mask each band
 static ColBands colBandsConfigMaskTbl0[512];
@@ -804,7 +861,7 @@ private:
                 { kAllConfig, kAllConfig, kAllConfig },
                 { kAllConfig, kAllConfig, kAllConfig }
             };
-            
+
             uint32_t mask = 1;
             for (uint32_t col = 0; col < Cols; col++) {
                 if ((bits & mask) == 0) {
@@ -828,6 +885,25 @@ private:
             table2[bits].band0 = configMask[2][0];
             table2[bits].band1 = configMask[2][1];
             table2[bits].band2 = configMask[2][2];
+        }
+    }
+
+    static void general_configMaskToColumnBandsTbl(ColBands * table0, ColBands * table1, ColBands * table2) {
+        for (uint32_t configMask = 0; configMask < 64; configMask++) {
+            ColBands colBands0, colBands1, colBands2;
+            uint32_t mask = 1;
+            for (uint32_t config = 0; config < 6; config++) {
+                if ((configMask & mask) != 0) {
+                    colBands0 |= configMaskToColumnBandsMaskTbl[0][config];
+                    colBands1 |= configMaskToColumnBandsMaskTbl[1][config];
+                    colBands2 |= configMaskToColumnBandsMaskTbl[2][config];
+                }
+                mask <<= 1;
+            }
+
+            table0[configMask] = colBands0;
+            table1[configMask] = colBands1;
+            table2[configMask] = colBands2;
         }
     }
 
@@ -855,9 +931,14 @@ private:
         general_keepColLockedCandidatesTbl(&keepColLockedCandidatesTbl0[0],
                                            &keepColLockedCandidatesTbl1[0],
                                            &keepColLockedCandidatesTbl2[0]);
+
         general_colBandsConfigMaskTbl(&colBandsConfigMaskTbl0[0],
                                       &colBandsConfigMaskTbl1[0],
                                       &colBandsConfigMaskTbl2[0]);
+
+        general_configMaskToColumnBandsTbl(&configMaskToColumnBandsTbl0[0],
+                                           &configMaskToColumnBandsTbl1[0],
+                                           &configMaskToColumnBandsTbl2[0]);
     }
 
     void extract_solution(State * state, Board & board) {
@@ -1173,9 +1254,9 @@ private:
         uint32_t configMask1 = band0ConfigMask.band1 & band1ConfigMask.band1 & band2ConfigMask.band1;
         uint32_t configMask2 = band0ConfigMask.band2 & band1ConfigMask.band2 & band2ConfigMask.band2;
 
-        ColBands colBands0 = configMaskToColumnBandsTbl[0][configMask0];
-        ColBands colBands1 = configMaskToColumnBandsTbl[1][configMask1];
-        ColBands colBands2 = configMaskToColumnBandsTbl[2][configMask2];
+        ColBands colBands0 = configMaskToColumnBandsTbl0[configMask0];
+        ColBands colBands1 = configMaskToColumnBandsTbl1[configMask1];
+        ColBands colBands2 = configMaskToColumnBandsTbl2[configMask2];
 
         uint32_t locked0 = colBands0.band0 | colBands1.band0 | colBands2.band0;
         uint32_t locked1 = colBands0.band1 | colBands1.band1 | colBands2.band1;
