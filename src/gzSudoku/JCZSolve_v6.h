@@ -1246,17 +1246,17 @@ private:
         uint32_t colCombBits1 = (band1 | (band1 >> 9U) | (band1 >> 18U)) & kFullRowBits;
         uint32_t colCombBits2 = (band2 | (band2 >> 9U) | (band2 >> 18U)) & kFullRowBits;
 
-        ColBands band0ConfigMask = colBandsConfigMaskTbl0[colCombBits0];
-        ColBands band1ConfigMask = colBandsConfigMaskTbl1[colCombBits1];
-        ColBands band2ConfigMask = colBandsConfigMaskTbl2[colCombBits2];
+        ColBands & band0ConfigMask = colBandsConfigMaskTbl0[colCombBits0];
+        ColBands & band1ConfigMask = colBandsConfigMaskTbl1[colCombBits1];
+        ColBands & band2ConfigMask = colBandsConfigMaskTbl2[colCombBits2];
 
         uint32_t configMask0 = band0ConfigMask.band0 & band1ConfigMask.band0 & band2ConfigMask.band0;
         uint32_t configMask1 = band0ConfigMask.band1 & band1ConfigMask.band1 & band2ConfigMask.band1;
         uint32_t configMask2 = band0ConfigMask.band2 & band1ConfigMask.band2 & band2ConfigMask.band2;
 
-        ColBands colBands0 = configMaskToColumnBandsTbl0[configMask0];
-        ColBands colBands1 = configMaskToColumnBandsTbl1[configMask1];
-        ColBands colBands2 = configMaskToColumnBandsTbl2[configMask2];
+        ColBands & colBands0 = configMaskToColumnBandsTbl0[configMask0];
+        ColBands & colBands1 = configMaskToColumnBandsTbl1[configMask1];
+        ColBands & colBands2 = configMaskToColumnBandsTbl2[configMask2];
 
         uint32_t locked0 = colBands0.band0 | colBands1.band0 | colBands2.band0;
         uint32_t locked1 = colBands0.band1 | colBands1.band1 | colBands2.band1;
@@ -1292,9 +1292,9 @@ private:
         uint32_t colTriadsMask1 = ((colCombBits0 & kTriadsBits1) >> 3U) | (colCombBits1 & kTriadsBits1) | ((colCombBits2 & kTriadsBits1) << 3U);
         uint32_t colTriadsMask2 = ((colCombBits0 & kTriadsBits2) >> 6U) | ((colCombBits1 & kTriadsBits2) >> 3U) | (colCombBits2 & kTriadsBits2);
 
-        ColBands lockedCandidates0 = keepColLockedCandidatesTbl0[colTriadsMask0];
-        ColBands lockedCandidates1 = keepColLockedCandidatesTbl1[colTriadsMask1];
-        ColBands lockedCandidates2 = keepColLockedCandidatesTbl2[colTriadsMask2];
+        ColBands & lockedCandidates0 = keepColLockedCandidatesTbl0[colTriadsMask0];
+        ColBands & lockedCandidates1 = keepColLockedCandidatesTbl1[colTriadsMask1];
+        ColBands & lockedCandidates2 = keepColLockedCandidatesTbl2[colTriadsMask2];
 
         uint32_t locked0 = lockedCandidates0.band0 | lockedCandidates1.band0 | lockedCandidates2.band0;
         uint32_t locked1 = lockedCandidates0.band1 | lockedCandidates1.band1 | lockedCandidates2.band1;
