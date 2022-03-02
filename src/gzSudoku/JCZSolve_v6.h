@@ -401,6 +401,153 @@ static const uint32_t boxToBoxesMaskTbl[9] = {
     0007007007, 0070070070, 0700700700
 };
 
+static const uint16_t kAll = 0777;
+static const uint32_t kAllConfig = 077;
+
+static const uint8_t None = 0;
+static const uint8_t Have = 1;
+
+struct ConfigMask {
+    uint8_t config[6];
+
+    ConfigMask() {
+        config[0] = 0;
+        config[1] = 0;
+        config[2] = 0;
+        config[3] = 0;
+        config[4] = 0;
+        config[5] = 0;
+    }
+
+    ConfigMask(uint32_t v0, uint32_t v1, uint32_t v2, uint32_t v3, uint32_t v4, uint32_t v5) {
+        config[0] = (uint8_t)v0;
+        config[1] = (uint8_t)v1;
+        config[2] = (uint8_t)v2;
+        config[3] = (uint8_t)v3;
+        config[4] = (uint8_t)v4;
+        config[5] = (uint8_t)v5;
+    }
+
+    ConfigMask(const ConfigMask & src) {
+        for (uint32_t i = 0; i < 6; i++) {
+            this->config[i] = src.config[i];
+        }
+    }
+
+    ConfigMask & operator = (const ConfigMask & rhs) {
+        for (uint32_t i = 0; i < 6; i++) {
+            this->config[i] = rhs.config[i];
+        }
+        return *this;
+    }
+};
+
+//
+//   config       0       1       2       3       4       5
+//
+//   box_id     0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2
+//            +-------+-------+-------+-------+-------+-------+
+//   peer0    | X . . | . X . | . . X | . . X | X . . | . X . |
+//   peer1    | . X . | . . X | X . . | . X . | . . X | X . . |
+//   peer2    | . . X | X . . | . X . | X . . | . X . | . . X |
+//            +-------+-------+-------+-------+-------+-------+
+//
+static const uint32_t triadsToReverseConfigMaskTbl[3][4] = {
+    {
+        0b00101110,
+        0b00011101,
+        0b00110011,
+        0
+    },
+    {
+        0b00011011,
+        0b00110110,
+        0b00101101,
+        0
+    },
+    {
+        0b00110101,
+        0b00101011,
+        0b00011110,
+        0
+    }
+};
+
+static const ConfigMask _triadsToReverseConfigMaskTbl[3][3] = {
+    {
+        {    0,   Have,   Have,   Have,      0,   Have },
+        { Have,      0,   Have,   Have,   Have,      0 },
+        { Have,   Have,      0,      0,   Have,   Have }
+    },
+    {
+        { Have,   Have,      0,   Have,   Have,      0 },
+        {    0,   Have,   Have,      0,   Have,   Have },
+        { Have,      0,   Have,   Have,      0,   Have }
+    },
+    {
+        { Have,      0,   Have,      0,   Have,   Have },
+        { Have,   Have,      0,   Have,      0,   Have },
+        {    0,   Have,   Have,   Have,   Have,      0 }
+    }
+};
+
+struct ColBands {
+    uint32_t band0;
+    uint32_t band1;
+    uint32_t band2;
+
+    ColBands(uint32_t b0 = 0, uint32_t b1 = 0, uint32_t b2 = 0)
+        : band0(b0), band1(b1), band2(b2) {
+    }
+};
+
+//
+//   config       0       1       2       3       4       5
+//
+//   box_id     0 1 2   0 1 2   0 1 2   0 1 2   0 1 2   0 1 2
+//            +-------+-------+-------+-------+-------+-------+
+//   peer0    | X . . | . X . | . . X | . . X | X . . | . X . |
+//   peer1    | . X . | . . X | X . . | . X . | . . X | X . . |
+//   peer2    | . . X | X . . | . X . | X . . | . X . | . . X |
+//            +-------+-------+-------+-------+-------+-------+
+//
+static const ColBands configMaskToColumnBandsTbl[3][6] = {
+    {
+        { 0001001001, 0002002002, 0004004004 },
+        { 0002002002, 0004004004, 0001001001 },
+        { 0004004004, 0001001001, 0002002002 },
+        { 0004004004, 0002002002, 0001001001 },
+        { 0001001001, 0004004004, 0002002002 },
+        { 0002002002, 0001001001, 0004004004 }
+    },
+    {
+        { 0010010010, 0020020020, 0040040040 },
+        { 0020020020, 0040040040, 0010010010 },
+        { 0040040040, 0010010010, 0020020020 },
+        { 0040040040, 0020020020, 0010010010 },
+        { 0010010010, 0040040040, 0020020020 },
+        { 0020020020, 0010010010, 0040040040 }
+    },
+    {
+        { 0100100100, 0200200200, 0400400400 },
+        { 0200200200, 0400400400, 0100100100 },
+        { 0400400400, 0100100100, 0200200200 },
+        { 0400400400, 0200200200, 0100100100 },
+        { 0100100100, 0400400400, 0200200200 },
+        { 0200200200, 0100100100, 0400400400 }
+    }
+};
+
+// The column config mask each band
+static ColBands colBandsConfigMaskTbl0[512];
+static ColBands colBandsConfigMaskTbl1[512];
+static ColBands colBandsConfigMaskTbl2[512];
+
+// Keep all column's locked candidates
+static ColBands keepColLockedCandidatesTbl0[512];
+static ColBands keepColLockedCandidatesTbl1[512];
+static ColBands keepColLockedCandidatesTbl2[512];
+
 class Solver : public BasicSolver {
 public:
     typedef BasicSolver                         basic_solver;
@@ -455,6 +602,11 @@ public:
     static const uint32_t kFullRowBits   = 0x01FFUL;
     static const uint32_t kFullRowBits_1 = 0x01FFUL << 9U;
     static const uint32_t kFullRowBits_2 = 0x01FFUL << 18U;
+
+    static const uint32_t kTriadsBits = 07;
+    static const uint32_t kTriadsBits0 = 07;
+    static const uint32_t kTriadsBits1 = 070;
+    static const uint32_t kTriadsBits2 = 0700;
 
     static const size_t kLimitSolutions = 1;
 
@@ -639,6 +791,46 @@ private:
         printf("\n");
     }
 
+    static void general_keepColLockedCandidatesTbl(ColBands * table0, ColBands * table1, ColBands * table2) {
+        for (uint32_t bits = 0; bits < 512; bits++) {
+            //
+        }
+    }
+
+    static void general_colBandsConfigMaskTbl(ColBands * table0, ColBands * table1, ColBands * table2) {
+        for (uint32_t bits = 0; bits < 512; bits++) {
+            uint32_t configMask[3][3] = {
+                { kAllConfig, kAllConfig, kAllConfig },
+                { kAllConfig, kAllConfig, kAllConfig },
+                { kAllConfig, kAllConfig, kAllConfig }
+            };
+            
+            uint32_t mask = 1;
+            for (uint32_t col = 0; col < Cols; col++) {
+                if ((bits & mask) == 0) {
+                    uint32_t band_idx = col / 3;
+                    uint32_t cell_x = col % 3;
+                    for (uint32_t band = 0; band < 3; band++) {
+                        configMask[band][band_idx] &= triadsToReverseConfigMaskTbl[band][cell_x];
+                    }
+                }
+                mask <<= 1;
+            }
+
+            table0[bits].band0 = configMask[0][0];
+            table0[bits].band1 = configMask[0][1];
+            table0[bits].band2 = configMask[0][2];
+
+            table1[bits].band0 = configMask[1][0];
+            table1[bits].band1 = configMask[1][1];
+            table1[bits].band2 = configMask[1][2];
+
+            table2[bits].band0 = configMask[2][0];
+            table2[bits].band1 = configMask[2][1];
+            table2[bits].band2 = configMask[2][2];
+        }
+    }
+
     static void init_flip_mask() {
         Static.num_row_mask.reset();
         Static.row_fill_mask.reset();
@@ -660,6 +852,12 @@ private:
         init_flip_mask();
 
         //print_rowHiddenSingleMaskTbl();
+        general_keepColLockedCandidatesTbl(&keepColLockedCandidatesTbl0[0],
+                                           &keepColLockedCandidatesTbl1[0],
+                                           &keepColLockedCandidatesTbl2[0]);
+        general_colBandsConfigMaskTbl(&colBandsConfigMaskTbl0[0],
+                                      &colBandsConfigMaskTbl1[0],
+                                      &colBandsConfigMaskTbl2[0]);
     }
 
     void extract_solution(State * state, Board & board) {
@@ -956,6 +1154,66 @@ private:
             state->candidates[8].bands[self] &= unsolvedCells;
     }
 
+    template <uint32_t digit>
+    JSTD_FORCE_INLINE
+    void update_column_lock_candidates(State * state) {
+        uint32_t band0 = state->candidates[digit].bands[0];
+        uint32_t band1 = state->candidates[digit].bands[1];
+        uint32_t band2 = state->candidates[digit].bands[2];
+
+        uint32_t colCombBits0 = (band0 | (band0 >> 9U) | (band0 >> 18U)) & kFullRowBits;
+        uint32_t colCombBits1 = (band1 | (band1 >> 9U) | (band1 >> 18U)) & kFullRowBits;
+        uint32_t colCombBits2 = (band2 | (band2 >> 9U) | (band2 >> 18U)) & kFullRowBits;
+
+        ColBands band0ConfigMask = colBandsConfigMaskTbl0[colCombBits0];
+        ColBands band1ConfigMask = colBandsConfigMaskTbl1[colCombBits1];
+        ColBands band2ConfigMask = colBandsConfigMaskTbl2[colCombBits2];
+
+        uint32_t configMask0 = band0ConfigMask.band0 & band1ConfigMask.band0 & band2ConfigMask.band0;
+        uint32_t configMask1 = band0ConfigMask.band1 & band1ConfigMask.band1 & band2ConfigMask.band1;
+        uint32_t configMask2 = band0ConfigMask.band2 & band1ConfigMask.band2 & band2ConfigMask.band2;
+
+        ColBands colBands0 = configMaskToColumnBandsTbl[0][configMask0];
+        ColBands colBands1 = configMaskToColumnBandsTbl[1][configMask1];
+        ColBands colBands2 = configMaskToColumnBandsTbl[2][configMask2];
+
+        uint32_t locked0 = colBands0.band0 | colBands1.band0 | colBands2.band0;
+        uint32_t locked1 = colBands0.band1 | colBands1.band1 | colBands2.band1;
+        uint32_t locked2 = colBands0.band2 | colBands1.band2 | colBands2.band2;
+
+        state->candidates[digit].bands[0] = band0 & locked0;
+        state->candidates[digit].bands[1] = band1 & locked1;
+        state->candidates[digit].bands[2] = band2 & locked2;
+    }
+
+    template <uint32_t digit>
+    JSTD_FORCE_INLINE
+    void update_column_lock_candidates_v1(State * state) {
+        uint32_t band0 = state->candidates[digit].bands[0];
+        uint32_t band1 = state->candidates[digit].bands[1];
+        uint32_t band2 = state->candidates[digit].bands[2];
+
+        uint32_t colCombBits0 = (band0 | (band0 >> 9U) | (band0 >> 18U)) & kFullRowBits;
+        uint32_t colCombBits1 = (band1 | (band1 >> 9U) | (band1 >> 18U)) & kFullRowBits;
+        uint32_t colCombBits2 = (band2 | (band2 >> 9U) | (band2 >> 18U)) & kFullRowBits;
+
+        uint32_t colTriadsMask0 = (colCombBits0 & kTriadsBits0) | ((colCombBits1 & kTriadsBits0) << 3U) | ((colCombBits2 & kTriadsBits0) << 6U);
+        uint32_t colTriadsMask1 = ((colCombBits0 & kTriadsBits1) >> 3U) | (colCombBits1 & kTriadsBits1) | ((colCombBits2 & kTriadsBits1) << 3U);
+        uint32_t colTriadsMask2 = ((colCombBits0 & kTriadsBits2) >> 6U) | ((colCombBits1 & kTriadsBits2) >> 3U) | (colCombBits2 & kTriadsBits2);
+
+        ColBands lockedCandidates0 = keepColLockedCandidatesTbl0[colTriadsMask0];
+        ColBands lockedCandidates1 = keepColLockedCandidatesTbl1[colTriadsMask1];
+        ColBands lockedCandidates2 = keepColLockedCandidatesTbl2[colTriadsMask2];
+
+        uint32_t locked0 = lockedCandidates0.band0 | lockedCandidates1.band0 | lockedCandidates2.band0;
+        uint32_t locked1 = lockedCandidates0.band1 | lockedCandidates1.band1 | lockedCandidates1.band1;
+        uint32_t locked2 = lockedCandidates0.band2 | lockedCandidates1.band2 | lockedCandidates2.band2;
+
+        state->candidates[digit].bands[0] = band0 & locked0;
+        state->candidates[digit].bands[1] = band1 & locked1;
+        state->candidates[digit].bands[2] = band2 & locked2;
+    }
+
     template <bool fast_mode = false>
     JSTD_NO_INLINE
     int find_hidden_singles(State * state) {
@@ -1011,6 +1269,8 @@ private:
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
                 }
+
+                this->update_column_lock_candidates<digit>(state);
             }
 
             // Number 2
@@ -1056,6 +1316,8 @@ private:
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
                 }
+
+                this->update_column_lock_candidates<digit>(state);
             }
 
             // Number 3
@@ -1101,6 +1363,8 @@ private:
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
                 }
+
+                this->update_column_lock_candidates<digit>(state);
             }
 
             state->solvedRows.bands[0] = solvedRows;
@@ -1153,6 +1417,8 @@ private:
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
                 }
+
+                this->update_column_lock_candidates<digit>(state);
             }
 
             // Number 5
@@ -1198,6 +1464,8 @@ private:
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
                 }
+
+                this->update_column_lock_candidates<digit>(state);
             }
 
             // Number 6
@@ -1243,6 +1511,8 @@ private:
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
                 }
+
+                this->update_column_lock_candidates<digit>(state);
             }
 
             state->solvedRows.bands[1] = solvedRows;
@@ -1295,6 +1565,8 @@ private:
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
                 }
+
+                this->update_column_lock_candidates<digit>(state);
             }
 
             // Number 8
@@ -1340,6 +1612,8 @@ private:
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
                 }
+
+                this->update_column_lock_candidates<digit>(state);
             }
 
             // Number 9
@@ -1385,6 +1659,8 @@ private:
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
                 }
+
+                this->update_column_lock_candidates<digit>(state);
             }
 
             state->solvedRows.bands[2] = solvedRows;
@@ -2493,7 +2769,7 @@ public:
             return 0;
         }
 
-#if (JCZ_V2_ONLY_NO_GUESS == 0)
+#if (JCZ_V6_ONLY_NO_GUESS == 0)
         status = this->search(state, solution);
         return this->numSolutions_;
 #else
