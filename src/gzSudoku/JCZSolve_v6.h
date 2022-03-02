@@ -911,17 +911,19 @@ private:
                                 (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
                                 (rowTriadsMaskTbl[(band >> 18U) & kFullRowBits] << 6U);
         uint32_t lockedCandidates = keepLockedCandidatesTbl[rowTriadsMask];
-        band &= lockedCandidates;
-        if (fast_mode || band != 0) {
-            assert(band != 0);
-            uint32_t colCombBits = (band | (band >> 9U) | (band >> 18U)) & kFullRowBits;
-
+        uint32_t newBand = band & lockedCandidates;
+        if (fast_mode || newBand != 0) {
+            assert(newBand != 0);
+            if (newBand != band)
+                state->candidates[digit].bands[self] = newBand;
+            state->prevCandidates[digit].bands[self] = newBand;
+            band = newBand;
+            uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
             uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
-            state->candidates[digit].bands[peer1] &= colLockedSingleMask;
-            state->candidates[digit].bands[peer2] &= colLockedSingleMask;
-
-            state->candidates[digit].bands[self] = band;
-            state->prevCandidates[digit].bands[self] = band;
+            if (colLockedSingleMask != 07777777777) {
+                state->candidates[digit].bands[peer1] &= colLockedSingleMask;
+                state->candidates[digit].bands[peer2] &= colLockedSingleMask;
+            }
             uint32_t newSolvedRows = rowHiddenSingleMaskTbl[rowTriadsSingleMaskTbl[rowTriadsMask] &
                                                             combColumnSingleMaskTbl[colCombBits]];
             return newSolvedRows;
