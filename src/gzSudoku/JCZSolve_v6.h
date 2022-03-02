@@ -914,8 +914,7 @@ private:
         uint32_t newBand = band & lockedCandidates;
         if (fast_mode || newBand != 0) {
             assert(newBand != 0);
-            if (newBand != band)
-                state->candidates[digit].bands[self] = newBand;
+            state->candidates[digit].bands[self] = newBand;
             state->prevCandidates[digit].bands[self] = newBand;
             band = newBand;
             uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
