@@ -953,7 +953,6 @@ private:
             }
         }
 #endif
-        board.cells[BoardSize] = 0;
     }
 
     JSTD_FORCE_INLINE

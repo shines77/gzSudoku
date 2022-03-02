@@ -80,9 +80,9 @@ struct SearchMode {
 #pragma pack(push, 1)
 
 struct Board {
-    char cells[82];
+    char cells[81];
 
-    void reset() {
+    void clear() {
         std::fill_n(this->cells, sizeof(this->cells), 0);
         //std::memset(&this->cells[0], 0, sizeof(this->cells));
     }

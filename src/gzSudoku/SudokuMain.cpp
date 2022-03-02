@@ -176,7 +176,7 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
                 ifs.getline(line, sizeof(line) - 1);
 
                 Board board;
-                board.reset();
+                board.clear();
                 size_t num_grids = read_sudoku_board(board, line);
                 // Sudoku::BoardSize = 81
                 if (num_grids >= Sudoku::kBoardSize) {
@@ -204,7 +204,7 @@ template <typename SudokuSlover>
 void run_solver_testcase(size_t index)
 {
     Board board, solution;
-    board.reset();
+    board.clear();
     make_sudoku_board(board, index);
 
     SudokuSlover solver;
@@ -280,7 +280,7 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
     double total_time = 0.0;
 
     Board solution;
-    solution.reset();
+    solution.clear();
     SudokuSolver solver;
     BasicSolver basicSolver;
     jtest::StopWatch sw;
@@ -327,10 +327,8 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
            (uint32_t)puzzleCount, (uint32_t)puzzleSolved, (uint32_t)puzzleInvalid, (uint32_t)puzzleMultiSolution,
            total_no_guess, no_guess_percent);
     printf("Total elapsed time: %0.3f ms\n\n", total_time);
-    printf("recur_counter: %" PRIuPTR "\n\n"
-           "total_guesses: %" PRIuPTR ", total_failed_return: %" PRIuPTR ", total_unique_candidate: %" PRIuPTR "\n\n"
+    printf("total_guesses: %" PRIuPTR ", total_failed_return: %" PRIuPTR ", total_unique_candidate: %" PRIuPTR "\n\n"
            "guess %% = %0.1f %%, failed_return %% = %0.1f %%, unique_candidate %% = %0.1f %%\n\n",
-           total_recur_counter,
            total_guesses, total_failed_return, total_unique_candidate,
            guesses_percent, failed_return_percent, unique_candidate_percent);
 
