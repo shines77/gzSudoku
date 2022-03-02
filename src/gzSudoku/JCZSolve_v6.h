@@ -916,13 +916,11 @@ private:
             assert(newBand != 0);
             state->candidates[digit].bands[self] = newBand;
             state->prevCandidates[digit].bands[self] = newBand;
-            band = newBand;
             uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
+            band = newBand;
             uint32_t colLockedSingleMask = colLockedSingleMaskTbl[colCombBits];
-            if (colLockedSingleMask != 07777777777) {
-                state->candidates[digit].bands[peer1] &= colLockedSingleMask;
-                state->candidates[digit].bands[peer2] &= colLockedSingleMask;
-            }
+            state->candidates[digit].bands[peer1] &= colLockedSingleMask;
+            state->candidates[digit].bands[peer2] &= colLockedSingleMask;
             uint32_t newSolvedRows = rowHiddenSingleMaskTbl[rowTriadsSingleMaskTbl[rowTriadsMask] &
                                                             combColumnSingleMaskTbl[colCombBits]];
             return newSolvedRows;

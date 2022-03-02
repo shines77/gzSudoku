@@ -932,9 +932,8 @@ private:
             assert(newBand != 0);
             state->candidates[digit].bands[self] = newBand;
             state->prevCandidates[digit].bands[self] = newBand;
-            band = newBand;
-
             uint32_t colCombBits = (newBand | (newBand >> 9U) | (newBand >> 18U)) & kFullRowBits;
+            band = newBand;
 #if JCZ_V2_COMP_COLCOMBBITS
             if (colCombBits != state->colCombBits[digit].bands[self]) {
                 state->colCombBits[digit].bands[self] = colCombBits;
