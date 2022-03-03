@@ -56,6 +56,10 @@
 #include "TestCase.h"
 
 #include "BasicSolver.hpp"
+
+#if defined(GZ_SUDOKU)
+#include "JCZSolve_v2.h"
+#else
 #include "SudokuSolver_v4.h"
 #include "SudokuSolver_v4a.h"
 #include "SudokuSolver_v4b.h"
@@ -68,6 +72,7 @@
 #include "JCZSolve_v5.h"
 #include "JCZSolve_v6.h"
 #include "JCZSolveEx_v1.h"
+#endif // GZ_SUDOKU
 
 #include "gzSudoku.h"
 
