@@ -208,6 +208,16 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
     return puzzleCount;
 }
 
+extern
+int GzSudoku(const char * input, char * output, int limit)
+{
+    JCZ::v2::Solver solver;
+    const Board & board = *(const Board *)input;
+    Board & solition = *(Board *)output;
+    int solutions = solver.solve(board, solition, limit);
+    return solutions;
+}
+
 template <typename SudokuSlover>
 void run_solver_testcase(size_t index)
 {
@@ -226,6 +236,8 @@ void run_solver_testcase(size_t index)
     double elapsed_time = sw.getElapsedMillisec();
     solver.display_result(solution, elapsed_time);
 }
+
+#if !defined(GZ_SUDOKU)
 
 void run_a_testcase(size_t index)
 {
@@ -392,18 +404,6 @@ void run_all_benchmark(const char * filename)
     //run_sudoku_test<JCZEx::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZEx::v1");
 #endif
 }
-
-extern
-int GzSudoku(const char * input, char * output, int limit)
-{
-    JCZ::v2::Solver solver;
-    const Board & board = *(const Board *)input;
-    Board & solition = *(Board *)output;
-    int solutions = solver.solve(board, solition, limit);
-    return solutions;
-}
-
-#if !defined(GZ_SUDOKU)
 
 int main(int argc, char * argv [])
 {
