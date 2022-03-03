@@ -398,6 +398,8 @@ int GzSudoku(const char * input, char * output, int limit)
     return solutions;
 }
 
+#if !defined(GZ_SUDOKU)
+
 int main(int argc, char * argv [])
 {
     const char * filename = nullptr;
@@ -442,3 +444,5 @@ int main(int argc, char * argv [])
 
     return 0;
 }
+
+#endif // !GZ_SUDOKU
