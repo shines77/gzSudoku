@@ -68,6 +68,8 @@
 #include "JCZSolve_v6.h"
 #include "JCZSolveEx_v1.h"
 
+#include "gzSudoku.h"
+
 using namespace gzSudoku;
 
 static const size_t kEnableDlxV1Solver = 1;
@@ -383,6 +385,16 @@ void run_all_benchmark(const char * filename)
     run_sudoku_test<JCZ::v6::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v6");
     //run_sudoku_test<JCZEx::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZEx::v1");
 #endif
+}
+
+extern
+int GzSudoku(const char * input, char * output, int limit)
+{
+    JCZ::v2::Solver solver;
+    const Board & board = *(const Board *)input;
+    Board & solition = *(Board *)output;
+    int solutions = solver.solve(board, solition, limit);
+    return solutions;
 }
 
 int main(int argc, char * argv [])
