@@ -52,6 +52,7 @@
 #include "StopWatch.h"
 
 #include "Sudoku.h"
+#include "Sudoku.hpp"
 #include "TestCase.h"
 
 #include "BasicSolver.hpp"
