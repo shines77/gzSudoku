@@ -1821,7 +1821,7 @@ struct BitVec16x16 {
             }
             else {
 #ifndef NDEBUG
-                this->high._minpos16<MaxLength>(minpos.high);
+                this->high.minpos16<MaxLength>(minpos.high);
                 __m128i equal_result_high = _mm_cmpeq_epi16(min_result.m128, minpos.high.m128);
                 int equal_mask_high = _mm_movemask_epi8(equal_result_high);
                 assert((equal_mask_high & 0x00000003U) != 0);
