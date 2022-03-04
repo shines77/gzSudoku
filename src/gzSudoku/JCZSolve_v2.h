@@ -1914,9 +1914,8 @@ private:
 
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cell(state, board);
+                        return Status::Success;
                     }
-
-                    return Status::Success;
                 }
             }
         }
@@ -1953,9 +1952,8 @@ private:
 
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cell(state, board);
-                    }
-
-                    return Status::Success;
+                        return Status::Success;
+                    }                    
                 }
             }
         }
@@ -2066,6 +2064,7 @@ private:
         assert(box >= 0 && box < Boxes);
         uint32_t band = tables.div3[box];
         uint32_t box_bits = state->candidates[digit].bands[band] & boxToBoxesMaskTbl[box];
+#if 0
         while (box_bits != 0) {
             size_t bit_pos = BitUtils::bsf32(box_bits);
             uint32_t mask = BitUtils::ls1b32(box_bits);
@@ -2098,46 +2097,12 @@ private:
 
                 if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                     this->guess_next_cell(state, board);
+                    return Status::Success;
                 }
-                return Status::Success;
             }
         }
 
         return Status::Failed;
-    }
-
-    JSTD_FORCE_INLINE
-    int guess_box_cell(State *& state, Board & board, uint32_t digit, uint32_t box) {
-        assert(digit >= 0 && digit < (uint32_t)Numbers);
-        assert(box >= 0 && box < (uint32_t)Boxes);
-        uint32_t band = tables.div3[box];
-        uint32_t box_bits = state->candidates[digit].bands[band] & boxToBoxesMaskTbl[box];
-#if 0
-        while (box_bits != 0) {
-            size_t bit_pos = BitUtils::bsf32(box_bits);
-            uint32_t mask = BitUtils::ls1b32(box_bits);
-            box_bits ^= mask;
-
-            size_t pos = bandBitPosToPos32[band][bit_pos];
-            assert(pos != size_t(-1));
-
-            std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
-            state->candidates[digit].bands[band] ^= mask;
-            ++state;
-            basic_solver::num_guesses++;
-
-            this->update_band_solved_mask32(state, band, pos, digit);
-
-            if (this->find_all_single_literals<false>(state) != Status::Invalid) {
-                this->guess_next_cell(state, board);
-            }
-            --state;
-
-            if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                return Status::Success;
-        }
-
-        return Status::Success;
 #else
         {
             // First of row bi-value
@@ -2176,11 +2141,45 @@ private:
 
             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                 this->guess_next_cell(state, board);
+                return Status::Success;
             }
         }
 
-        return Status::Success;
+        return Status::Invalid;
 #endif
+    }
+
+    JSTD_FORCE_INLINE
+    int guess_box_cell(State *& state, Board & board, uint32_t digit, uint32_t box) {
+        assert(digit >= 0 && digit < (uint32_t)Numbers);
+        assert(box >= 0 && box < (uint32_t)Boxes);
+        uint32_t band = tables.div3[box];
+        uint32_t box_bits = state->candidates[digit].bands[band] & boxToBoxesMaskTbl[box];
+        while (box_bits != 0) {
+            size_t bit_pos = BitUtils::bsf32(box_bits);
+            uint32_t mask = BitUtils::ls1b32(box_bits);
+            box_bits ^= mask;
+
+            size_t pos = bandBitPosToPos32[band][bit_pos];
+            assert(pos != size_t(-1));
+
+            std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
+            state->candidates[digit].bands[band] ^= mask;
+            ++state;
+            basic_solver::num_guesses++;
+
+            this->update_band_solved_mask32(state, band, pos, digit);
+
+            if (this->find_all_single_literals<false>(state) != Status::Invalid) {
+                this->guess_next_cell(state, board);
+            }
+            --state;
+
+            if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
+                return Status::Success;
+        }
+
+        return Status::Success;
     }
 
     JSTD_NO_INLINE
@@ -2528,10 +2527,11 @@ Row_BiValue_Find:
 
             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                 this->guess_next_cell(state, board);
+                return Status::Success;
             }
         }
 
-        return Status::Success;
+        return Status::Failed;
     }
 
     int guess_hidden_bivalue_cells(State *& state, Board & board) {

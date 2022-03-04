@@ -316,10 +316,9 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
         Board & board = puzzles[i];
         int solutions = solver.solve(board, solution, 1);
         if (solutions == 1) {
-            total_guesses += BasicSolverTy::num_guesses;
-            if (BasicSolverTy::num_guesses == 0) {
-                total_no_guess++;
-            }
+            size_t num_guesses = BasicSolverTy::num_guesses;
+            total_guesses += num_guesses;
+            total_no_guess += (num_guesses == 0);
 
             puzzleSolved++;
         }
@@ -392,13 +391,11 @@ void run_sudoku_test_ex(std::vector<Board> & puzzles, size_t puzzleTotal, const 
         Board & board = puzzles[i];
         int solutions = solver.solve(board, solution, 1);
         if (solutions == 1) {
-            total_guesses += BasicSolverTy::num_guesses;
+            size_t num_guesses = BasicSolverTy::num_guesses;
+            total_guesses += num_guesses;
+            total_no_guess += (num_guesses == 0);
             total_unique_candidate += BasicSolverTy::num_unique_candidate;
             total_failed_return += BasicSolverTy::num_failed_return;
-
-            if (BasicSolverTy::num_guesses == 0) {
-                total_no_guess++;
-            }
 
             puzzleSolved++;
         }
