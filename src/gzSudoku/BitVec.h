@@ -1820,7 +1820,7 @@ struct BitVec16x16 {
                 min_index = _mm_extract_epi16(minpos.low.m128, 1);
             }
             else {
-#ifndef NDEBUG
+#ifdef _DEBUG
                 this->high.minpos16<MaxLength>(minpos.high);
                 __m128i equal_result_high = _mm_cmpeq_epi16(min_result.m128, minpos.high.m128);
                 int equal_mask_high = _mm_movemask_epi8(equal_result_high);
@@ -1872,7 +1872,7 @@ struct BitVec16x16 {
                 out_min_index = min_and_index >> 16U;
             }
             else {
-#ifndef NDEBUG
+#ifdef _DEBUG
                 this->high.minpos16<MaxLenHigh>(minpos.high);
                 __m128i equal_result_high = _mm_cmpeq_epi16(min_result.m128, minpos.high.m128);
                 int equal_mask_high = _mm_movemask_epi8(equal_result_high);
@@ -1926,7 +1926,7 @@ struct BitVec16x16 {
             }
             else {
                 uint32_t min_num = (uint32_t)(_mm_cvtsi128_si32(min_result.m128) & 0xFFFFUL);
-#ifndef NDEBUG
+#ifdef _DEBUG
                 BitVec08x16 minpos_high;
                 this->high.minpos16<MaxLenHigh>(minpos_high);
                 __m128i equal_result_high = _mm_cmpeq_epi16(min_result.m128, minpos_high.m128);
@@ -2005,13 +2005,13 @@ struct BitVec16x16 {
                     out_min_index = min_and_index >> 16U;
                 }
                 else {
-    #ifndef NDEBUG
+#ifdef _DEBUG
                     this->high.minpos16<MaxLenHigh>(minpos.high);
                     __m128i equal_result_high = _mm_cmpeq_epi16(min_result.m128, minpos.high.m128);
                     int equal_mask_high = _mm_movemask_epi8(equal_result_high);
                     assert((equal_mask_high & 0x00000003U) != 0);
                     assert(_mm_extract_epi16(minpos.high.m128, 1) == 0);
-    #endif
+#endif
                     out_min_index = 8;
                 }
             }

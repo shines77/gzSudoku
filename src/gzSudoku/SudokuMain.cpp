@@ -323,7 +323,7 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
             puzzleInvalid++;
         }
         puzzleCount++;
-#ifndef NDEBUG
+#ifdef _DEBUG
         if (puzzleCount > 100000)
             break;
 #endif
@@ -402,7 +402,7 @@ void run_sudoku_test_ex(std::vector<Board> & puzzles, size_t puzzleTotal, const 
             puzzleInvalid++;
         }
         puzzleCount++;
-#ifndef NDEBUG
+#ifdef _DEBUG
         if (puzzleCount > 100000)
             break;
 #endif
@@ -453,7 +453,7 @@ void run_all_benchmark(const char * filename)
     jtest::CPU::warmup(1000);
     std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
 
-#if defined(NDEBUG)
+#if !defined(_DEBUG)
 #if 0
 //  run_sudoku_test<v4::Solver     >(bm_puzzles, bm_puzzleTotal, "dfs::v4");
     run_sudoku_test<v4a::Solver    >(bm_puzzles, bm_puzzleTotal, "dfs::v4a");
@@ -518,7 +518,7 @@ int main(int argc, char * argv [])
 
     Sudoku::finalize();
 
-#if !defined(NDEBUG) && defined(_MSC_VER)
+#if defined(_DEBUG) && defined(_MSC_VER)
     ::system("pause");
 #endif
 

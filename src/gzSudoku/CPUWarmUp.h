@@ -30,7 +30,7 @@ namespace CPU {
 
 void warmup(int delayMillsecs)
 {
-#if defined(NDEBUG)
+#if !defined(_DEBUG)
     double delayTimeLimit = (double)delayMillsecs / 1.0;
     volatile int sum = 0;
 
@@ -62,7 +62,7 @@ void warmup(int delayMillsecs)
 
 void warmup(DWORD delayMillsecs)
 {
-#if defined(NDEBUG)
+#if !defined(_DEBUG)
     volatile int sum = 0;
 
     printf("CPU warm-up begin ...\n");
