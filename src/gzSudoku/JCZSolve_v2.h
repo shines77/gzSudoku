@@ -1484,7 +1484,8 @@ private:
                 size_t pos = bandBitPosToPos64[0][bit_pos];
                 assert(pos != size_t(-1));
 
-                for (size_t num = 0; num < Numbers; num++) {
+                size_t num;
+                for (num = 0; num < Numbers; num++) {
                     uint64_t band_bits = state->candidates[num].bands64[0];
                     if ((band_bits & bit) != 0) {
                         this->update_band_solved_mask64(state, 0, pos, num);
@@ -1492,6 +1493,8 @@ private:
                         break;
                     }
                 }
+                if (num == Numbers)
+                    return 0;
             }
 
             bits64 = R1_bits.bands64[1];
@@ -1503,7 +1506,8 @@ private:
                 size_t pos = bandBitPosToPos64[1][bit_pos];
                 assert(pos != size_t(-1));
 
-                for (size_t num = 0; num < Numbers; num++) {
+                size_t num;
+                for (num = 0; num < Numbers; num++) {
                     uint64_t band_bits = state->candidates[num].bands64[1];
                     if ((band_bits & bit) != 0) {
                         this->update_band_solved_mask64(state, 1, pos, num);
@@ -1511,6 +1515,8 @@ private:
                         break;
                     }
                 }
+                if (num == Numbers)
+                    return 0;
             }
 #else // !__amd64__
             for (size_t band = 0; band < 3; band++) {
@@ -1523,7 +1529,8 @@ private:
                     size_t pos = bandBitPosToPos32[band][bit_pos];
                     assert(pos != size_t(-1));
 
-                    for (size_t num = 0; num < Numbers; num++) {
+                    size_t num;
+                    for (num = 0; num < Numbers; num++) {
                         uint32_t band_bits = state->candidates[num].bands[band];
                         if ((band_bits & bit) != 0) {
                             this->update_band_solved_mask32(state, band, pos, num);
@@ -1531,6 +1538,8 @@ private:
                             break;
                         }
                     }
+                    if (num == Numbers)
+                        return 0;
                 }
             }
 #endif // __amd64__
@@ -1634,7 +1643,8 @@ private:
                 size_t pos = bandBitPosToPos64[0][bit_pos];
                 assert(pos != size_t(-1));
 
-                for (size_t num = 0; num < Numbers; num++) {
+                size_t num;
+                for (num = 0; num < Numbers; num++) {
                     uint64_t band_bits = state->candidates[num].bands64[0];
                     if ((band_bits & bit) != 0) {
                         this->update_band_solved_mask64(state, 0, pos, num);
@@ -1642,6 +1652,8 @@ private:
                         break;
                     }
                 }
+                if (num == Numbers)
+                    return 0;
             }
 
             bits64 = R1_bits.bands64[1];
@@ -1653,7 +1665,8 @@ private:
                 size_t pos = bandBitPosToPos64[1][bit_pos];
                 assert(pos != size_t(-1));
 
-                for (size_t num = 0; num < Numbers; num++) {
+                size_t num;
+                for (num = 0; num < Numbers; num++) {
                     uint64_t band_bits = state->candidates[num].bands64[1];
                     if ((band_bits & bit) != 0) {
                         this->update_band_solved_mask64(state, 1, pos, num);
@@ -1661,6 +1674,8 @@ private:
                         break;
                     }
                 }
+                if (num == Numbers)
+                    return 0;
             }
 #else // !__amd64__
             for (size_t band = 0; band < 3; band++) {
@@ -1673,7 +1688,8 @@ private:
                     size_t pos = bandBitPosToPos32[band][bit_pos];
                     assert(pos != size_t(-1));
 
-                    for (size_t num = 0; num < Numbers; num++) {
+                    size_t num;
+                    for (num = 0; num < Numbers; num++) {
                         uint32_t band_bits = state->candidates[num].bands[band];
                         if ((band_bits & bit) != 0) {
                             this->update_band_solved_mask32(state, band, pos, num);
@@ -1681,6 +1697,8 @@ private:
                             break;
                         }
                     }
+                    if (num == Numbers)
+                        return 0;
                 }
             }
 #endif // __amd64__
@@ -1696,7 +1714,7 @@ private:
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
         for (size_t band = 0; band < 2; band++) {
             uint64_t pairs = state->pairs.bands64[band];
-            if (pairs) {
+            if (pairs != 0) {
                 size_t bit_pos = BitUtils::bsf64(pairs);
                 uint64_t mask = BitUtils::ls1b64(pairs);
 
@@ -1739,7 +1757,7 @@ private:
 #else // !__amd64__
         for (size_t band = 0; band < 3; band++) {
             uint32_t pairs = state->pairs.bands[band];
-            if (pairs) {
+            if (pairs != 0) {
                 size_t bit_pos = BitUtils::bsf32(pairs);
                 uint32_t mask = BitUtils::ls1b32(pairs);
 
@@ -1914,8 +1932,8 @@ private:
 
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cell(state, board);
-                        return Status::Success;
                     }
+                    return Status::Success;
                 }
             }
         }
@@ -1951,9 +1969,9 @@ private:
                     this->update_band_solved_mask32(state, band, pos, num);
 
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
-                        this->guess_next_cell(state, board);
-                        return Status::Success;
-                    }                    
+                        return this->guess_next_cell(state, board);
+                    }
+                    return Status::Success;
                 }
             }
         }
@@ -2065,6 +2083,7 @@ private:
         uint32_t band = tables.div3[box];
         uint32_t box_bits = state->candidates[digit].bands[band] & boxToBoxesMaskTbl[box];
 #if 0
+        int tries = 2;
         while (box_bits != 0) {
             size_t bit_pos = BitUtils::bsf32(box_bits);
             uint32_t mask = BitUtils::ls1b32(box_bits);
@@ -2072,8 +2091,6 @@ private:
 
             size_t pos = bandBitPosToPos32[band][bit_pos];
             assert(pos != size_t(-1));
-
-            int tries = 2;
             if (--tries) {
                 // First of pair
                 std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
@@ -2097,8 +2114,8 @@ private:
 
                 if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                     this->guess_next_cell(state, board);
-                    return Status::Success;
                 }
+                return Status::Success;
             }
         }
 
@@ -2141,11 +2158,9 @@ private:
 
             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                 this->guess_next_cell(state, board);
-                return Status::Success;
             }
+            return Status::Success;
         }
-
-        return Status::Invalid;
 #endif
     }
 
@@ -2527,11 +2542,9 @@ Row_BiValue_Find:
 
             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                 this->guess_next_cell(state, board);
-                return Status::Success;
             }
+            return Status::Success;
         }
-
-        return Status::Failed;
     }
 
     int guess_hidden_bivalue_cells(State *& state, Board & board) {
