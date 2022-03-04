@@ -241,6 +241,13 @@ void run_solver_testcase(size_t index)
 
 void run_a_testcase(size_t index)
 {
+    //
+    // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
+    //
+    std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
+    jtest::CPU::warmup(1000);
+    std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
+
     if (kEnableV4Solver)
     {
         printf("------------------------------------------\n\n");

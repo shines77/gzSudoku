@@ -100,8 +100,6 @@ struct WarmUp {
     }
 };
 
-static WarmUp warm_up;
-
 } // namespace CPU
 } // namespace jtest
 
