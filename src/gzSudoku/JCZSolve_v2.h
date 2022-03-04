@@ -502,6 +502,14 @@ private:
             this->bands64[0] = kBitSet27_Double64;
             this->bands64[1] = kBitSet27_Single64;
         }
+
+        bool operator == (const BandBoard & rhs) {
+            return (this->bands64[0] == rhs.bands64[0] && this->bands64[1] == rhs.bands64[1]);
+        }
+
+        bool operator != (const BandBoard & rhs) {
+            return (this->bands64[0] != rhs.bands64[0] || this->bands64[1] != rhs.bands64[1]);
+        }
 #else
         void clear() {
             this->bands[0] = 0;
@@ -515,6 +523,18 @@ private:
             this->bands[1] = kBitSet27;
             this->bands[2] = kBitSet27;
             this->bands[3] = 0;
+        }
+
+        bool operator == (const BandBoard & rhs) {
+            return (this->bands[0] == rhs.bands[0] &&
+                    this->bands[1] == rhs.bands[1] &&
+                    this->bands[2] == rhs.bands[2]);
+        }
+
+        bool operator == (const BandBoard & rhs) {
+            return (this->bands[0] != rhs.bands[0] ||
+                    this->bands[1] != rhs.bands[1] ||
+                    this->bands[2] != rhs.bands[2]);
         }
 #endif
     };
