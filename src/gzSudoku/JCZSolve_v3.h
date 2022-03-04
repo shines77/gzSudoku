@@ -766,10 +766,6 @@ private:
 
     JSTD_FORCE_INLINE
     int init_board(State & state, const Board & board) {
-        if (kSearchMode > SearchMode::OneSolution) {
-            this->answers_.clear();
-        }
-
         state.init();
 
         register BitVec08x16 solved_cells;
@@ -1922,13 +1918,14 @@ private:
         if ((state.solvedCells.bands64[0] == kBitSet27_Double64) &&
             (state.solvedCells.bands64[1] == kBitSet27_Single64)) {
             if (kSearchMode > SearchMode::OneSolution) {
-                this->extract_solution(state, board);
-                this->answers_.push_back(board);
+                if (this->numSolutions_ == 0)
+                    this->extract_solution(state, board);
                 this->numSolutions_++;
                 if (kSearchMode == SearchMode::MoreThanOneSolution) {
-                    if (this->answers_.size() > 1)
+                    if (this->numSolutions_ > this->limitSolutions_)
                         return Status::Solved;
                 }
+                return Status::Solved;
             }
             else {
                 if (this->numSolutions_ == 0)

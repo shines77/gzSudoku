@@ -289,6 +289,80 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
     printf("gzSudoku: %s::Solver\n\n", name);
 
     size_t total_guesses = 0;
+    size_t total_no_guess = 0;
+
+    size_t puzzleCount = 0;
+    size_t puzzleInvalid = 0;
+    size_t puzzleSolved = 0;
+    size_t puzzleMultiSolution = 0;
+    double total_time = 0.0;
+
+    SudokuSolver solver;
+
+    Board solution;
+    solution.clear();    
+
+    jtest::StopWatch sw;
+    sw.start();
+
+    for (size_t i = 0; i < puzzleTotal; i++) {
+        Board & board = puzzles[i];
+        int solutions = solver.solve(board, solution, 1);
+        if (solutions == 1) {
+            total_guesses += BasicSolverTy::num_guesses;
+            if (BasicSolverTy::num_guesses == 0) {
+                total_no_guess++;
+            }
+
+            puzzleSolved++;
+        }
+        else if (solutions > 1) {
+            puzzleMultiSolution++;
+        }
+        else {
+            puzzleInvalid++;
+        }
+        puzzleCount++;
+#ifndef NDEBUG
+        if (puzzleCount > 100000)
+            break;
+#endif
+    }
+
+    sw.stop();
+    total_time = sw.getElapsedMillisec();
+
+    double no_guess_percent = calc_percent(total_no_guess, puzzleCount);
+
+    printf("Total puzzle(s): %u / (%u solved, %u invalid, %u multi-solution).\n\n"
+           "total_no_guess: %" PRIuPTR ", no_guess %% = %0.1f %%\n\n",
+           (uint32_t)puzzleCount, (uint32_t)puzzleSolved, (uint32_t)puzzleInvalid, (uint32_t)puzzleMultiSolution,
+           total_no_guess, no_guess_percent);
+    printf("Total elapsed time: %0.3f ms, total_guesses: %" PRIuPTR "\n\n", total_time, total_guesses);
+
+    if (puzzleCount != 0) {
+        printf("%0.1f usec/puzzle, %0.2f guesses/puzzle, %0.1f puzzles/sec\n\n",
+               total_time * 1000.0 / puzzleCount,
+               (double)total_guesses / puzzleCount,
+               puzzleCount / (total_time / 1000.0));
+    }
+    else {
+        printf("NaN usec/puzzle, NaN guesses/puzzle, %0.1f puzzles/sec\n\n",
+               puzzleCount / (total_time / 1000.0));
+    }
+
+    printf("------------------------------------------\n\n");
+}
+
+template <typename SudokuSolver>
+void run_sudoku_test_ex(std::vector<Board> & puzzles, size_t puzzleTotal, const char * name)
+{
+    typedef typename SudokuSolver::basic_solver   BasicSolverTy;
+
+    //printf("------------------------------------------\n\n");
+    printf("gzSudoku: %s::Solver\n\n", name);
+
+    size_t total_guesses = 0;
     size_t total_unique_candidate = 0;
     size_t total_failed_return = 0;
     size_t total_no_guess = 0;
@@ -299,10 +373,11 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
     size_t puzzleMultiSolution = 0;
     double total_time = 0.0;
 
+    SudokuSolver solver;
+
     Board solution;
     solution.clear();
-    SudokuSolver solver;
-    BasicSolver basicSolver;
+
     jtest::StopWatch sw;
     sw.start();
 

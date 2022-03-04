@@ -44,9 +44,9 @@ static const size_t TableLs2b[16] = {
     0xFC000000, 0xF0000000, 0xC0000000, 0x00000000
 };
 
-class Solver : public BasicSolver {
+class Solver : public BasicSolverEx {
 public:
-    typedef BasicSolver                         basic_solver;
+    typedef BasicSolverEx                       basic_solver;
     typedef Solver                              this_type;
 
     typedef typename Sudoku::NeighborCells      NeighborCells;

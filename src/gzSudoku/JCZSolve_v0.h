@@ -36,9 +36,9 @@ namespace v0 {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
-class Solver : public BasicSolver {
+class Solver : public BasicSolverEx {
 public:
-    typedef BasicSolver                         basic_solver;
+    typedef BasicSolverEx                       basic_solver;
     typedef Solver                              this_type;
 
     typedef typename Sudoku::NeighborCells      NeighborCells;
