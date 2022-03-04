@@ -1484,8 +1484,7 @@ private:
                 size_t pos = bandBitPosToPos64[0][bit_pos];
                 assert(pos != size_t(-1));
 
-                size_t num;
-                for (num = 0; num < Numbers; num++) {
+                for (size_t num = 0; num < Numbers; num++) {
                     uint64_t band_bits = state->candidates[num].bands64[0];
                     if ((band_bits & bit) != 0) {
                         this->update_band_solved_mask64(state, 0, pos, num);
@@ -1493,8 +1492,6 @@ private:
                         break;
                     }
                 }
-                if (num == Numbers)
-                    return 0;
             }
 
             bits64 = R1_bits.bands64[1];
@@ -1506,8 +1503,7 @@ private:
                 size_t pos = bandBitPosToPos64[1][bit_pos];
                 assert(pos != size_t(-1));
 
-                size_t num;
-                for (num = 0; num < Numbers; num++) {
+                for (size_t num = 0; num < Numbers; num++) {
                     uint64_t band_bits = state->candidates[num].bands64[1];
                     if ((band_bits & bit) != 0) {
                         this->update_band_solved_mask64(state, 1, pos, num);
@@ -1515,8 +1511,6 @@ private:
                         break;
                     }
                 }
-                if (num == Numbers)
-                    return 0;
             }
 #else // !__amd64__
             for (size_t band = 0; band < 3; band++) {
@@ -1529,8 +1523,7 @@ private:
                     size_t pos = bandBitPosToPos32[band][bit_pos];
                     assert(pos != size_t(-1));
 
-                    size_t num;
-                    for (num = 0; num < Numbers; num++) {
+                    for (size_t num = 0; num < Numbers; num++) {
                         uint32_t band_bits = state->candidates[num].bands[band];
                         if ((band_bits & bit) != 0) {
                             this->update_band_solved_mask32(state, band, pos, num);
@@ -1538,8 +1531,6 @@ private:
                             break;
                         }
                     }
-                    if (num == Numbers)
-                        return 0;
                 }
             }
 #endif // __amd64__
@@ -1653,7 +1644,7 @@ private:
                     }
                 }
                 if (num == Numbers)
-                    return 0;
+                    return -1;
             }
 
             bits64 = R1_bits.bands64[1];
@@ -1675,7 +1666,7 @@ private:
                     }
                 }
                 if (num == Numbers)
-                    return 0;
+                    return -1;
             }
 #else // !__amd64__
             for (size_t band = 0; band < 3; band++) {
@@ -1698,7 +1689,7 @@ private:
                         }
                     }
                     if (num == Numbers)
-                        return 0;
+                        return -1;
                 }
             }
 #endif // __amd64__
