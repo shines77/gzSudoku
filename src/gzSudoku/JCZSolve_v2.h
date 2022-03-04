@@ -702,6 +702,7 @@ private:
         //print_rowHiddenSingleMaskTbl();
     }
 
+    JSTD_FORCE_INLINE
     void extract_solution(State * state, Board & board) {
         assert(state != nullptr);
 #if 1
@@ -1716,7 +1717,7 @@ private:
                 for (size_t num = 0; num < Numbers; num++) {
                     if ((state->candidates[num].bands64[band] & mask) != 0) {
                         if (--tries) {
-                            // First of pair
+                            // The first of pair
                             std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
                             state->candidates[num].bands64[band] ^= mask;
                             ++state;
@@ -1759,7 +1760,7 @@ private:
                 for (size_t num = 0; num < Numbers; num++) {
                     if ((state->candidates[num].bands[band] & mask) != 0) {
                         if (--tries) {
-                            // First of pair
+                            // The first of pair
                             std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
                             state->candidates[num].bands[band] ^= mask;
                             ++state;
@@ -1901,7 +1902,7 @@ private:
         for (size_t num = 0; num < Numbers; num++) {
             if ((state->candidates[num].bands[band] & mask) != 0) {
                 if (--tries) {
-                    // The First and second digit
+                    // The first and second digit
                     std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
                     state->candidates[num].bands[band] ^= mask;
                     ++state;
@@ -2068,7 +2069,7 @@ private:
     }
 
     JSTD_FORCE_INLINE
-    int guess_box_cell_pair(State *& state, Board & board, uint32_t digit, uint32_t box) {
+    int guess_hidden_box_pair(State *& state, Board & board, uint32_t digit, uint32_t box) {
         assert(digit >= 0 && digit < Numbers);
         assert(box >= 0 && box < Boxes);
         uint32_t band = tables.div3[box];
@@ -2083,7 +2084,7 @@ private:
             size_t pos = bandBitPosToPos32[band][bit_pos];
             assert(pos != size_t(-1));
             if (--tries) {
-                // First of pair
+                // The first of pair
                 std::memcpy((void *)(state + 1), (const void *)state, sizeof(State));
                 state->candidates[digit].bands[band] ^= mask;
                 ++state;
@@ -2100,7 +2101,7 @@ private:
                     return Status::Success;
             }
             else {
-                // Second of pair
+                // The second of pair
                 this->update_band_solved_mask32(state, band, pos, digit);
 
                 if (this->find_all_single_literals<false>(state) != Status::Invalid) {
@@ -2113,7 +2114,7 @@ private:
         return Status::Failed;
 #else
         {
-            // First of row bi-value
+            // The first of row bi-value
             assert (box_bits != 0);
             uint32_t bit_pos = BitUtils::bsf32(box_bits);
             uint32_t mask = BitUtils::ls1b32(box_bits);
@@ -2139,7 +2140,7 @@ private:
         }
 
         {
-            // Second of row bi-value
+            // The second of row bi-value
             assert (box_bits != 0);
             uint32_t bit_pos = BitUtils::bsf32(box_bits);
             uint32_t pos = bandBitPosToPos32[band][bit_pos];
@@ -2156,7 +2157,7 @@ private:
     }
 
     JSTD_FORCE_INLINE
-    int guess_box_cell(State *& state, Board & board, uint32_t digit, uint32_t box) {
+    int guess_box_cell_more_than_2(State *& state, Board & board, uint32_t digit, uint32_t box) {
         assert(digit >= 0 && digit < (uint32_t)Numbers);
         assert(box >= 0 && box < (uint32_t)Boxes);
         uint32_t band = tables.div3[box];
@@ -2295,7 +2296,7 @@ private:
             }
 
             if (min_candidates == 0) {
-                return this->guess_box_cell_pair(state, board, min_digit, min_box);
+                return this->guess_hidden_box_pair(state, board, min_digit, min_box);
             }
 
             total_min.digits[min_digit] = min_candidates;
@@ -2344,7 +2345,7 @@ private:
                 assert(min_digit >= 0 && min_digit < Numbers);
                 uint32_t min_box = total_box.digits[min_digit];
                 assert(min_box != uint32_t(-1));
-                return this->guess_box_cell(state, board, min_digit, min_box);
+                return this->guess_box_cell_more_than_2(state, board, min_digit, min_box);
             }
             else {
                 return Status::Failed;
@@ -2395,7 +2396,7 @@ private:
             }
 
             if (min_candidates == 0) {
-                return this->guess_box_cell_pair(state, board, digit, min_box);
+                return this->guess_hidden_box_pair(state, board, digit, min_box);
             }
 
             total_min.digits[digit] = min_candidates;
@@ -2423,7 +2424,7 @@ private:
                 assert(min_digit >= 0 && min_digit < Numbers);
                 uint32_t min_box = total_box.digits[min_digit];
                 assert(min_box != uint32_t(-1));
-                return this->guess_box_cell(state, board, min_digit, min_box);
+                return this->guess_box_cell_more_than_2(state, board, min_digit, min_box);
             }
             else {
                 return Status::Failed;
@@ -2497,7 +2498,7 @@ private:
 
 Row_BiValue_Find:
         {
-            // First of row bi-value
+            // The first of row bi-value
             assert (hidden_bits != 0);
             uint32_t bit_pos = BitUtils::bsf32(hidden_bits);
             uint32_t mask = BitUtils::ls1b32(hidden_bits);
@@ -2523,7 +2524,7 @@ Row_BiValue_Find:
         }
 
         {
-            // Second of row bi-value
+            // The second of row bi-value
             assert (hidden_bits != 0);
             uint32_t bit_pos = BitUtils::bsf32(hidden_bits);
             uint32_t pos = bandBitPosToPos32[band][bit_pos];
