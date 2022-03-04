@@ -1448,10 +1448,10 @@ private:
         R1.and_not(R2);
         R1.and_not(solved_bits);
 
-        register BandBoard R1_bits;
+        BandBoard R1_bits;
         R1.saveAligned((void *)&R1_bits);
 
-        register int cell_count = 0;
+        int cell_count = 0;
         {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -1726,10 +1726,10 @@ private:
 
         R2.saveAligned((void *)&state->pairs);
 
-        register BandBoard R1_bits;
+        BandBoard R1_bits;
         R1.saveAligned((void *)&R1_bits);
 
-        register int cell_count = 0;
+        int cell_count = 0;
         {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
