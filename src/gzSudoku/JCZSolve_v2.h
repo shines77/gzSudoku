@@ -2534,7 +2534,6 @@ Row_BiValue_Find:
         return Status::Success;
     }
 
-    JSTD_FORCE_INLINE
     int guess_hidden_bivalue_cells(State *& state, Board & board) {
         int status = this->guess_hidden_row_bivalue(state, board);
         if (status == Status::Failed) {
