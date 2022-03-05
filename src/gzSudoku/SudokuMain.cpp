@@ -72,6 +72,7 @@
 #include "JCZSolve_v5.h"
 #include "JCZSolve_v6.h"
 #include "JCZSolveEx_v1.h"
+#include "RustSudoku_v1.h"
 #endif // GZ_SUDOKU
 
 #include "gzSudoku.h"
@@ -472,6 +473,7 @@ void run_all_benchmark(const char * filename)
     run_sudoku_test<JCZ::v5::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v5");
     run_sudoku_test<JCZ::v6::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v6");
     run_sudoku_test<JCZEx::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZEx::v1");
+    run_sudoku_test<Rust::v1::Solver>(bm_puzzles, bm_puzzleTotal, "Rust::v1");
 #else
 //  run_sudoku_test<v4b::Solver    >(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
 //  run_sudoku_test<JCZ::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v1");

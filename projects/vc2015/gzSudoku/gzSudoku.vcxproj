@@ -178,6 +178,7 @@
     <ClInclude Include="..\..\..\src\gzSudoku\msvc_x86intrin.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\PackedBitSet.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\PowerOf2.h" />
+    <ClInclude Include="..\..\..\src\gzSudoku\RustSudoku_v1.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\stddef.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\StopWatch.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\Sudoku.h" />

@@ -540,7 +540,7 @@ private:
                     this->bands[1] != rhs.bands[1] ||
                     this->bands[2] != rhs.bands[2]);
         }
-#endif
+#endif // __amd64__
     };
 
     struct alignas(16) State {
@@ -816,7 +816,7 @@ private:
     int init_board(State * state, const Board & board) {
         state->init();
 
-        register BitVec08x16 solved_cells;
+        BitVec08x16 solved_cells;
         solved_cells.setAllZeros();
 
         int candidates = 0;

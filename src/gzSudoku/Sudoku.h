@@ -55,6 +55,7 @@ struct Status {
     enum {
         Failed = -2,
         Invalid = -1,
+        Unsolvable = -1,
         Success = 0,
         Solved = 1,
         UniqueSolution = 2,
