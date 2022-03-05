@@ -58,7 +58,7 @@
 #include "BasicSolver.hpp"
 
 #if defined(GZ_SUDOKU)
-#include "JCZSolve_v2.h"
+#include "RustSudoku_v1.h"
 #else
 #include "SudokuSolver_v4.h"
 #include "SudokuSolver_v4a.h"
@@ -212,11 +212,17 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
 extern
 int GzSudoku(const char * input, char * output, int limit)
 {
+#if 0
     JCZ::v2::Solver solver;
     const Board & board = *(const Board *)input;
     Board & solition = *(Board *)output;
     int solutions = solver.solve(board, solition, limit);
     return solutions;
+#else
+    Rust::v1::Solver solver;
+    int solutions = solver.solve(input, output, limit);
+    return solutions;
+#endif
 }
 
 template <typename SudokuSlover>
