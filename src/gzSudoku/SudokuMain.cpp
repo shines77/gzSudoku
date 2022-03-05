@@ -55,6 +55,7 @@
 #include "Sudoku.hpp"
 #include "TestCase.h"
 
+#include "gzSudoku.h"
 #include "BasicSolver.hpp"
 
 #if defined(GZ_SUDOKU)
@@ -74,8 +75,6 @@
 #include "JCZSolveEx_v1.h"
 #include "RustSudoku_v1.h"
 #endif // GZ_SUDOKU
-
-#include "gzSudoku.h"
 
 using namespace gzSudoku;
 

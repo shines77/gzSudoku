@@ -50,6 +50,8 @@ namespace v2 {
 static const size_t kSearchMode = SearchMode::OneSolution;
 
 static const bool kCheckSolvedRows = false;
+static const bool kDontVerifySolvedRows = true;
+
 static const bool kUseFastMode = false;
 
 static const bool kReachSolutionsLimitToExit = true;
@@ -1026,7 +1028,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 0U;
-                    if ((solvedRows & (0x007U << 0U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 0U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 0>(state, band, bandSolvedRows);
                     }
@@ -1039,7 +1041,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 3U;
-                    if ((solvedRows & (0x007U << 3U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 3U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 1>(state, band, bandSolvedRows);
                     }
@@ -1052,7 +1054,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 6U;
-                    if ((solvedRows & (0x007U << 6U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 6U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
@@ -1071,7 +1073,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 9U;
-                    if ((solvedRows & (0x007U << 9U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 9U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 0>(state, band, bandSolvedRows);
                     }
@@ -1084,7 +1086,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 12U;
-                    if ((solvedRows & (0x007U << 12U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 12U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 1>(state, band, bandSolvedRows);
                     }
@@ -1097,7 +1099,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 15U;
-                    if ((solvedRows & (0x007U << 15U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 15U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
@@ -1116,7 +1118,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 18U;
-                    if ((solvedRows & (0x007U << 18U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 18U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 0>(state, band, bandSolvedRows);
                     }
@@ -1129,7 +1131,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 21U;
-                    if ((solvedRows & (0x007U << 21U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 21U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 1>(state, band, bandSolvedRows);
                     }
@@ -1142,7 +1144,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 24U;
-                    if ((solvedRows & (0x007U << 24U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 24U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
@@ -1168,7 +1170,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 0U;
-                    if ((solvedRows & (0x007U << 0U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 0U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 0>(state, band, bandSolvedRows);
                     }
@@ -1181,7 +1183,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 3U;
-                    if ((solvedRows & (0x007U << 3U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 3U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 1>(state, band, bandSolvedRows);
                     }
@@ -1194,7 +1196,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 6U;
-                    if ((solvedRows & (0x007U << 6U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 6U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
@@ -1213,7 +1215,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 9U;
-                    if ((solvedRows & (0x007U << 9U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 9U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 0>(state, band, bandSolvedRows);
                     }
@@ -1226,7 +1228,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 12U;
-                    if ((solvedRows & (0x007U << 12U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 12U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 1>(state, band, bandSolvedRows);
                     }
@@ -1239,7 +1241,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 15U;
-                    if ((solvedRows & (0x007U << 15U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 15U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
@@ -1258,7 +1260,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 18U;
-                    if ((solvedRows & (0x007U << 18U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 18U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 0>(state, band, bandSolvedRows);
                     }
@@ -1271,7 +1273,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 21U;
-                    if ((solvedRows & (0x007U << 21U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 21U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 1>(state, band, bandSolvedRows);
                     }
@@ -1284,7 +1286,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 24U;
-                    if ((solvedRows & (0x007U << 24U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 24U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
@@ -1310,7 +1312,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 0U;
-                    if ((solvedRows & (0x007U << 0U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 0U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 0>(state, band, bandSolvedRows);
                     }
@@ -1323,7 +1325,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 3U;
-                    if ((solvedRows & (0x007U << 3U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 3U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 1>(state, band, bandSolvedRows);
                     }
@@ -1336,7 +1338,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 6U;
-                    if ((solvedRows & (0x007U << 6U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 6U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
@@ -1355,7 +1357,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 9U;
-                    if ((solvedRows & (0x007U << 9U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 9U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 0>(state, band, bandSolvedRows);
                     }
@@ -1368,7 +1370,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 12U;
-                    if ((solvedRows & (0x007U << 12U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 12U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 1>(state, band, bandSolvedRows);
                     }
@@ -1381,7 +1383,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 15U;
-                    if ((solvedRows & (0x007U << 15U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 15U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
@@ -1400,7 +1402,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 18U;
-                    if ((solvedRows & (0x007U << 18U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 18U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 0>(state, band, bandSolvedRows);
                     }
@@ -1413,7 +1415,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 21U;
-                    if ((solvedRows & (0x007U << 21U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 21U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 1>(state, band, bandSolvedRows);
                     }
@@ -1426,7 +1428,7 @@ private:
                     if (!fast_mode && (bandSolvedRows == (uint32_t)-1))
                         return Status::Invalid;
                     uint32_t newSolvedRows = bandSolvedRows << 24U;
-                    if ((solvedRows & (0x007U << 24U)) != newSolvedRows) {
+                    if (kDontVerifySolvedRows || (solvedRows & (0x007U << 24U)) != newSolvedRows) {
                         solvedRows |= newSolvedRows;
                         this->update_solved_rows<digit, 2>(state, band, bandSolvedRows);
                     }
