@@ -529,7 +529,30 @@ private:
         }
 
         void init() {
-#if defined(__AVX2__)
+#if defined(__AVX2__) && 0
+            BitVec16x16_AVX bitset27(kBitSet27_Double64, kBitSet27_Single64, kBitSet27_Double64, kBitSet27_Single64);
+            BitVec16x16_AVX zeros;
+            BitVec08x16 bitset27_x4(kBitSet27_Double64, kBitSet27_Single64);
+            BitVec08x16 zeros_x4;
+            zeros.setAllZeros();
+            zeros_x4.setAllZeros();
+            {
+                bitset27.saveAligned((void *)&this->candidates[0]);
+                bitset27.saveAligned((void *)&this->candidates[2]);
+                bitset27.saveAligned((void *)&this->candidates[4]);
+                bitset27.saveAligned((void *)&this->candidates[6]);
+                bitset27_x4.saveAligned((void *)&this->candidates[8]);
+                zeros_x4.saveAligned((void *)&this->candidates[9]);
+
+                zeros.saveAligned((void *)&this->prevCandidates[0]);                
+                zeros.saveAligned((void *)&this->prevCandidates[2]);               
+                zeros.saveAligned((void *)&this->prevCandidates[4]);                
+                zeros.saveAligned((void *)&this->prevCandidates[6]);
+                zeros.saveAligned((void *)&this->prevCandidates[8]);
+            }
+            zeros.saveAligned((void *)&this->solvedCells);
+            zeros.saveAligned((void *)&this->pairs);
+#elif defined(__AVX2__)
             BitVec16x16_AVX bitset27(kBitSet27_Double64, kBitSet27_Single64, kBitSet27_Double64, kBitSet27_Single64);
             BitVec16x16_AVX bitset27_half(kBitSet27_Double64, kBitSet27_Single64, 0, 0);
             BitVec16x16_AVX zeros;
@@ -835,7 +858,7 @@ private:
                     size_t pos = bandBitPosToPos64[0][bit_pos];
                     assert(pos != size_t(-1));
 
-                    assert(board.cells[pos] == '.');
+                    assert(solution[pos] == '.');
                     solution[pos] = (char)('1' + num);
                 }
             }
@@ -851,7 +874,7 @@ private:
                     size_t pos = bandBitPosToPos64[1][bit_pos];
                     assert(pos != size_t(-1));
 
-                    assert(board.cells[pos] == '.');
+                    assert(solution[pos] == '.');
                     solution[pos] = (char)('1' + num);
                 }
             }
@@ -869,7 +892,7 @@ private:
                     size_t pos = bandBitPosToPos32[0][bit_pos];
                     assert(pos != size_t(-1));
 
-                    assert(board.cells[pos] == '.');
+                    assert(solution[pos] == '.');
                     solution[pos] = (char)('1' + num);
                 }
             }
@@ -885,7 +908,7 @@ private:
                     size_t pos = bandBitPosToPos32[1][bit_pos];
                     assert(pos != size_t(-1));
 
-                    assert(board.cells[pos] == '.');
+                    assert(solutions[pos] == '.');
                     solution[pos] = (char)('1' + num);
                 }
             }
@@ -901,7 +924,7 @@ private:
                     size_t pos = bandBitPosToPos32[2][bit_pos];
                     assert(pos != size_t(-1));
 
-                    assert(board.cells[pos] == '.');
+                    assert(solution[pos] == '.');
                     solution[pos] = (char)('1' + num);
                 }
             }
@@ -1139,10 +1162,11 @@ private:
     template <bool fast_mode = false>
     JSTD_NO_INLINE
     int find_locked_candidates_and_update(State & state) {
-        bool found_nothing = true;
+        bool found_nothing;
 
         do {
             register uint32_t solvedRows;
+            found_nothing = true;
 
             /********* Number 1-3 Start *********/
         
@@ -1452,7 +1476,7 @@ private:
             state.solvedRows.bands[2] = solvedRows;
 
             /********* Number 7-9 End *********/
-        } while (found_nothing);
+        } while (!found_nothing);
 
         return Status::Success;
     }
@@ -1572,11 +1596,11 @@ private:
                 bits64 = R1_bits.bands64[1];
 Band64_01_Loop:
                 do {
-                    size_t bit_pos = BitUtils::bsf64(bits64);
+                    uint32_t bit_pos = BitUtils::bsf64(bits64);
                     uint64_t bit = BitUtils::ls1b64(bits64);
                     bits64 ^= bit;
 
-                    size_t pos = bandBitPosToPos64[1][bit_pos];
+                    uint32_t pos = bandBitPosToPos64[1][bit_pos];
                     assert(pos != uint32_t(int8_t(-1)));
 
                     for (size_t num = 0; num < Numbers; num++) {
@@ -1593,12 +1617,12 @@ Band64_01_Loop:
             for (size_t band = 0; band < 3; band++) {
                 register uint32_t bits32 = R1_bits.bands[band];
                 while (bits32 != 0) {
-                    size_t bit_pos = BitUtils::bsf32(bits32);
+                    uint32_t bit_pos = BitUtils::bsf32(bits32);
                     uint32_t bit = BitUtils::ls1b32(bits32);
                     bits32 ^= bit;
 
-                    size_t pos = bandBitPosToPos32[band][bit_pos];
-                    assert(pos != size_t(-1));
+                    uint32_t pos = bandBitPosToPos32[band][bit_pos];
+                    assert(pos != uint32_t(-1));
 
                     for (size_t num = 0; num < Numbers; num++) {
                         uint32_t band_bits = state.candidates[num].bands[band];
@@ -1965,8 +1989,7 @@ Band64_01_Loop:
 
     JSTD_FORCE_INLINE
     int guess_next_cell(State & state, char * solution) {
-        if ((state.solvedCells.bands64[0] == kBitSet27_Double64) &&
-            (state.solvedCells.bands64[1] == kBitSet27_Single64)) {
+        if (this->is_solved(state)) {
             if (kSearchMode > SearchMode::OneSolution) {
                 if (this->numSolutions_ == 0)
                     this->extract_solution(state, solution);
@@ -2004,35 +2027,6 @@ Band64_01_Loop:
 
     template <bool fast_mode>
     JSTD_FORCE_INLINE
-    int search(State & state) {
-        int status;
-        if (this->numSolutions_ >= this->limitSolutions_)
-            return Status::Unsolvable;
-
-        do {
-            status = this->find_locked_candidates_and_update<false>(state);
-            if (status == Status::Unsolvable)
-                return Status::Unsolvable;
-
-            if (this->is_solved(state)) {
-                return Status::Solved;
-            }
-
-            // If naked singles has found, go again
-            int naked_singles = this->find_naked_singles<false>(state);
-            if (naked_singles > 0)
-                continue;
-            else if (!fast_mode && (naked_singles < 0))
-                return Status::Unsolvable;
-            else
-                break;
-        } while (1);
-
-        return Status::Success;
-    }
-
-    template <bool fast_mode>
-    JSTD_FORCE_INLINE
     int find_all_single_literals(State & state) {
         if (!fast_mode && (this->numSolutions_ >= this->limitSolutions_))
             return Status::Unsolvable;
@@ -2052,6 +2046,34 @@ Band64_01_Loop:
                 break;
             else if (!fast_mode && (naked_singles < 0))
                 return Status::Unsolvable;
+        } while (1);
+
+        return Status::Success;
+    }
+
+    template <bool fast_mode>
+    JSTD_FORCE_INLINE
+    int search(State & state) {
+        if (this->numSolutions_ >= this->limitSolutions_)
+            return Status::Unsolvable;
+
+        do {
+            int status = this->find_locked_candidates_and_update<false>(state);
+            if (status == Status::Unsolvable)
+                return status;
+
+            if (this->is_solved(state)) {
+                return Status::Solved;
+            }
+
+            // If naked singles has found, go again
+            int naked_singles = this->find_naked_singles<false>(state);
+            if (naked_singles > 0)
+                continue;
+            else if (!fast_mode && (naked_singles < 0))
+                return Status::Unsolvable;
+            else
+                break;
         } while (1);
 
         return Status::Success;
@@ -2089,7 +2111,7 @@ public:
 
 #if (RUST_V1_ONLY_NO_GUESS == 0)
         int status = this->search<kUseFastMode>(state);
-        if (status == Status::Success) {
+        if (status != Status::Unsolvable) {
             status = this->guess_next_cell(state, solution);
         }
         return this->numSolutions_;
