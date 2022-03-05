@@ -1150,10 +1150,10 @@ private:
                                                         combColumnSingleMaskTbl[possible_cols];
             uint32_t bandSolvedRows = rowHiddenSingleMaskTbl[locked_candidates_intersection];
             uint32_t newSolvedRows = bandSolvedRows << shift;
-            if ((solvedRows & (0x007U << shift)) != newSolvedRows) {
+            //if ((solvedRows & (0x007U << shift)) != newSolvedRows) {
                 solvedRows |= newSolvedRows;
                 this->update_solved_rows<digit, self>(state, newBand, bandSolvedRows);
-            }
+            //}
             return Status::Success;
         }
         else {
