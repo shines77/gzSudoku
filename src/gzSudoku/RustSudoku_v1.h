@@ -1147,7 +1147,7 @@ private:
             state.candidates[digit].bands[peer2] &= nonconflicting_other;
 
             uint32_t locked_candidates_intersection = rowTriadsSingleMaskTbl[rowTriadsMask] &
-                                                        combColumnSingleMaskTbl[possible_cols];
+                                                      combColumnSingleMaskTbl[possible_cols];
             uint32_t bandSolvedRows = rowHiddenSingleMaskTbl[locked_candidates_intersection];
             uint32_t newSolvedRows = bandSolvedRows << shift;
             //if ((solvedRows & (0x007U << shift)) != newSolvedRows) {
