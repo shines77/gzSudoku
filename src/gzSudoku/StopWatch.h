@@ -40,7 +40,7 @@
 #endif
 #endif
 
-namespace jtest {
+namespace test {
 
 template <typename T>
 struct TimeRatio {
@@ -652,7 +652,7 @@ typedef StopWatchExBase< defaultStopWatchImpl<double> > getTickCountStopWatchEx;
 
 #endif // _WIN32
 
-} // namespace jtest
+} // namespace test
 
 #undef __COMPILER_BARRIER
 

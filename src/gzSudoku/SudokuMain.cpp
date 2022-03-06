@@ -1,4 +1,8 @@
 
+#if defined(_MSC_VER) && !defined(NDEBUG)
+#include <vld.h>
+#endif
+
 #if defined(_MSC_VER)
 #define __MMX__
 #define __SSE__
@@ -22,13 +26,10 @@
 //#undef __SSE4_1__
 //#undef __SSE4_2__
 
-#if defined(_MSC_VER) && !defined(NDEBUG)
-#include <vld.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <inttypes.h>
 #include <string.h>
 #include <memory.h>
@@ -234,7 +235,7 @@ void run_solver_testcase(size_t index)
     SudokuSlover solver;
     solver.display_board(board);
 
-    jtest::StopWatch sw;
+    test::StopWatch sw;
     sw.start();
     int success = solver.solve(board, solution, 1);
     sw.stop();
@@ -251,7 +252,7 @@ void run_a_testcase(size_t index)
     // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
     //
     std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
-    jtest::CPU::warmup(1000);
+    test::CPU::warmup(1000);
     std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
 
     if (kEnableV4Solver)
@@ -315,7 +316,7 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
     Board solution;
     solution.clear();    
 
-    jtest::StopWatch sw;
+    test::StopWatch sw;
     sw.start();
 
     for (size_t i = 0; i < puzzleTotal; i++) {
@@ -390,7 +391,7 @@ void run_sudoku_test_ex(std::vector<Board> & puzzles, size_t puzzleTotal, const 
     Board solution;
     solution.clear();
 
-    jtest::StopWatch sw;
+    test::StopWatch sw;
     sw.start();
 
     for (size_t i = 0; i < puzzleTotal; i++) {
@@ -460,7 +461,7 @@ void run_all_benchmark(const char * filename)
     // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
     //
     std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
-    jtest::CPU::warmup(1000);
+    test::CPU::warmup(1000);
     std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
 
 #if !defined(_DEBUG)
@@ -492,7 +493,7 @@ void run_all_benchmark(const char * filename)
 #endif
 }
 
-int main(int argc, char * argv [])
+int main(int argc, char * argv[])
 {
     const char * filename = nullptr;
     const char * out_file = nullptr;

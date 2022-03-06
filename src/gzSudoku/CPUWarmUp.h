@@ -23,12 +23,12 @@
 
 #include <atomic>
 
-namespace jtest {
+namespace test {
 namespace CPU {
 
 #if !defined(_MSC_VER) || (_MSC_VER >= 1800)
 
-void warmup(int delayMillsecs)
+void warm_up(int delayMillsecs)
 {
 #if !defined(_DEBUG)
     double delayTimeLimit = (double)delayMillsecs / 1.0;
@@ -60,7 +60,7 @@ void warmup(int delayMillsecs)
 
 #else
 
-void warmup(DWORD delayMillsecs)
+void warm_up(DWORD delayMillsecs)
 {
 #if !defined(_DEBUG)
     volatile int sum = 0;
@@ -95,12 +95,12 @@ struct WarmUp {
         // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
         //
         std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
-        jtest::CPU::warmup(1000);
+        test::CPU::warm_up(1000);
         std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
     }
 };
 
 } // namespace CPU
-} // namespace jtest
+} // namespace test
 
 #endif // JSTD_TEST_CPU_WARMUP_H
