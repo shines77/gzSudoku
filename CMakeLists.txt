@@ -4,15 +4,6 @@ project(gzSudoku)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
-
-message("------------ Options -------------")
-message("  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
-
-message("----------------------------------")
-
 message("-------------- Env ---------------")
 message("  CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 message("  CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
@@ -72,6 +63,15 @@ add_custom_target(release
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target all
     COMMENT "Switch CMAKE_BUILD_TYPE to Release"
 )
+
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+message("------------ Options -------------")
+message("  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+
+message("----------------------------------")
 
 add_executable(gzSudoku ${SOURCE_FILES})
 target_link_libraries(gzSudoku ${EXTRA_LIBS})
