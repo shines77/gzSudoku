@@ -460,8 +460,6 @@ public:
     static const uint32_t kBand1RowBits  = 0070;
     static const uint32_t kBand2RowBits  = 0700;
 
-    static const size_t kLimitSolutions = 1;
-
 private:
     enum LiteralType {
         NumRowCols,

@@ -21,6 +21,7 @@
 #include <type_traits>
 #include <algorithm>    // For std::sort(), std::fill_n()
 
+#include <vector>
 #include <atomic>
 
 #include "stddef.h"
