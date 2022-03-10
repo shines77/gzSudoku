@@ -44,6 +44,45 @@
 
 #endif //_MSC_VER
 
+/*
+ * We'll support vectors targeting sse2, sse4_1, avx2, and avx512bitalg instruction sets.
+ * While avx2 or avx512 will be ideal, sse4_1 should deliver solid performance. OTOH, sse2
+ * performance is seriously handicapped because of our heavy reliance on fast ssse3 shuffles
+ * for which there is no great sse2 alternative.
+ *
+ * sse2 - pentium4 2000
+ *   has most of the instructions we'll use, with exceptions noted below
+ *
+ * ssse3 2006 - core2 2006
+ *   _mm_shuffle_epi8      // sse2 alt: kind of a mess. see below.
+ *
+ * sse4_1 - penryn 2007
+ *   _mm_testz_si128       // sse2 alt: movemask(cmpeq(setzero())) in sse2
+ *   _mm_blend_epi16       // sse2 alt: &| with masks
+ *   _mm_minpos_epu8
+ *
+ * sse4_2 - nehalem 2007
+ *   _mm_cmpgt_epi64
+ *
+ * avx2 - haswell 2013
+ *   _mm256 versions of most everything
+ *
+ * avx512vl - skylake 2017
+ *  _mm(256)_ternarylogic_epi32
+ *
+ * avx512vpopcntdq, avx512bitalg - ice lake 2019
+ *   _mm_popcnt_epi64
+ *   _mm256_popcnt_epi16
+ *
+ * April 2021 Steam monthly hardware survey:
+ *   SSE2        100.00%
+ *   SSSE3        99.17%
+ *   SSE4.1       98.80%
+ *   SSE4.2       98.36%
+ *   AVX          94.77%
+ *   AVX2         82.28%
+ */
+
 // For SSE2, SSE3, SSSE3, SSE 4.1, AVX, AVX2
 #if defined(_MSC_VER)
 #include <intrin.h>
@@ -54,63 +93,137 @@
 #include "msvc_x86intrin.h"
 #include <avxintrin.h>
 
+/////////////////////////////////////////////
+
+#ifndef _mm_setr_epi64x
+#define _mm_setr_epi64x(high, low) \
+        _mm_setr_epi64(_mm_cvtsi64_m64(high), _mm_cvtsi64_m64(low))
+#endif
+
+/////////////////////////////////////////////
+
+#ifndef _mm256_set_m128
+#define _mm256_set_m128(hi, lo) \
+        _mm256_insertf128_ps(_mm256_castps128_ps256(lo), (hi), 0x1)
+#endif
+
+#ifndef _mm256_set_m128d
+#define _mm256_set_m128d(hi, lo) \
+        _mm256_insertf128_pd(_mm256_castpd128_pd256(lo), (hi), 0x1)
+#endif
+
+#ifndef _mm256_set_m128i
+#define _mm256_set_m128i(hi, lo) \
+        _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 0x1)
+#endif
+
+/////////////////////////////////////////////
+
+#ifndef _mm256_setr_m128
+#define _mm256_setr_m128(lo, hi)    _mm256_set_m128((hi), (lo))
+#endif
+
+#ifndef _mm256_setr_m128d
+#define _mm256_setr_m128d(lo, hi)   _mm256_set_m128d((hi), (lo))
+#endif
+
+#ifndef _mm256_setr_m128i
+#define _mm256_setr_m128i(lo, hi)   _mm256_set_m128i((hi), (lo))
+#endif
+
+/////////////////////////////////////////////
+
+#ifndef _mm256_test_all_zeros
+#define _mm256_test_all_zeros(mask, val) \
+        _mm256_testz_si256((mask), (val))
+#endif
+
+#ifndef _mm256_test_all_ones
+#define _mm256_test_all_ones(val) \
+        _mm256_testc_si256((val), _mm256_cmpeq_epi32((val), (val)))
+#endif
+
+#ifndef _mm256_test_mix_ones_zeros
+#define _mm256_test_mix_ones_zeros(mask, val) \
+        _mm256_testnzc_si256((mask), (val))
+#endif
+#endif // _MSC_VER
+
+/////////////////////////////////////////////
+
+#ifndef _mm_bslli_si128
+#define _mm_bslli_si128 _mm_slli_si128
+#endif
+
+#ifndef _mm_bsrli_si128
+#define _mm_bsrli_si128 _mm_srli_si128
+#endif
+
+/////////////////////////////////////////////
+
+#ifndef _mm_cvtss_i32
 #define _mm_cvtss_i32 _mm_cvtss_si32
+#endif
+
+#ifndef _mm_cvtsd_i32
 #define _mm_cvtsd_i32 _mm_cvtsd_si32
+#endif
+
+#ifndef _mm_cvti32_sd
 #define _mm_cvti32_sd _mm_cvtsi32_sd
+#endif
+
+#ifndef _mm_cvti32_ss
 #define _mm_cvti32_ss _mm_cvtsi32_ss
-#ifdef __x86_64__
+#endif
+
+/////////////////////////////////////////////
+
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+
+#ifndef _mm_cvtss_i64
 #define _mm_cvtss_i64 _mm_cvtss_si64
+#endif
+
+#ifndef _mm_cvtsd_i64
 #define _mm_cvtsd_i64 _mm_cvtsd_si64
+#endif
+
+#ifndef _mm_cvti64_sd
 #define _mm_cvti64_sd _mm_cvtsi64_sd
+#endif
+
+#ifndef _mm_cvti64_ss
 #define _mm_cvti64_ss _mm_cvtsi64_ss
 #endif
 
-#define _mm_setr_epi64x(high, low) \
-        _mm_setr_epi64(_mm_cvtsi64_m64(high), _mm_cvtsi64_m64(low))
+#endif // __amd64__
 
-#if !defined(_mm256_set_m128i)
+/////////////////////////////////////////////
 
-#define _mm256_set_m128(hi, lo) \
-        _mm256_insertf128_ps(_mm256_castps128_ps256(lo), (hi), 0x1)
+#if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
+ || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+// x64 mode have no _mm_setr_epi64()
+#else
+#endif // __amd64__
 
-#define _mm256_set_m128d(hi, lo) \
-        _mm256_insertf128_pd(_mm256_castpd128_pd256(lo), (hi), 0x1)
-
-#define _mm256_set_m128i(hi, lo) \
-        _mm256_insertf128_si256(_mm256_castsi128_si256(lo), (hi), 0x1)
-
-#endif // !_mm256_set_m128i
-
-#if !defined(_mm256_setr_m128i)
-
-#define _mm256_setr_m128(lo, hi)    _mm256_set_m128((hi), (lo))
-#define _mm256_setr_m128d(lo, hi)   _mm256_set_m128d((hi), (lo))
-#define _mm256_setr_m128i(lo, hi)   _mm256_set_m128i((hi), (lo))
-
-#endif // !_mm256_setr_m128i
-
-#define _mm256_test_all_zeros(mask, val) \
-        _mm256_testz_si256((mask), (val))
-
-#define _mm256_test_all_ones(val) \
-        _mm256_testc_si256((val), _mm256_cmpeq_epi32((val), (val)))
-
-#define _mm256_test_mix_ones_zeros(mask, val) \
-        _mm256_testnzc_si256((mask), (val))
-#endif // _MSC_VER
+/////////////////////////////////////////////
 
 //
 // Missing in MSVC (before 2017) & gcc (before 11.0)
 //
-#if !defined(_mm256_cvtsi256_si32)
+#ifndef _mm256_cvtsi256_si32
 #define _mm256_cvtsi256_si32(val) \
         _mm_cvtsi128_si32(_mm256_castsi256_si128(val))
 #endif // _mm256_cvtsi256_si32
 
-#if !defined(_mm256_insert_epi16)
+#ifndef _mm256_insert_epi16
 #define _mm256_insert_epi16(target, value, index) \
         AVX2::template mm256_insert_epi16<index>(target, value)
 #endif // _mm256_insert_epi16
+
+/////////////////////////////////////////////
 
 //
 // Intel Intrinsics Guide (SIMD)
@@ -127,6 +240,14 @@
 //   tmp[255:0] := ((a[127:0] << 128)[255:0] OR b[127:0]) >> (imm8*8)
 //   dst[127:0] := tmp[127:0]
 //
+
+// for functions like extract below where we use switches to determine which immediate to use
+// we'll assume only valid values are passed and omit the default, thereby allowing the compiler's
+// assumption of defined behavior to optimize away a branch.
+#if !defined(_MSC_VER)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type"
+#endif
 
 namespace gzSudoku {
 
@@ -2945,5 +3066,9 @@ typedef BitVec16x16_AVX BitVec16x16;
 #endif // __AVX2__
 
 } // namespace gzSudoku
+
+#if !defined(_MSC_VER)
+#pragma GCC diagnostic pop
+#endif
 
 #endif // GZ_SUDOKU_BITVEC_H
