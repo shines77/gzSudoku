@@ -53,11 +53,9 @@
 #include "StopWatch.h"
 
 #include "Sudoku.h"
-#include "Sudoku.hpp"
 #include "TestCase.h"
 
 #include "gzSudoku.h"
-#include "BasicSolver.hpp"
 
 #if defined(GZ_SUDOKU)
 #include "RustSudoku_v1.h"
@@ -75,9 +73,33 @@
 #include "JCZSolve_v6.h"
 #include "JCZSolveEx_v1.h"
 #include "RustSudoku_v1.h"
+
+#include "BasicSolver.hpp"
+#include "Sudoku.hpp"
 #endif // GZ_SUDOKU
 
 using namespace gzSudoku;
+
+#if defined(GZ_SUDOKU)
+
+Rust::v1::Solver rust_v1_solver;
+
+extern
+int GzSudoku(const char * input, char * output, int limit)
+{
+#if 0
+    JCZ::v2::Solver solver;
+    const Board & board = *(const Board *)input;
+    Board & solition = *(Board *)output;
+    int solutions = solver.solve(board, solition, limit);
+    return solutions;
+#else
+    int solutions = rust_v1_solver.solve(input, output, limit);
+    return solutions;
+#endif
+}
+
+#else // !GZ_SUDOKU
 
 static const size_t kEnableDlxV1Solver = 1;
 static const size_t kEnableDlxV2Solver = 1;
@@ -208,24 +230,6 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
 
     return puzzleCount;
 }
-
-extern
-int GzSudoku(const char * input, char * output, int limit)
-{
-#if 0
-    JCZ::v2::Solver solver;
-    const Board & board = *(const Board *)input;
-    Board & solition = *(Board *)output;
-    int solutions = solver.solve(board, solition, limit);
-    return solutions;
-#else
-    Rust::v1::Solver solver;
-    int solutions = solver.solve(input, output, limit);
-    return solutions;
-#endif
-}
-
-#if !defined(GZ_SUDOKU)
 
 template <typename SudokuSlover>
 void run_solver_testcase(size_t index)
@@ -521,4 +525,4 @@ int main(int argc, char * argv[])
     return 0;
 }
 
-#endif // !GZ_SUDOKU
+#endif // GZ_SUDOKU
