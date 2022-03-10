@@ -225,6 +225,8 @@ int GzSudoku(const char * input, char * output, int limit)
 #endif
 }
 
+#if !defined(GZ_SUDOKU)
+
 template <typename SudokuSlover>
 void run_solver_testcase(size_t index)
 {
@@ -243,8 +245,6 @@ void run_solver_testcase(size_t index)
     double elapsed_time = sw.getElapsedMillisec();
     solver.display_result(solution, elapsed_time);
 }
-
-#if !defined(GZ_SUDOKU)
 
 void run_a_testcase(size_t index)
 {
@@ -495,13 +495,6 @@ int main(int argc, char * argv[])
     else if (argc > 1) {
         filename = argv[1];
     }
-
-    //
-    // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
-    //
-//  std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
-//  std::atomic_thread_fence(std::memory_order_release);        // x86: _compile_barrier(), arm: _memory_barrier()
-//  std::atomic_thread_fence(std::memory_order_seq_cst);        // CPU: mfence
 
     Sudoku::initialize();
 
