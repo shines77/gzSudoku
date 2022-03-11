@@ -117,6 +117,14 @@ static size_t bm_puzzleTotal = 0;
 // Index: [0 - 4]
 #define TEST_CASE_INDEX         4
 
+static inline
+double calc_percent(size_t num_val, size_t num_total) {
+    if (num_total != 0)
+        return (num_val * 100.0) / num_total;
+    else
+        return 0.0;
+}
+
 void make_sudoku_board(Board & board, size_t index)
 {
     for (size_t row = 0; row < Sudoku::kRows; row++) {

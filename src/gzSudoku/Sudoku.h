@@ -92,13 +92,6 @@ struct Board {
 
 #pragma pack(pop)
 
-static
-double calc_percent(size_t num_val, size_t num_total) {
-    if (num_total != 0)
-        return (num_val * 100.0) / num_total;
-    else
-        return 0.0;
-}
 
 struct Tables {
     const unsigned int div3[9] = { 0, 0, 0, 1, 1, 1, 2, 2, 2 };

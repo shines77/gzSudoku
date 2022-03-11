@@ -2772,7 +2772,11 @@ public:
     }
 };
 
+#if defined(GZ_SUDOKU)
+extern Solver::StaticData Solver::Static;
+#else
 Solver::StaticData Solver::Static;
+#endif
 
 } // namespace v1
 } // namespace Rust
