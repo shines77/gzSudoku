@@ -123,6 +123,13 @@ public:
     static size_t get_num_unique_candidate() { return this_type::num_unique_candidate; }
     static size_t get_num_failed_return() { return this_type::num_failed_return; }
 
+    static double calc_percent(size_t num_val, size_t num_total) {
+        if (num_total != 0)
+            return (num_val * 100.0) / num_total;
+        else
+            return 0.0;
+    }
+
     static size_t get_total_search_counter() {
         return (this_type::num_guesses + this_type::num_unique_candidate + this_type::num_failed_return);
     }
