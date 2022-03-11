@@ -4,15 +4,6 @@ project(gzSudoku)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
-
-message("------------ Options -------------")
-message("  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
-
-message("----------------------------------")
-
 message("-------------- Env ---------------")
 message("  CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 message("  CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
@@ -21,7 +12,6 @@ message("  PROJECT_BINARY_DIR: ${PROJECT_BINARY_DIR}")
 message("----------------------------------")
 
 if (NOT MSVC)
-
     ##
     ## See: https://www.cnblogs.com/stonehat/p/7000637.html
     ##
@@ -32,8 +22,8 @@ if (NOT MSVC)
 
     ## For C_FLAGS
     ## -mmmx -msse -msse2 -msse3 -mssse3 -msse4 -msse4a -msse4.1 -msse4.2 -mavx -mavx2 -mavx512vl -mavx512f
-    set(CMAKE_C_COMPILER        "/usr/bin/clang")
-    set(CMAKE_C_FLAGS_DEFAULT "${CMAKE_C_FLAGS} -std=c90 -march=native -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -fPIC")
+    set(CMAKE_C_COMPILER      "/usr/bin/clang")
+    set(CMAKE_C_FLAGS_DEFAULT "${CMAKE_C_FLAGS} -std=c89 -march=native -Wall -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-variable -fPIC")
     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_DEFAULT} -O3 -DNDEBUG")
     set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEFAULT} -g -pg -D_DEBUG")
 
@@ -113,6 +103,15 @@ add_custom_target(release
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target all
     COMMENT "Switch CMAKE_BUILD_TYPE to Release"
 )
+
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+message("------------ Options -------------")
+message("  CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+
+message("----------------------------------")
 
 add_executable(gzSudoku ${SOURCE_FILES})
 target_link_libraries(gzSudoku ${EXTRA_LIBS})
