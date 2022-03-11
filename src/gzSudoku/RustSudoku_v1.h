@@ -2772,9 +2772,7 @@ public:
     }
 };
 
-#if defined(GZ_SUDOKU)
-extern Solver::StaticData Solver::Static;
-#else
+#if !defined(GZ_SUDOKU)
 Solver::StaticData Solver::Static;
 #endif
 

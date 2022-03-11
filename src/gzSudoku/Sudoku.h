@@ -92,7 +92,6 @@ struct Board {
 
 #pragma pack(pop)
 
-
 struct Tables {
     const unsigned int div3[9] = { 0, 0, 0, 1, 1, 1, 2, 2, 2 };
     const unsigned int mod3[9] = { 0, 1, 2, 0, 1, 2, 0, 1, 2 };
