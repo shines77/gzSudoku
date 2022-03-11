@@ -58,6 +58,7 @@
 #if defined(GZ_SUDOKU)
 #include "gzSudoku.h"
 #include "RustSudoku_v1.h"
+#include "RustSudoku_v1.hpp"
 #else
 #include "SudokuSolver_v4.h"
 #include "SudokuSolver_v4a.h"
@@ -72,6 +73,7 @@
 #include "JCZSolve_v6.h"
 #include "JCZSolveEx_v1.h"
 #include "RustSudoku_v1.h"
+#include "RustSudoku_v1.hpp"
 #endif // GZ_SUDOKU
 
 #include "BasicSolver.hpp"

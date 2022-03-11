@@ -2772,10 +2772,6 @@ public:
     }
 };
 
-#if !defined(GZ_SUDOKU)
-Solver::StaticData Solver::Static;
-#endif
-
 } // namespace v1
 } // namespace Rust
 } // namespace gzSudoku
