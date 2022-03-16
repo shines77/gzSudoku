@@ -498,7 +498,7 @@ int64_t mm256_extract_epi64(__m256i src)
 
 template <int index>
 static inline
-__m256i mm256_insert_epi64(__m256i target, __int64 value)
+__m256i mm256_insert_epi64(__m256i target, int64_t value)
 {
     __m128i partOfInsert = _mm256_extractf128_si256(target, index >> 1);
     partOfInsert = _mm_insert_epi64(partOfInsert, value, index % 2);
