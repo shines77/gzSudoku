@@ -91,10 +91,13 @@
     <ClInclude Include="..\..\..\src\gzSudoku\gzSudoku.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\gzSudoku\Sudoku.hpp">
+    <ClInclude Include="..\..\..\src\gzSudoku\RustSudoku_v1.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\gzSudoku\RustSudoku_v1.h">
+    <ClInclude Include="..\..\..\src\gzSudoku\SudokuTable.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\gzSudoku\SudokuTable.hpp">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

@@ -21,6 +21,7 @@
 
 #include "BasicSolver.h"
 #include "Sudoku.h"
+#include "SudokuTable.h"
 #include "StopWatch.h"
 #include "BitUtils.h"
 #include "BitSet.h"
@@ -403,46 +404,46 @@ public:
     typedef BasicSolver                         basic_solver;
     typedef Solver                              this_type;
 
-    typedef typename Sudoku::NeighborCells      NeighborCells;
-    typedef typename Sudoku::CellInfo           CellInfo;
-    typedef typename Sudoku::BoxesInfo          BoxesInfo;
+    typedef typename SudokuTable::NeighborCells NeighborCells;
+    typedef typename SudokuTable::CellInfo      CellInfo;
+    typedef typename SudokuTable::BoxesInfo     BoxesInfo;
 
     typedef typename Sudoku::BitMask            BitMask;
     typedef typename Sudoku::BitMaskTable       BitMaskTable;
 
-    static const size_t kAlignment = Sudoku::kAlignment;
-    static const size_t BoxCellsX = Sudoku::kBoxCellsX;      // 3
-    static const size_t BoxCellsY = Sudoku::kBoxCellsY;      // 3
-    static const size_t BoxCountX = Sudoku::kBoxCountX;      // 3
-    static const size_t BoxCountY = Sudoku::kBoxCountY;      // 3
-    static const size_t MinNumber = Sudoku::kMinNumber;      // 1
-    static const size_t MaxNumber = Sudoku::kMaxNumber;      // 9
+    static const size_t kAlignment = Sudoku::Alignment;
+    static const size_t BoxCellsX = Sudoku::BoxCellsX;      // 3
+    static const size_t BoxCellsY = Sudoku::BoxCellsY;      // 3
+    static const size_t BoxCountX = Sudoku::BoxCountX;      // 3
+    static const size_t BoxCountY = Sudoku::BoxCountY;      // 3
+    static const size_t MinNumber = Sudoku::MinNumber;      // 1
+    static const size_t MaxNumber = Sudoku::MaxNumber;      // 9
 
-    static const size_t Rows = Sudoku::kRows;
-    static const size_t Cols = Sudoku::kCols;
-    static const size_t Boxes = Sudoku::kBoxes;
-    static const size_t BoxSize = Sudoku::kBoxSize;
-    static const size_t Numbers = Sudoku::kNumbers;
+    static const size_t Rows = Sudoku::Rows;
+    static const size_t Cols = Sudoku::Cols;
+    static const size_t Boxes = Sudoku::Boxes;
+    static const size_t BoxSize = Sudoku::BoxSize;
+    static const size_t Numbers = Sudoku::Numbers;
 
-    static const size_t BoardSize = Sudoku::kBoardSize;
-    static const size_t TotalSize = Sudoku::kTotalSize;
-    static const size_t Neighbors = Sudoku::kNeighbors;
+    static const size_t BoardSize = Sudoku::BoardSize;
+    static const size_t TotalSize = Sudoku::TotalSize;
+    static const size_t Neighbors = Sudoku::Neighbors;
 
-    static const size_t Rows16 = Sudoku::kRows16;
-    static const size_t Cols16 = Sudoku::kCols16;
-    static const size_t Numbers10 = Sudoku::kNumbers10;
-    static const size_t Numbers16 = Sudoku::kNumbers16;
-    static const size_t Boxes16 = Sudoku::kBoxes16;
-    static const size_t BoxSize16 = Sudoku::kBoxSize16;
-    static const size_t BoardSize16 = Sudoku::kBoardSize16;
+    static const size_t Rows16 = Sudoku::Rows16;
+    static const size_t Cols16 = Sudoku::Cols16;
+    static const size_t Numbers10 = Sudoku::Numbers10;
+    static const size_t Numbers16 = Sudoku::Numbers16;
+    static const size_t Boxes16 = Sudoku::Boxes16;
+    static const size_t BoxSize16 = Sudoku::BoxSize16;
+    static const size_t BoardSize16 = Sudoku::BoardSize16;
 
-    static const size_t kAllRowBits = Sudoku::kAllRowBits;
-    static const size_t kAllColBits = Sudoku::kAllColBits;
-    static const size_t kAllBoxBits = Sudoku::kAllBoxBits;
-    static const size_t kAllBoxCellBits = Sudoku::kAllBoxCellBits;
-    static const size_t kAllNumberBits = Sudoku::kAllNumberBits;
+    static const size_t kAllRowBits = Sudoku::AllRowBits;
+    static const size_t kAllColBits = Sudoku::AllColBits;
+    static const size_t kAllBoxBits = Sudoku::AllBoxBits;
+    static const size_t kAllBoxCellBits = Sudoku::AllBoxCellBits;
+    static const size_t kAllNumberBits = Sudoku::AllNumberBits;
 
-    static const bool kAllDimIsSame = Sudoku::kAllDimIsSame;
+    static const bool kAllDimIsSame = Sudoku::AllDimIsSame;
 
     // all pencil marks set - 27 bits per band
     static const uint32_t kBitSet27          = 0x07FFFFFFUL;
@@ -532,7 +533,7 @@ private:
 
         StaticData() : mask_is_inited(false) {
             if (!Static.mask_is_inited) {
-                Sudoku::initialize();
+                SudokuTable::initialize();
                 this_type::init_mask();
                 Static.mask_is_inited = true;
             }
@@ -557,7 +558,7 @@ private:
     static void make_flip_mask(size_t fill_pos, size_t row, size_t col) {
         PackedBitSet2D<Rows16, Cols16> & rows_mask = Static.num_row_mask[fill_pos];
 
-        const CellInfo * pCellInfo = Sudoku::cell_info;
+        const CellInfo * pCellInfo = SudokuTable::cell_info;
         size_t box = pCellInfo[fill_pos].box;
         size_t cell = pCellInfo[fill_pos].cell;
 
@@ -649,7 +650,9 @@ private:
     }
 
     static void init_mask() {
-        printf("JCZ::v3::Solver::StaticData::init_mask()\n");
+        if (bPrintSudokuStaticInit) {
+            printf("JCZ::v3::Solver::StaticData::init_mask()\n");
+        }
 
         init_flip_mask();
 
@@ -777,7 +780,7 @@ private:
             unsigned char val = board.cells[pos];
             if (val != '.') {
                 size_t num = val - '1';
-                assert(num >= (Sudoku::kMinNumber - 1) && num <= (Sudoku::kMaxNumber - 1));
+                assert(num >= (Sudoku::MinNumber - 1) && num <= (Sudoku::MaxNumber - 1));
                 int validity = this->update_peer_cells(state, solved_cells, pos, num);
                 if (validity == Status::Invalid)
                     return -1;
@@ -792,8 +795,8 @@ private:
     }
 
     inline int update_peer_cells(State & state, BitVec08x16 & solved_cells, size_t fill_pos, size_t fill_num) {
-        assert(fill_pos < Sudoku::kBoardSize);
-        assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
+        assert(fill_pos < Sudoku::BoardSize);
+        assert(fill_num >= (Sudoku::MinNumber - 1) && fill_num <= (Sudoku::MaxNumber - 1));
 
         BitVec08x16 cells16, mask16;
         void * pCells16, * pMask16;
@@ -834,8 +837,8 @@ private:
     }
 
     inline void update_peer_cells(State & state, size_t fill_pos, size_t fill_num) {
-        assert(fill_pos < Sudoku::kBoardSize);
-        assert(fill_num >= (Sudoku::kMinNumber - 1) && fill_num <= (Sudoku::kMaxNumber - 1));
+        assert(fill_pos < Sudoku::BoardSize);
+        assert(fill_num >= (Sudoku::MinNumber - 1) && fill_num <= (Sudoku::MaxNumber - 1));
 
         size_t rowBit = fill_num * Rows + tables.div9[fill_pos];
         uint32_t band = tables.div27[rowBit];
@@ -2006,7 +2009,7 @@ public:
 
         State & state = this->state_;
         int candidates = this->init_board(state, board);
-        if (candidates < (int)Sudoku::kMinInitCandidates)
+        if (candidates < (int)Sudoku::MinInitCandidates)
             return -1;
 
         int status = this->find_all_single_literals<kUseFastMode>(state);

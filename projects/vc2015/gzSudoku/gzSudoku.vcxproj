@@ -182,11 +182,12 @@
     <ClInclude Include="..\..\..\src\gzSudoku\stddef.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\StopWatch.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\Sudoku.h" />
-    <ClInclude Include="..\..\..\src\gzSudoku\Sudoku.hpp" />
+    <ClInclude Include="..\..\..\src\gzSudoku\SudokuTable.hpp" />
     <ClInclude Include="..\..\..\src\gzSudoku\SudokuSolver_v4.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\SudokuSolver_v4a.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\SudokuSolver_v4b.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\SudokuSolver_v5.h" />
+    <ClInclude Include="..\..\..\src\gzSudoku\SudokuTable.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\SudokuTables.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\TestCase.h" />
   </ItemGroup>

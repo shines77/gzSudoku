@@ -1,6 +1,6 @@
 
-#ifndef GZ_SUDOKU_H
-#define GZ_SUDOKU_H
+#ifndef GZ_SUDOKU_SUDOKU_H
+#define GZ_SUDOKU_SUDOKU_H
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
@@ -27,30 +27,11 @@
 #include "stddef.h"
 #include "BitSet.h"
 #include "BitArray.h"
-
-#if defined(__builtin_expect) && !defined(_MSC_VER)
-
-#ifndef likely
-#define likely(x)       __builtin_expect(!!(x), 1)
-#endif
-
-#ifndef unlikely
-#define unlikely(x)     __builtin_expect(!!(x), 0)
-#endif
-
-#else
-
-#ifndef likely
-#define likely(x)       x
-#endif
-
-#ifndef unlikely
-#define unlikely(x)     x
-#endif
-
-#endif // __builtin_expect
+#include "BitVec.h"
 
 namespace gzSudoku {
+
+static const bool bPrintSudokuStaticInit = false;
 
 struct Status {
     enum {
@@ -92,7 +73,7 @@ struct Board {
 
 #pragma pack(pop)
 
-struct Tables {
+struct ConstTables {
     const unsigned int div3[9] = { 0, 0, 0, 1, 1, 1, 2, 2, 2 };
     const unsigned int mod3[9] = { 0, 1, 2, 0, 1, 2, 0, 1, 2 };
 
@@ -446,446 +427,81 @@ struct Tables {
         { 8, 17, 26, 35, 44, 53, 60, 61, 62, 62, 69, 71, 72, 73, 74, 75, 76, 77, 78, 79 }   // 80
     };
 
-    Tables() noexcept {
+    ConstTables() noexcept {
         //
     }
 };
 
-static const Tables tables {};
+static const ConstTables tables {};
 
 struct Sudoku {
-    static const size_t kAlignment = sizeof(size_t);
+    static const size_t Alignment = sizeof(size_t);
 
-    static const size_t kBoxCellsX = 3;
-    static const size_t kBoxCellsY = 3;
-    static const size_t kBoxCountX = 3;
-    static const size_t kBoxCountY = 3;
-    static const size_t kMinNumber = 1;
-    static const size_t kMaxNumber = 9;
+    static const size_t BoxCellsX = 3;
+    static const size_t BoxCellsY = 3;
+    static const size_t BoxCountX = 3;
+    static const size_t BoxCountY = 3;
+    static const size_t MinNumber = 1;
+    static const size_t MaxNumber = 9;
 
-    static const size_t kCols = kBoxCellsX * kBoxCountX;
-    static const size_t kRows = kBoxCellsY * kBoxCountY;
-    static const size_t kBoxes = kBoxCountX * kBoxCountY;
-    static const size_t kNumbers = (kMaxNumber - kMinNumber) + 1;
+    static const size_t Cols = BoxCellsX * BoxCountX;
+    static const size_t Rows = BoxCellsY * BoxCountY;
+    static const size_t Boxes = BoxCountX * BoxCountY;
+    static const size_t Numbers = (MaxNumber - MinNumber) + 1;
 
-    static const size_t kBoxSize = kBoxCellsX * kBoxCellsY;
-    static const size_t kBoardSize = kRows * kCols;
-    static const size_t kTotalSize = kRows * kCols * kNumbers;
-    static const size_t kTotalSize2 = kBoxes * kBoxSize * kNumbers;
+    static const size_t BoxSize = BoxCellsX * BoxCellsY;
+    static const size_t BoardSize = Rows * Cols;
+    static const size_t TotalSize = Rows * Cols * Numbers;
+    static const size_t TotalSize2 = Boxes * BoxSize * Numbers;
 
-    static const size_t kNeighbors = (kCols - 1) + (kRows - 1) +
-                                     (kBoxSize - (kBoxCellsX - 1) - (kBoxCellsY - 1) - 1);
+    static const size_t Neighbors = (Cols - 1) + (Rows - 1) +
+                                    (BoxSize - (BoxCellsX - 1) - (BoxCellsY - 1) - 1);
 
-    static const size_t kRows16 = AlignedTo<kRows, 16>::value;
-    static const size_t kCols16 = AlignedTo<kCols, 16>::value;
-    static const size_t kNumbers10 = AlignedTo<kNumbers, 2>::value;
-    static const size_t kNumbers16 = AlignedTo<kNumbers, 16>::value;
-    static const size_t kBoxes16 = AlignedTo<kBoxes, 16>::value;
-    static const size_t kBoxSize16 = AlignedTo<kBoxSize, 16>::value;
-    static const size_t kBoardSize16 = kBoxes16 * kBoxSize16;
+    static const size_t Rows16 = AlignedTo<Rows, 16>::value;
+    static const size_t Cols16 = AlignedTo<Cols, 16>::value;
+    static const size_t Numbers10 = AlignedTo<Numbers, 2>::value;
+    static const size_t Numbers16 = AlignedTo<Numbers, 16>::value;
+    static const size_t Boxes16 = AlignedTo<Boxes, 16>::value;
+    static const size_t BoxSize16 = AlignedTo<BoxSize, 16>::value;
+    static const size_t BoardSize16 = Boxes16 * BoxSize16;
 
-    static const size_t kMaxEffectBox = (kBoxCountX - 1) + (kBoxCountY -1) + 1;
-    static const size_t kMaxEffectLength = kMaxEffectBox * kBoxSize;
+    static const size_t MaxEffectBox = (BoxCountX - 1) + (BoxCountY -1) + 1;
+    static const size_t MaxEffectLength = MaxEffectBox * BoxSize;
 
-    static const size_t kTotalCellLiterals = kRows * kCols;
-    static const size_t kTotalRowLiterals = kRows * kNumbers;
-    static const size_t kTotalColLiterals = kCols * kNumbers;
-    static const size_t kTotalBoxLiterals = kBoxes * kNumbers;
+    static const size_t TotalCellLiterals = Rows * Cols;
+    static const size_t TotalRowLiterals = Rows * Numbers;
+    static const size_t TotalColLiterals = Cols * Numbers;
+    static const size_t TotalBoxLiterals = Boxes * Numbers;
 
-    static const size_t kTotalLiterals =
-        kTotalCellLiterals + kTotalRowLiterals + kTotalColLiterals + kTotalBoxLiterals;
+    static const size_t TotalLiterals =
+        TotalCellLiterals + TotalRowLiterals + TotalColLiterals + TotalBoxLiterals;
 
-    static const size_t kLiteralFirst     = 0;
-    static const size_t kCellLiteralFirst = kLiteralFirst;
-    static const size_t kRowLiteralFirst  = kCellLiteralFirst + kTotalCellLiterals;
-    static const size_t kColLiteralFirst  = kRowLiteralFirst + kTotalRowLiterals;
-    static const size_t kBoxLiteralFirst  = kColLiteralFirst + kTotalColLiterals;
-    static const size_t kLiteralLast      = kBoxLiteralFirst + kTotalBoxLiterals;
+    static const size_t LiteralFirst     = 0;
+    static const size_t CellLiteralFirst = LiteralFirst;
+    static const size_t RowLiteralFirst  = CellLiteralFirst + TotalCellLiterals;
+    static const size_t ColLiteralFirst  = RowLiteralFirst + TotalRowLiterals;
+    static const size_t BoxLiteralFirst  = ColLiteralFirst + TotalColLiterals;
+    static const size_t LiteralLast      = BoxLiteralFirst + TotalBoxLiterals;
 
-    static const size_t kAllRowBits = (size_t(1) << kRows) - 1;
-    static const size_t kAllColBits = (size_t(1) << kCols) - 1;
-    static const size_t kAllBoxBits = (size_t(1) << kBoxes) - 1;
-    static const size_t kAllBoxCellBits = (size_t(1) << kBoxSize) - 1;
-    static const size_t kAllNumberBits = (size_t(1) << kNumbers) - 1;
+    static const size_t AllRowBits = (size_t(1) << Rows) - 1;
+    static const size_t AllColBits = (size_t(1) << Cols) - 1;
+    static const size_t AllBoxBits = (size_t(1) << Boxes) - 1;
+    static const size_t AllBoxCellBits = (size_t(1) << BoxSize) - 1;
+    static const size_t AllNumberBits = (size_t(1) << Numbers) - 1;
 
-    static const bool kAllDimIsSame = ((kNumbers == kBoxSize) && (kRows == kCols) && (kNumbers == kRows));
+    static const bool AllDimIsSame = ((Numbers == BoxSize) && (Rows == Cols) && (Numbers == Rows));
 
-    static const size_t kMinInitCandidates = 17;
+    static const size_t MinInitCandidates = 17;
 
     typedef Board board_type;
 
-#pragma pack(push, 1)
-
-    static const size_t kNeighborsAlignBytes    = ((kNeighbors * sizeof(uint8_t) + kAlignment - 1) / kAlignment) * kAlignment;
-    static const size_t kNeighborsReserveBytes1 = kNeighborsAlignBytes - kNeighbors * sizeof(uint8_t);
-    static const size_t kNeighborsReserveBytes  = (kNeighborsReserveBytes1 != 0) ? kNeighborsReserveBytes1 : kAlignment;
-
-    // Aligned to sizeof(size_t) for cache friendly
-    struct NeighborCells {
-        uint8_t cells[kNeighbors];
-        uint8_t reserve[kNeighborsReserveBytes];
-    };
-
-    struct CellInfo {
-        uint8_t row, col;
-        uint8_t box, cell;
-        uint8_t box_pos;
-        uint8_t box_base;
-        uint8_t box_x, box_y;
-        uint8_t cell_x, cell_y;
-        // Reserve for cache friendly
-        uint8_t reserve[6];
-    };
-
-    struct BoxesInfo {
-        uint8_t row, col;
-        uint8_t box, cell;
-        uint8_t pos;
-        uint8_t box_base;
-        uint8_t box_x, box_y;
-        uint8_t cell_x, cell_y;
-        // Reserve for cache friendly
-        uint8_t reserve[6];
-    };
-
-#pragma pack(pop)
-
-    typedef SmallBitSet<kBoardSize>               BitMask;
-    typedef SmallBitSet2D<kBoardSize, kBoardSize> BitMaskTable;
-
-    static bool is_inited;
-
-    static CellInfo *       cell_info;
-    static CellInfo *       cell_info16;
-    static BoxesInfo *      boxes_info;
-    static BoxesInfo *      boxes_info16;
-    static NeighborCells *  neighbor_cells;
-    static NeighborCells *  ordered_neighbor_cells;
-    static BitMaskTable     neighbors_mask_tbl;
-
-    Sudoku() {
-        Sudoku::initialize();
-    }
-
-    ~Sudoku() {
-        Sudoku::finalize();
-    }
-
-    static void initialize() {
-        //
-        // See: https://stackoverflow.com/questions/40579342/is-there-any-compiler-barrier-which-is-equal-to-asm-memory-in-c11
-        //
-        std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
-        if (!is_inited) {
-            printf("Sudoku::initialize()\n");
-            neighbors_mask_tbl.reset();
-            make_cell_info();
-            make_boxes_info();
-            make_neighbor_cells();
-            is_inited = true;
-        }
-        std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
-    }
-
-    static void finalize() {
-        std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
-        if (is_inited) {
-            printf("Sudoku::finalize()\n");
-            if (cell_info) {
-                delete[] cell_info;
-                cell_info = nullptr;
-            }
-            if (cell_info16) {
-                delete[] cell_info16;
-                cell_info16 = nullptr;
-            }
-            if (boxes_info) {
-                delete[] boxes_info;
-                boxes_info = nullptr;
-            }
-            if (boxes_info16) {
-                delete[] boxes_info16;
-                boxes_info16 = nullptr;
-            }
-            if (neighbor_cells) {
-                delete[] neighbor_cells;
-                neighbor_cells = nullptr;
-            }
-            if (ordered_neighbor_cells) {
-                delete[] ordered_neighbor_cells;
-                ordered_neighbor_cells = nullptr;
-            }
-            is_inited = false;
-        }
-        std::atomic_signal_fence(std::memory_order_release);        // _compile_barrier()
-    }
-
-    static void make_cell_info() {
-        if (cell_info == nullptr) {
-            cell_info = new CellInfo[kBoardSize];
-            cell_info16 = new CellInfo[kRows * kCols16];
-
-            std::memset(cell_info, 0, sizeof(CellInfo) * kBoardSize);
-            std::memset(cell_info16, 0, sizeof(CellInfo) * kRows * kCols16);
-
-            size_t pos = 0;
-            for (size_t row = 0; row < kRows; row++) {
-                for (size_t col = 0; col < kCols; col++) {
-                    CellInfo * cellInfo = &cell_info[pos];
-                    CellInfo * cellInfo16 = &cell_info16[row * kCols16 + col];
-
-                    size_t box_x = col / kBoxCellsX;
-                    size_t box_y = row / kBoxCellsY;
-                    size_t box = box_y * kBoxCountX + box_x;
-                    size_t box_base = (box_y * kBoxCellsY) * kCols + box_x * kBoxCellsX;
-                    size_t cell_x = col % kBoxCellsX;
-                    size_t cell_y = row % kBoxCellsY;
-                    size_t cell = cell_y * kBoxCellsX + cell_x;
-                    size_t box_pos = box * kBoxSize + cell;
-
-                    cellInfo->row = (uint8_t)row;
-                    cellInfo->col = (uint8_t)col;
-                    cellInfo->box = (uint8_t)box;
-                    cellInfo->cell = (uint8_t)cell;
-                    cellInfo->box_pos = (uint8_t)box_pos;
-                    cellInfo->box_base = (uint8_t)box_base;
-                    cellInfo->box_x = (uint8_t)box_x;
-                    cellInfo->box_y = (uint8_t)box_x;
-                    cellInfo->cell_x = (uint8_t)cell_x;
-                    cellInfo->cell_y = (uint8_t)cell_y;
-
-                    cellInfo16->row = (uint8_t)row;
-                    cellInfo16->col = (uint8_t)col;
-                    cellInfo16->box = (uint8_t)box;
-                    cellInfo16->cell = (uint8_t)cell;
-                    cellInfo16->box_pos = (uint8_t)box_pos;
-                    cellInfo16->box_base = (uint8_t)box_base;
-                    cellInfo16->box_x = (uint8_t)box_x;
-                    cellInfo16->box_y = (uint8_t)box_x;
-                    cellInfo16->cell_x = (uint8_t)cell_x;
-                    cellInfo16->cell_y = (uint8_t)cell_y;
-
-                    pos++;
-                }
-            }
-
-            // print_cell_info();
-        }
-    }
-
-    static void print_cell_info() {
-        printf("    const uint8_t cell_info[%d][10] = {\n", (int)kBoardSize);
-        for (size_t pos = 0; pos < kBoardSize; pos++) {
-            printf("        {");
-            const CellInfo & cellInfo = cell_info[pos];
-            printf("%2d, %2d, %2d, %2d, %2d, %2d, %2d, %2d, %2d, %2d",
-                   (int)cellInfo.row, (int)cellInfo.col,
-                   (int)cellInfo.box, (int)cellInfo.cell,
-                   (int)cellInfo.box_pos, (int)cellInfo.box_base,
-                   (int)cellInfo.box_x, (int)cellInfo.box_y,
-                   (int)cellInfo.cell_x, (int)cellInfo.cell_y);
-            if (pos < (kBoardSize - 1))
-                printf(" },  // %d\n", (int)pos);
-            else
-                printf(" }   // %d\n", (int)pos);
-        }
-        printf("    };\n\n");
-    }
-
-    static void make_boxes_info() {
-        if (boxes_info == nullptr) {
-            boxes_info = new BoxesInfo[kBoxes * kBoxSize];
-            boxes_info16 = new BoxesInfo[kBoxes * kBoxSize16];
-
-            std::memset(boxes_info, 0, sizeof(BoxesInfo) * kBoxes * kBoxSize);
-            std::memset(boxes_info16, 0, sizeof(BoxesInfo) * kBoxes * kBoxSize16);
-
-            size_t index = 0;
-            for (size_t box = 0; box < kBoxes; box++) {
-                for (size_t cell = 0; cell < kBoxSize; cell++) {
-                    BoxesInfo * boxesInfo = &boxes_info[index];
-                    BoxesInfo * boxesInfo16 = &boxes_info16[box * kBoxSize16 + cell];
-
-                    size_t row = (box / kBoxCountX) * kBoxCellsY + (cell / kBoxCellsX);
-                    size_t col = (box % kBoxCountX) * kBoxCellsX + (cell % kBoxCellsX);
-                    size_t pos = row * kCols + col;
-                    size_t box_x = box % kBoxCountX;
-                    size_t box_y = box / kBoxCountX;
-                    size_t box_base = (box_y * kBoxCellsY) * kCols + box_x * kBoxCellsX;
-                    size_t cell_x = col % kBoxCellsX;
-                    size_t cell_y = row % kBoxCellsY;
-
-                    boxesInfo->row = (uint8_t)row;
-                    boxesInfo->col = (uint8_t)col;
-                    boxesInfo->box = (uint8_t)box;
-                    boxesInfo->cell = (uint8_t)cell;
-                    boxesInfo->pos = (uint8_t)pos;
-                    boxesInfo->box_base = (uint8_t)box_base;
-                    boxesInfo->box_x = (uint8_t)box_x;
-                    boxesInfo->box_y = (uint8_t)box_x;
-                    boxesInfo->cell_x = (uint8_t)cell_x;
-                    boxesInfo->cell_y = (uint8_t)cell_y;
-
-                    boxesInfo16->row = (uint8_t)row;
-                    boxesInfo16->col = (uint8_t)col;
-                    boxesInfo16->box = (uint8_t)box;
-                    boxesInfo16->cell = (uint8_t)cell;
-                    boxesInfo16->pos = (uint8_t)pos;
-                    boxesInfo16->box_base = (uint8_t)box_base;
-                    boxesInfo16->box_x = (uint8_t)box_x;
-                    boxesInfo16->box_y = (uint8_t)box_x;
-                    boxesInfo16->cell_x = (uint8_t)cell_x;
-                    boxesInfo16->cell_y = (uint8_t)cell_y;
-
-                    index++;
-                }
-            }
-
-            // print_boxes_info();
-        }
-    }
-
-    static void print_boxes_info() {
-        printf("    const uint8_t boxes_info[%d][10] = {\n", (int)(kBoxes * kBoxSize));
-        for (size_t index = 0; index < kBoardSize; index++) {
-            printf("        {");
-            const BoxesInfo & boxesInfo = boxes_info[index];
-            printf("%2d, %2d, %2d, %2d, %2d, %2d, %2d, %2d, %2d, %2d",
-                   (int)boxesInfo.row, (int)boxesInfo.col,
-                   (int)boxesInfo.box, (int)boxesInfo.cell,
-                   (int)boxesInfo.pos, (int)boxesInfo.box_base,
-                   (int)boxesInfo.box_x, (int)boxesInfo.box_y,
-                   (int)boxesInfo.cell_x, (int)boxesInfo.cell_y);
-            if (index < (kBoxes * kBoxSize - 1))
-                printf(" },  // %d\n", (int)index);
-            else
-                printf(" }   // %d\n", (int)index);
-        }
-        printf("    };\n\n");
-    }
-
-    static size_t get_neighbor_cells_list(size_t row, size_t col,
-                                          NeighborCells * list) {
-        assert(list != nullptr);
-        size_t index = 0;
-        size_t pos_y = row * kCols;
-        for (size_t x = 0; x < kCols; x++) {
-            if (x != col) {
-                list->cells[index++] = (uint8_t)(pos_y + x);
-            }
-        }
-
-        size_t pos_x = col;
-        for (size_t y = 0; y < kRows; y++) {
-            if (y != row) {
-                list->cells[index++] = (uint8_t)(y * kCols + pos_x);
-            }
-        }
-
-        size_t box_x = col / kBoxCellsX;
-        size_t box_y = row / kBoxCellsY;
-        size_t box_base = (box_y * kBoxCellsY) * kCols + box_x * kBoxCellsX;
-        size_t pos = pos_y + pos_x;
-        size_t cell_x = col % kBoxCellsX;
-        size_t cell_y = row % kBoxCellsY;
-        size_t cell = box_base;
-        for (size_t y = 0; y < kBoxCellsY; y++) {
-            if (y == cell_y) {
-                cell += kCols;
-            }
-            else {
-                for (size_t x = 0; x < kBoxCellsX; x++) {
-                    if (x != cell_x) {
-                        assert(cell != pos);
-                        list->cells[index++] = (uint8_t)(cell);
-                    }
-                    cell++;
-                }
-                cell += (kCols - kBoxCellsX);
-            }
-        }
-
-        assert(index == kNeighbors);
-        return index;
-    }
-
-    static void make_effect_mask(size_t pos) {
-        NeighborCells * list = &neighbor_cells[pos];
-        SmallBitSet<kBoardSize> masks;
-        for (size_t i = 0; i < kNeighbors; i++) {
-            size_t cell = list->cells[i];
-            masks.set(cell);
-        }
-        neighbors_mask_tbl[pos] = masks;
-    }
-
-    static void make_neighbor_cells() {
-        if (neighbor_cells == nullptr) {
-            neighbor_cells = new NeighborCells[kBoardSize];
-            ordered_neighbor_cells = new NeighborCells[kBoardSize];
-
-            size_t pos = 0;
-            for (size_t row = 0; row < kRows; row++) {
-                for (size_t col = 0; col < kCols; col++) {
-                    NeighborCells * list = &neighbor_cells[pos];
-                    size_t neighbors = get_neighbor_cells_list(row, col, list);
-                    assert(neighbors == kNeighbors);
-                    NeighborCells * ordered_list = &ordered_neighbor_cells[pos];
-                    for (size_t cell = 0; cell < kNeighbors; cell++) {
-                        ordered_list->cells[cell] = list->cells[cell];
-                    }
-                    // Sort the cells for cache friendly
-                    std::sort(&neighbor_cells[pos].cells[0], &neighbor_cells[pos].cells[kNeighbors]);
-                    make_effect_mask(pos);
-                    pos++;
-                }
-            }
-
-            // print_neighbor_cells();
-            // print_ordered_neighbor_cells();
-        }
-    }
-
-    static void print_neighbor_cells() {
-        printf("    const uint8_t neighbor_cells[%d][%d] = {\n", (int)kBoardSize, (int)kNeighbors);
-        for (size_t pos = 0; pos < kBoardSize; pos++) {
-            printf("        { ");
-            for (size_t cell = 0; cell < kNeighbors; cell++) {
-                if (cell < kNeighbors - 1)
-                    printf("%2u, ", (uint32_t)neighbor_cells[pos].cells[cell]);
-                else
-                    printf("%2u ", (uint32_t)neighbor_cells[pos].cells[cell]);
-            }
-            if (pos < (kBoardSize - 1))
-                printf("},  // %d\n", (int)pos);
-            else
-                printf("}   // %d\n", (int)pos);
-        }
-        printf("    };\n\n");
-    }
-
-    static void print_ordered_neighbor_cells() {
-        printf("    const uint8_t ordered_neighbor_cells[%d][%d] = {\n", (int)kBoardSize, (int)kNeighbors);
-        for (size_t pos = 0; pos < kBoardSize; pos++) {
-            printf("        { ");
-            for (size_t cell = 0; cell < kNeighbors; cell++) {
-                if (cell < kNeighbors - 1)
-                    printf("%2u, ", (uint32_t)ordered_neighbor_cells[pos].cells[cell]);
-                else
-                    printf("%2u ", (uint32_t)ordered_neighbor_cells[pos].cells[cell]);
-            }
-            if (pos < (kBoardSize - 1))
-                printf("},  // %d\n", (int)pos);
-            else
-                printf("}   // %d\n", (int)pos);
-        }
-        printf("    };\n\n");
-    }
+    typedef SmallBitSet<BoardSize>              BitMask;
+    typedef SmallBitSet2D<BoardSize, BoardSize> BitMaskTable;
 
     static void clear_board(Board & board) {
         size_t pos = 0;
-        for (size_t row = 0; row < kRows; row++) {
-            for (size_t col = 0; col < kCols; col++) {
+        for (size_t row = 0; row < Rows; row++) {
+            for (size_t col = 0; col < Cols; col++) {
                 board.cells[pos++] = '.';
             }
         }
@@ -896,8 +512,8 @@ struct Sudoku {
                               int idx = -1) {
         int filled = 0;
         size_t pos = 0;
-        for (size_t row = 0; row < kRows; row++) {
-            for (size_t col = 0; col < kCols; col++) {
+        for (size_t row = 0; row < Rows; row++) {
+            for (size_t col = 0; col < Cols; col++) {
                 char val = board.cells[pos++];
                 if ((val != '.') && (val != ' ') && (val != '0') && (val != '-')) {
                     filled++;
@@ -917,27 +533,32 @@ struct Sudoku {
         printf("\n");
         // printf("  ------- ------- -------\n");
         printf(" ");
-        for (size_t countX = 0; countX < kBoxCountX; countX++) {
+        for (size_t countX = 0; countX < BoxCountX; countX++) {
             printf(" -------");
         }
         printf("\n");
         pos = 0;
-        for (size_t row = 0; row < kRows; row++) {
+        for (size_t row = 0; row < Rows; row++) {
             printf(" | ");
-            for (size_t col = 0; col < kCols; col++) {
-                char val = board.cells[pos++];
-                if (val == ' ' || val == '0' || val == '-')
+            for (size_t col = 0; col < Cols; col++) {
+                unsigned char val = (unsigned char)board.cells[pos++];
+                //if (val == ' ' || val == '0' || val == '-')
+                if (val == ' ' || val == '-')
                     printf(". ");
+                else if (val == '\0')
+                    printf("* ");
+                else if (val < ' ')
+                    printf("? ");
                 else
                     printf("%c ", val);
-                if ((col % kBoxCellsX) == (kBoxCellsX - 1))
+                if ((col % BoxCellsX) == (BoxCellsX - 1))
                     printf("| ");
             }
             printf("\n");
-            if ((row % kBoxCellsY) == (kBoxCellsY - 1)) {
+            if ((row % BoxCellsY) == (BoxCellsY - 1)) {
                 // printf("  ------- ------- -------\n");
                 printf(" ");
-                for (size_t countX = 0; countX < kBoxCountX; countX++) {
+                for (size_t countX = 0; countX < BoxCountX; countX++) {
                     printf(" -------");
                 }
                 printf("\n");
@@ -958,4 +579,4 @@ struct Sudoku {
 
 } // namespace gzSudoku
 
-#endif // GZ_SUDOKU_H
+#endif // GZ_SUDOKU_SUDOKU_H

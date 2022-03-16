@@ -22,23 +22,23 @@ class BasicSolver {
 public:
     typedef BasicSolver this_type;
 
-    static const size_t kAlignment = Sudoku::kAlignment;
-    static const size_t BoxCellsX = Sudoku::kBoxCellsX;      // 3
-    static const size_t BoxCellsY = Sudoku::kBoxCellsY;      // 3
-    static const size_t BoxCountX = Sudoku::kBoxCountX;      // 3
-    static const size_t BoxCountY = Sudoku::kBoxCountY;      // 3
-    static const size_t MinNumber = Sudoku::kMinNumber;      // 1
-    static const size_t MaxNumber = Sudoku::kMaxNumber;      // 9
+    static const size_t kAlignment = Sudoku::Alignment;
+    static const size_t BoxCellsX = Sudoku::BoxCellsX;      // 3
+    static const size_t BoxCellsY = Sudoku::BoxCellsY;      // 3
+    static const size_t BoxCountX = Sudoku::BoxCountX;      // 3
+    static const size_t BoxCountY = Sudoku::BoxCountY;      // 3
+    static const size_t MinNumber = Sudoku::MinNumber;      // 1
+    static const size_t MaxNumber = Sudoku::MaxNumber;      // 9
 
-    static const size_t Rows = Sudoku::kRows;
-    static const size_t Cols = Sudoku::kCols;
-    static const size_t Boxes = Sudoku::kBoxes;
-    static const size_t BoxSize = Sudoku::kBoxSize;
-    static const size_t Numbers = Sudoku::kNumbers;
+    static const size_t Rows = Sudoku::Rows;
+    static const size_t Cols = Sudoku::Cols;
+    static const size_t Boxes = Sudoku::Boxes;
+    static const size_t BoxSize = Sudoku::BoxSize;
+    static const size_t Numbers = Sudoku::Numbers;
 
-    static const size_t BoardSize = Sudoku::kBoardSize;
-    static const size_t TotalSize = Sudoku::kTotalSize;
-    static const size_t Neighbors = Sudoku::kNeighbors;
+    static const size_t BoardSize = Sudoku::BoardSize;
+    static const size_t TotalSize = Sudoku::TotalSize;
+    static const size_t Neighbors = Sudoku::Neighbors;
 
     static size_t num_guesses;
 
@@ -87,23 +87,23 @@ class BasicSolverEx {
 public:
     typedef BasicSolverEx this_type;
 
-    static const size_t kAlignment = Sudoku::kAlignment;
-    static const size_t BoxCellsX = Sudoku::kBoxCellsX;      // 3
-    static const size_t BoxCellsY = Sudoku::kBoxCellsY;      // 3
-    static const size_t BoxCountX = Sudoku::kBoxCountX;      // 3
-    static const size_t BoxCountY = Sudoku::kBoxCountY;      // 3
-    static const size_t MinNumber = Sudoku::kMinNumber;      // 1
-    static const size_t MaxNumber = Sudoku::kMaxNumber;      // 9
+    static const size_t kAlignment = Sudoku::Alignment;
+    static const size_t BoxCellsX = Sudoku::BoxCellsX;      // 3
+    static const size_t BoxCellsY = Sudoku::BoxCellsY;      // 3
+    static const size_t BoxCountX = Sudoku::BoxCountX;      // 3
+    static const size_t BoxCountY = Sudoku::BoxCountY;      // 3
+    static const size_t MinNumber = Sudoku::MinNumber;      // 1
+    static const size_t MaxNumber = Sudoku::MaxNumber;      // 9
 
-    static const size_t Rows = Sudoku::kRows;
-    static const size_t Cols = Sudoku::kCols;
-    static const size_t Boxes = Sudoku::kBoxes;
-    static const size_t BoxSize = Sudoku::kBoxSize;
-    static const size_t Numbers = Sudoku::kNumbers;
+    static const size_t Rows = Sudoku::Rows;
+    static const size_t Cols = Sudoku::Cols;
+    static const size_t Boxes = Sudoku::Boxes;
+    static const size_t BoxSize = Sudoku::BoxSize;
+    static const size_t Numbers = Sudoku::Numbers;
 
-    static const size_t BoardSize = Sudoku::kBoardSize;
-    static const size_t TotalSize = Sudoku::kTotalSize;
-    static const size_t Neighbors = Sudoku::kNeighbors;
+    static const size_t BoardSize = Sudoku::BoardSize;
+    static const size_t TotalSize = Sudoku::TotalSize;
+    static const size_t Neighbors = Sudoku::Neighbors;
 
     static size_t num_guesses;
     static size_t num_unique_candidate;

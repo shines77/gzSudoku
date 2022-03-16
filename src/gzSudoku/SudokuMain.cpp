@@ -77,7 +77,7 @@
 #endif // GZ_SUDOKU
 
 #include "BasicSolver.hpp"
-#include "Sudoku.hpp"
+#include "SudokuTable.hpp"
 
 using namespace gzSudoku;
 
@@ -129,7 +129,7 @@ double calc_percent(size_t num_val, size_t num_total) {
 
 void make_sudoku_board(Board & board, size_t index)
 {
-    for (size_t row = 0; row < Sudoku::kRows; row++) {
+    for (size_t row = 0; row < Sudoku::Rows; row++) {
         size_t row_base = row * 9;
         size_t col = 0;
         const char * prows = test_case[index].rows[row];
@@ -141,16 +141,16 @@ void make_sudoku_board(Board & board, size_t index)
                 else
                     board.cells[row_base + col] = '.';
                 col++;
-                assert(col <= Sudoku::kCols);
+                assert(col <= Sudoku::Cols);
             }
             else if (val == '.') {
                 board.cells[row_base + col] = '.';
                 col++;
-                assert(col <= Sudoku::kCols);
+                assert(col <= Sudoku::Cols);
             }
             prows++;
         }
-        assert(col == Sudoku::kCols);
+        assert(col == Sudoku::Cols);
     }
 }
 
@@ -174,17 +174,17 @@ size_t read_sudoku_board(Board & board, char line[256])
                 board.cells[pos] = val;
             else
                 board.cells[pos] = '.';
-            assert(pos < Sudoku::kBoardSize);
+            assert(pos < Sudoku::BoardSize);
             pos++;
             
         }
         else if ((val == '.') || (val == ' ') || (val == '-')) {
             board.cells[pos] = '.';
-            assert(pos < Sudoku::kBoardSize);
+            assert(pos < Sudoku::BoardSize);
             pos++;
         }
     }
-    assert(pos <= Sudoku::kBoardSize);
+    assert(pos <= Sudoku::BoardSize);
     return pos;
 }
 
@@ -205,7 +205,7 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
             std::cout << "File name: " << filename << std::endl;
             std::cout << "File size: " << total_size << " Byte(s)" << std::endl;
 
-            size_t predictedSize = total_size / (Sudoku::kBoardSize + 1) + 200;
+            size_t predictedSize = total_size / (Sudoku::BoardSize + 1) + 200;
             puzzles.resize(predictedSize);
 
             std::cout << "Predicted Size: " << predictedSize << std::endl << std::endl;
@@ -219,7 +219,7 @@ size_t load_sudoku_puzzles(const char * filename, std::vector<Board> & puzzles)
                 board.clear();
                 size_t num_grids = read_sudoku_board(board, line);
                 // Sudoku::BoardSize = 81
-                if (num_grids >= Sudoku::kBoardSize) {
+                if (num_grids >= Sudoku::BoardSize) {
                     if (puzzleCount < predictedSize)
                         puzzles[puzzleCount] = board;
                     else
@@ -302,7 +302,7 @@ void run_a_testcase(size_t index)
     printf("------------------------------------------\n\n");
 }
 
-template <typename SudokuSolver>
+template <typename SudokuSolver, int LimitSolutions>
 void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const char * name)
 {
     typedef typename SudokuSolver::basic_solver   BasicSolverTy;
@@ -329,7 +329,7 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
 
     for (size_t i = 0; i < puzzleTotal; i++) {
         Board & board = puzzles[i];
-        int solutions = solver.solve(board, solution, 1);
+        int solutions = solver.solve(board, solution, LimitSolutions);
         if (solutions == 1) {
             size_t num_guesses = BasicSolverTy::num_guesses;
             total_guesses += num_guesses;
@@ -375,7 +375,7 @@ void run_sudoku_test(std::vector<Board> & puzzles, size_t puzzleTotal, const cha
     printf("------------------------------------------\n\n");
 }
 
-template <typename SudokuSolver>
+template <typename SudokuSolver, int LimitSolutions>
 void run_sudoku_test_ex(std::vector<Board> & puzzles, size_t puzzleTotal, const char * name)
 {
     typedef typename SudokuSolver::basic_solver   BasicSolverTy;
@@ -404,7 +404,7 @@ void run_sudoku_test_ex(std::vector<Board> & puzzles, size_t puzzleTotal, const 
 
     for (size_t i = 0; i < puzzleTotal; i++) {
         Board & board = puzzles[i];
-        int solutions = solver.solve(board, solution, 1);
+        int solutions = solver.solve(board, solution, LimitSolutions);
         if (solutions == 1) {
             size_t num_guesses = BasicSolverTy::num_guesses;
             total_guesses += num_guesses;
@@ -460,6 +460,7 @@ void run_sudoku_test_ex(std::vector<Board> & puzzles, size_t puzzleTotal, const 
     printf("------------------------------------------\n\n");
 }
 
+template <int LimitSolutions = 1>
 void run_all_benchmark(const char * filename)
 {
     // Read the puzzles data
@@ -469,30 +470,30 @@ void run_all_benchmark(const char * filename)
 
 #if !defined(_DEBUG)
 #if 0
-//  run_sudoku_test<v4::Solver     >(bm_puzzles, bm_puzzleTotal, "dfs::v4");
-    run_sudoku_test<v4a::Solver    >(bm_puzzles, bm_puzzleTotal, "dfs::v4a");
-    run_sudoku_test<v4b::Solver    >(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
-    run_sudoku_test<v5::Solver     >(bm_puzzles, bm_puzzleTotal, "dfs::v5");
+//  run_sudoku_test<v4::Solver     , LimitSolutions>(bm_puzzles, bm_puzzleTotal, "dfs::v4");
+    run_sudoku_test<v4a::Solver    , LimitSolutions>(bm_puzzles, bm_puzzleTotal, "dfs::v4a");
+    run_sudoku_test<v4b::Solver    , LimitSolutions>(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
+    run_sudoku_test<v5::Solver     , LimitSolutions>(bm_puzzles, bm_puzzleTotal, "dfs::v5");
 #endif
-    run_sudoku_test<JCZ::v0::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v0");
-    run_sudoku_test<JCZ::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v1");
-    run_sudoku_test<JCZ::v2::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
-    run_sudoku_test<JCZ::v3::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v3");
-    run_sudoku_test<JCZ::v4::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v4");
-    run_sudoku_test<JCZ::v5::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v5");
-    run_sudoku_test<JCZ::v6::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v6");
-    run_sudoku_test<JCZEx::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZEx::v1");
-    run_sudoku_test<Rust::v1::Solver>(bm_puzzles, bm_puzzleTotal, "Rust::v1");
+    run_sudoku_test<JCZ::v0::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v0");
+    run_sudoku_test<JCZ::v1::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v1");
+    run_sudoku_test<JCZ::v2::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
+    run_sudoku_test<JCZ::v3::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v3");
+    run_sudoku_test<JCZ::v4::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v4");
+    run_sudoku_test<JCZ::v5::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v5");
+    run_sudoku_test<JCZ::v6::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v6");
+    run_sudoku_test<JCZEx::v1::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZEx::v1");
+    run_sudoku_test<Rust::v1::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "Rust::v1");
 #else
-//  run_sudoku_test<v4b::Solver    >(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
-//  run_sudoku_test<JCZ::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v1");
-//  run_sudoku_test<JCZ::v2::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
-//  run_sudoku_test<JCZ::v4::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v4");
-//  run_sudoku_test<JCZ::v5::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v5");
-    //run_sudoku_test<JCZ::v2::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
-    //run_sudoku_test<JCZ::v6::Solver>(bm_puzzles, bm_puzzleTotal, "JCZ::v6");
-    //run_sudoku_test<JCZEx::v1::Solver>(bm_puzzles, bm_puzzleTotal, "JCZEx::v1");
-    run_sudoku_test<Rust::v1::Solver>(bm_puzzles, bm_puzzleTotal, "Rust::v1");
+//  run_sudoku_test<v4b::Solver    , LimitSolutions>(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
+//  run_sudoku_test<JCZ::v1::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v1");
+//  run_sudoku_test<JCZ::v2::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
+//  run_sudoku_test<JCZ::v4::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v4");
+//  run_sudoku_test<JCZ::v5::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v5");
+    //run_sudoku_test<JCZ::v2::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
+    //run_sudoku_test<JCZ::v6::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v6");
+    //run_sudoku_test<JCZEx::v1::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZEx::v1");
+    run_sudoku_test<Rust::v1::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "Rust::v1");
 #endif
 }
 
@@ -500,16 +501,22 @@ int main(int argc, char * argv[])
 {
     const char * filename = nullptr;
     const char * out_file = nullptr;
+    int limit_solution = 0;
     UNUSED_VARIANT(out_file);
-    if (argc > 2) {
+    if (argc > 3) {
         filename = argv[1];
-        out_file = argv[2];
+        limit_solution = atoi(argv[2]);
+        out_file = argv[3];
+    }
+    else if (argc > 2) {
+        filename = argv[1];
+        limit_solution = atoi(argv[2]);
     }
     else if (argc > 1) {
         filename = argv[1];
     }
 
-    Sudoku::initialize();
+    SudokuTable::initialize();
 
     if (1)
     {
@@ -521,11 +528,14 @@ int main(int argc, char * argv[])
     if (1)
     {
         if (filename != nullptr) {
-            run_all_benchmark(filename);
+            if (limit_solution <= 0 || limit_solution == 1)
+                run_all_benchmark<1>(filename);
+            else
+                run_all_benchmark<2>(filename);
         }
     }
 
-    Sudoku::finalize();
+    SudokuTable::finalize();
 
 #if defined(_DEBUG) && defined(_MSC_VER)
     ::system("pause");

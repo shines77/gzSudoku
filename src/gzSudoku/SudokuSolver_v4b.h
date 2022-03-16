@@ -21,6 +21,7 @@
 
 #include "BasicSolver.h"
 #include "Sudoku.h"
+#include "SudokuTable.h"
 #include "StopWatch.h"
 #include "BitUtils.h"
 #include "BitSet.h"
@@ -49,38 +50,38 @@ public:
     typedef BasicSolverEx                       basic_solver;
     typedef Solver                              this_type;
 
-    typedef typename Sudoku::NeighborCells      NeighborCells;
-    typedef typename Sudoku::CellInfo           CellInfo;
-    typedef typename Sudoku::BoxesInfo          BoxesInfo;
+    typedef typename SudokuTable::NeighborCells NeighborCells;
+    typedef typename SudokuTable::CellInfo      CellInfo;
+    typedef typename SudokuTable::BoxesInfo     BoxesInfo;
 
     typedef typename Sudoku::BitMask            BitMask;
     typedef typename Sudoku::BitMaskTable       BitMaskTable;
 
-    static const size_t kAlignment = Sudoku::kAlignment;
-    static const size_t BoxCellsX = Sudoku::kBoxCellsX;      // 3
-    static const size_t BoxCellsY = Sudoku::kBoxCellsY;      // 3
-    static const size_t BoxCountX = Sudoku::kBoxCountX;      // 3
-    static const size_t BoxCountY = Sudoku::kBoxCountY;      // 3
-    static const size_t MinNumber = Sudoku::kMinNumber;      // 1
-    static const size_t MaxNumber = Sudoku::kMaxNumber;      // 9
+    static const size_t kAlignment = Sudoku::Alignment;
+    static const size_t BoxCellsX = Sudoku::BoxCellsX;      // 3
+    static const size_t BoxCellsY = Sudoku::BoxCellsY;      // 3
+    static const size_t BoxCountX = Sudoku::BoxCountX;      // 3
+    static const size_t BoxCountY = Sudoku::BoxCountY;      // 3
+    static const size_t MinNumber = Sudoku::MinNumber;      // 1
+    static const size_t MaxNumber = Sudoku::MaxNumber;      // 9
 
-    static const size_t Rows = Sudoku::kRows;
-    static const size_t Cols = Sudoku::kCols;
-    static const size_t Boxes = Sudoku::kBoxes;
-    static const size_t BoxSize = Sudoku::kBoxSize;
-    static const size_t Numbers = Sudoku::kNumbers;
+    static const size_t Rows = Sudoku::Rows;
+    static const size_t Cols = Sudoku::Cols;
+    static const size_t Boxes = Sudoku::Boxes;
+    static const size_t BoxSize = Sudoku::BoxSize;
+    static const size_t Numbers = Sudoku::Numbers;
 
-    static const size_t BoardSize = Sudoku::kBoardSize;
-    static const size_t TotalSize = Sudoku::kTotalSize;
-    static const size_t Neighbors = Sudoku::kNeighbors;
+    static const size_t BoardSize = Sudoku::BoardSize;
+    static const size_t TotalSize = Sudoku::TotalSize;
+    static const size_t Neighbors = Sudoku::Neighbors;
 
-    static const size_t Rows16 = Sudoku::kRows16;
-    static const size_t Cols16 = Sudoku::kCols16;
-    static const size_t Numbers10 = Sudoku::kNumbers10;
-    static const size_t Numbers16 = Sudoku::kNumbers16;
-    static const size_t Boxes16 = Sudoku::kBoxes16;
-    static const size_t BoxSize16 = Sudoku::kBoxSize16;
-    static const size_t BoardSize16 = Sudoku::kBoardSize16;
+    static const size_t Rows16 = Sudoku::Rows16;
+    static const size_t Cols16 = Sudoku::Cols16;
+    static const size_t Numbers10 = Sudoku::Numbers10;
+    static const size_t Numbers16 = Sudoku::Numbers16;
+    static const size_t Boxes16 = Sudoku::Boxes16;
+    static const size_t BoxSize16 = Sudoku::BoxSize16;
+    static const size_t BoardSize16 = Sudoku::BoardSize16;
 
     static const size_t Rows32 = Rows16 * 2;
     static const size_t Cols32 = Cols16 * 2;
@@ -112,15 +113,15 @@ public:
     static const size_t ColLiteralLast   = BoxLiteralFirst;
     static const size_t BoxLiteralLast   = LiteralLast;
 
-    static const size_t kAllRowBits = Sudoku::kAllRowBits;
-    static const size_t kAllColBits = Sudoku::kAllColBits;
-    static const size_t kAllBoxBits = Sudoku::kAllBoxBits;
-    static const size_t kAllBoxCellBits = Sudoku::kAllBoxCellBits;
-    static const size_t kAllNumberBits = Sudoku::kAllNumberBits;
+    static const size_t kAllRowBits = Sudoku::AllRowBits;
+    static const size_t kAllColBits = Sudoku::AllColBits;
+    static const size_t kAllBoxBits = Sudoku::AllBoxBits;
+    static const size_t kAllBoxCellBits = Sudoku::AllBoxCellBits;
+    static const size_t kAllNumberBits = Sudoku::AllNumberBits;
 
     static const size_t kDisableNumberMask = 0x0200U;
 
-    static const bool kAllDimIsSame = Sudoku::kAllDimIsSame;
+    static const bool kAllDimIsSame = Sudoku::AllDimIsSame;
 
     static const int kLiteralCntThreshold = 0;
     static const uint32_t kLiteralCntThreshold2 = 0;
@@ -339,7 +340,7 @@ private:
 
         StaticData() : mask_is_inited(false) {
             if (!Static.mask_is_inited) {
-                Sudoku::initialize();
+                SudokuTable::initialize();
                 this_type::init_mask();
                 Static.mask_is_inited = true;
             }
@@ -406,7 +407,7 @@ private:
         PackedBitSet2D<Cols16, Rows16> & cols_mask      = Static.num_col_mask[fill_pos];
         PackedBitSet2D<Boxes16, BoxSize16> & boxes_mask = Static.num_box_mask[fill_pos];
 
-        const CellInfo * pCellInfo = Sudoku::cell_info;
+        const CellInfo * pCellInfo = SudokuTable::cell_info;
         size_t box_x = col / BoxCellsX;
         size_t box_y = row / BoxCellsY;
         size_t box_first_y = box_y * BoxCellsY;
@@ -590,7 +591,9 @@ private:
     }
 
     static void init_mask() {
-        printf("v4b::Solver::StaticData::init_mask()\n");
+        if (bPrintSudokuStaticInit) {
+            printf("v4b::Solver::StaticData::init_mask()\n");
+        }
 
         init_peer_boxes();
         init_flip_mask();
@@ -603,7 +606,7 @@ private:
 #if V4B_USE_SIMD_INIT
         // init_literal_size()
         BitVec16x16_AVX full_mask;
-        full_mask.fill_u16(Numbers);
+        full_mask.fill16(Numbers);
         for (size_t box = 0; box < Boxes; box++) {
             full_mask.saveAligned((void *)&this->count_.sizes.box_cells[box]);
         }
@@ -709,7 +712,7 @@ private:
 
 #if V4B_USE_SIMD_INIT
         BitVec16x16_AVX full_mask;
-        full_mask.fill_u16(kAllNumberBits);
+        full_mask.fill16(kAllNumberBits);
         for (size_t box = 0; box < Boxes; box++) {
             full_mask.saveAligned((void *)&this->init_state_.box_cell_nums[box]);
         }
@@ -1038,7 +1041,7 @@ private:
 
     LiteralMask find_single_literal_full() {
         BitVec16x16_AVX unique_mask;
-        unique_mask.fill_u16(1);
+        unique_mask.fill16(1);
 
         // Row literal
         for (size_t num = 0; num < Numbers; num++) {
@@ -1105,7 +1108,7 @@ private:
 
     LiteralMask find_single_literal_full(size_t fill_num) {
         BitVec16x16_AVX unique_mask;
-        unique_mask.fill_u16(1);
+        unique_mask.fill16(1);
 
         // Row literal
         {
@@ -1220,7 +1223,7 @@ private:
 
     LiteralMask find_single_literal_delta() {
         BitVec16x16_AVX unique_mask;
-        unique_mask.fill_u16(1);
+        unique_mask.fill16(1);
 
         // Row literal
         uint16_t num_bits = this->init_state_.changed.literal[LiteralType::NumRowCols];
@@ -1319,7 +1322,7 @@ private:
 
     size_t find_all_single_literal(std::vector<LiteralInfo> & single_literal_list) {
         BitVec16x16_AVX unique_mask;
-        unique_mask.fill_u16(1);
+        unique_mask.fill16(1);
 
         // Row literal
         for (size_t num = 0; num < Numbers; num++) {
@@ -1408,7 +1411,7 @@ private:
                 col = BitUtils::bsf(col_bits);
                 pos = row * Cols + col;
 
-                const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                const CellInfo & cellInfo = SudokuTable::cell_info[pos];
                 box = cellInfo.box;
                 cell = cellInfo.cell;
 
@@ -1434,7 +1437,7 @@ private:
                 row = BitUtils::bsf(row_bits);
                 pos = row * Cols + col;
 
-                const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                const CellInfo & cellInfo = SudokuTable::cell_info[pos];
                 box = cellInfo.box;
                 cell = cellInfo.cell;
 
@@ -1459,7 +1462,7 @@ private:
                 assert((cell_bits & (cell_bits - 1)) == 0);
                 cell = BitUtils::bsf(cell_bits);
 
-                const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box * BoxSize16 + cell];
+                const BoxesInfo & boxesInfo = SudokuTable::boxes_info16[box * BoxSize16 + cell];
                 row = boxesInfo.row;
                 col = boxesInfo.col;
                 pos = boxesInfo.pos;
@@ -1477,7 +1480,7 @@ private:
                 size_t box_pos = literalInfo.literal_index;
                 assert(box_pos < Boxes * BoxSize16);
 
-                const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box_pos];
+                const BoxesInfo & boxesInfo = SudokuTable::boxes_info16[box_pos];
                 row = boxesInfo.row;
                 col = boxesInfo.col;
                 box = boxesInfo.box;
@@ -1512,7 +1515,7 @@ private:
                 size_t box_pos = literalInfo.literal_index;
                 assert(box_pos < Boxes * BoxSize16);
 
-                const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box_pos];
+                const BoxesInfo & boxesInfo = SudokuTable::boxes_info16[box_pos];
                 row = boxesInfo.row;
                 col = boxesInfo.col;
                 box = boxesInfo.box;
@@ -1550,7 +1553,7 @@ private:
                     col = BitUtils::bsf(col_bits);
                     pos = row * Cols + col;
 
-                    const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                    const CellInfo & cellInfo = SudokuTable::cell_info[pos];
                     box = cellInfo.box;
                     cell = cellInfo.cell;
 
@@ -1579,7 +1582,7 @@ private:
                     row = BitUtils::bsf(row_bits);
                     pos = row * Cols + col;
 
-                    const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                    const CellInfo & cellInfo = SudokuTable::cell_info[pos];
                     box = cellInfo.box;
                     cell = cellInfo.cell;
 
@@ -1607,7 +1610,7 @@ private:
                     assert((cell_bits & (cell_bits - 1)) == 0);
                     cell = BitUtils::bsf(cell_bits);
 
-                    const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box * BoxSize16 + cell];
+                    const BoxesInfo & boxesInfo = SudokuTable::boxes_info16[box * BoxSize16 + cell];
                     row = boxesInfo.row;
                     col = boxesInfo.col;
                     pos = boxesInfo.pos;
@@ -1656,7 +1659,7 @@ private:
                     col = BitUtils::bsf(col_bits);
                     pos = row * Cols + col;
 
-                    const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                    const CellInfo & cellInfo = SudokuTable::cell_info[pos];
                     box = cellInfo.box;
                     cell = cellInfo.cell;
 
@@ -1693,7 +1696,7 @@ private:
                     row = BitUtils::bsf(row_bits);
                     pos = row * Cols + col;
 
-                    const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                    const CellInfo & cellInfo = SudokuTable::cell_info[pos];
                     box = cellInfo.box;
                     cell = cellInfo.cell;
 
@@ -1730,7 +1733,7 @@ private:
                     cell = BitUtils::bsf(cell_bits);
 
                     size_t box_pos = box * BoxSize16 + cell;
-                    const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box_pos];
+                    const BoxesInfo & boxesInfo = SudokuTable::boxes_info16[box_pos];
                     row = boxesInfo.row;
                     col = boxesInfo.col;
                     pos = boxesInfo.pos;
@@ -1763,7 +1766,7 @@ private:
                     cell = index;
                     size_t box_pos = box * BoxSize16 + cell;
 
-                    const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box_pos];
+                    const BoxesInfo & boxesInfo = SudokuTable::boxes_info16[box_pos];
                     row = boxesInfo.row;
                     col = boxesInfo.col;
                     pos = boxesInfo.pos;
@@ -1820,7 +1823,7 @@ private:
                     col = BitUtils::bsf(col_bits);
                     pos = row * Cols + col;
 
-                    const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                    const CellInfo & cellInfo = SudokuTable::cell_info[pos];
                     box = cellInfo.box;
                     cell = cellInfo.cell;
 
@@ -1858,7 +1861,7 @@ private:
                     row = BitUtils::bsf(row_bits);
                     pos = row * Cols + col;
 
-                    const CellInfo & cellInfo = Sudoku::cell_info[pos];
+                    const CellInfo & cellInfo = SudokuTable::cell_info[pos];
                     box = cellInfo.box;
                     cell = cellInfo.cell;
 
@@ -1896,7 +1899,7 @@ private:
                     cell = BitUtils::bsf(cell_bits);
 
                     size_t box_pos = box * BoxSize16 + cell;
-                    const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box_pos];
+                    const BoxesInfo & boxesInfo = SudokuTable::boxes_info16[box_pos];
                     row = boxesInfo.row;
                     col = boxesInfo.col;
                     pos = boxesInfo.pos;
@@ -1929,7 +1932,7 @@ private:
                     cell = index;
                     size_t box_pos = box * BoxSize16 + cell;
 
-                    const BoxesInfo & boxesInfo = Sudoku::boxes_info16[box_pos];
+                    const BoxesInfo & boxesInfo = SudokuTable::boxes_info16[box_pos];
                     row = boxesInfo.row;
                     col = boxesInfo.col;
                     pos = boxesInfo.pos;
@@ -1982,7 +1985,7 @@ public:
         this->init_board(board);
 
         ptrdiff_t empties = this->calc_empties(board);
-        assert(empties <= (Sudoku::kBoardSize - Sudoku::kMinInitCandidates));
+        assert(empties <= (Sudoku::BoardSize - Sudoku::MinInitCandidates));
 
         solution = board;
 #if 0
