@@ -587,9 +587,9 @@ private:
             box_bits.loadAligned(bitset);
 
             disable_mask = box_bits.whichIsZeros();
-            disable_mask._and(numbits_mask);
+            disable_mask.and_equal(numbits_mask);
 
-            box_bits._or(disable_mask);
+            box_bits.or_equal(disable_mask);
 
             BitVec16x16 popcnt16 = box_bits.popcount16<BoxSize, Numbers>();
 #if V4_SAVE_COUNT_SIZE
@@ -623,9 +623,9 @@ private:
             num_row_bits.loadAligned(bitset);
 
             disable_mask = num_row_bits.whichIsZeros();
-            disable_mask._and(num_rows_mask);
+            disable_mask.and_equal(num_rows_mask);
 
-            num_row_bits._or(disable_mask);
+            num_row_bits.or_equal(disable_mask);
 
             BitVec16x16 popcnt16 = num_row_bits.popcount16<Rows, Cols>();
 #if V4_SAVE_COUNT_SIZE
@@ -659,9 +659,9 @@ private:
             num_col_bits.loadAligned(bitset);
 
             disable_mask = num_col_bits.whichIsZeros();
-            disable_mask._and(num_cols_mask);
+            disable_mask.and_equal(num_cols_mask);
 
-            num_col_bits._or(disable_mask);
+            num_col_bits.or_equal(disable_mask);
 
             BitVec16x16 popcnt16 = num_col_bits.popcount16<Cols, Rows>();
 #if V4_SAVE_COUNT_SIZE
@@ -695,9 +695,9 @@ private:
             num_box_bits.loadAligned(bitset);
 
             disable_mask = num_box_bits.whichIsZeros();
-            disable_mask._and(num_box_mask);
+            disable_mask.and_equal(num_box_mask);
 
-            num_box_bits._or(disable_mask);
+            num_box_bits.or_equal(disable_mask);
 
             BitVec16x16 popcnt16 = num_box_bits.popcount16<Boxes, BoxSize>();
 #if V4_SAVE_COUNT_SIZE
@@ -748,10 +748,10 @@ private:
             box_bits.loadAligned(bitset);
 
             disable_mask = box_bits.whichIsEqual(filter_mask);
-            disable_mask._and(numbits_mask);
+            disable_mask.and_equal(numbits_mask);
 
-            box_bits._and(numbits_mask);
-            box_bits._or(disable_mask);
+            box_bits.and_equal(numbits_mask);
+            box_bits.or_equal(disable_mask);
 
             BitVec16x16 popcnt16 = box_bits.popcount16<BoxSize, Numbers>();
 #if V4_SAVE_COUNT_SIZE

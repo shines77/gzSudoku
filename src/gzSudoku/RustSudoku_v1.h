@@ -1002,14 +1002,14 @@ private:
         for (size_t num = 0; num < Numbers; num++) {
             pCells16 = (void *)&state.candidates[num];
             cells16.loadAligned(pCells16);
-            cells16.and_not(fill_mask);
+            cells16.and_not_equal(fill_mask);
             cells16.saveAligned(pCells16);
         }
 
         pMask16 = (void *)&Static.flip_mask[fill_pos];
         mask16.loadAligned(pMask16);
-        candidates.and_not(mask16);
-        candidates._or(fill_mask);
+        candidates.and_not_equal(mask16);
+        candidates.or_equal(fill_mask);
         candidates.saveAligned((void *)&state.candidates[fill_num]);
 
         return Status::Success;
@@ -1038,7 +1038,7 @@ private:
         for (size_t num = 0; num < Numbers; num++) {
             pCells16 = (void *)&state.candidates[num];
             cells16.loadAligned(pCells16);
-            cells16.and_not(fill_mask);
+            cells16.and_not_equal(fill_mask);
             cells16.saveAligned(pCells16);
         }
 
@@ -1046,8 +1046,8 @@ private:
         pMask16 = (void *)&Static.flip_mask[fill_pos];
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
-        cells16.and_not(mask16);
-        cells16._or(fill_mask);
+        cells16.and_not_equal(mask16);
+        cells16.or_equal(fill_mask);
         cells16.saveAligned(pCells16);
     }
 
@@ -1557,21 +1557,18 @@ private:
         BitVec08x16 solved_bits;
         solved_bits.loadAligned((void *)&state.solvedCells);
 
-        R1.and_not(R2);
-        R1.and_not(solved_bits);
+        R1.and_not_equal(R2);
+        R1.and_not_equal(solved_bits);
 
         if (R1.isAllZeros()) {
             return 0;
         }
         else {
-            BandBoard R1_bits;
-            R1.saveAligned((void *)&R1_bits);
-
             int cell_count = 0;
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
-            register uint64_t bits64 = R1_bits.bands64[0];
+            register uint64_t bits64 = R1.extractU64(0);
             if (bits64 != 0) {
                 do {
                     uint32_t bit_pos = BitUtils::bsf64(bits64);
@@ -1591,12 +1588,12 @@ private:
                     }
                 } while (bits64 != 0);
 
-                bits64 = R1_bits.bands64[1];
+                bits64 = R1.extractU64(1);
                 if (bits64 != 0)
                     goto Band64_01_Loop;
             }
             else {
-                bits64 = R1_bits.bands64[1];
+                bits64 = R1.extractU64(1);
 Band64_01_Loop:
                 do {
                     uint32_t bit_pos = BitUtils::bsf64(bits64);
@@ -1617,6 +1614,9 @@ Band64_01_Loop:
                 } while (bits64 != 0);
             }
 #else // !__amd64__
+            BandBoard R1_bits;
+            R1.saveAligned((void *)&R1_bits);
+
             for (size_t band = 0; band < 3; band++) {
                 register uint32_t bits32 = R1_bits.bands[band];
                 while (bits32 != 0) {
@@ -1724,23 +1724,20 @@ Band64_01_Loop:
         BitVec08x16 solved_bits;
         solved_bits.loadAligned((void *)&state.solvedCells);
 
-        R1.and_not(R2);
-        R1.and_not(solved_bits);
+        R1.and_not_equal(R2);
+        R1.and_not_equal(solved_bits);
 
         if (R1.isAllZeros()) {
-            R2.and_not(R3);
+            R2.and_not_equal(R3);
             R2.saveAligned((void *)&state.pairs);
             return 0;
         }
         else {
-            BandBoard R1_bits;
-            R1.saveAligned((void *)&R1_bits);
-
             int cell_count = 0;
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
-            register uint64_t bits64 = R1_bits.bands64[0];
+            register uint64_t bits64 = R1.extractU64(0);
             if (bits64 != 0) {
                 do {
                     uint32_t bit_pos = BitUtils::bsf64(bits64);
@@ -1763,12 +1760,12 @@ Band64_01_Loop:
                         return Status::Unsolvable;
                 } while (bits64 != 0);
 
-                bits64 = R1_bits.bands64[1];
+                bits64 = R1.extractU64(1);
                 if (bits64 != 0)
                     goto Band64_01_Loop;
             }
             else {
-                bits64 = R1_bits.bands64[1];
+                bits64 = R1.extractU64(1);
 Band64_01_Loop:
                 do {
                     size_t bit_pos = BitUtils::bsf64(bits64);
@@ -1792,6 +1789,9 @@ Band64_01_Loop:
                 } while (bits64 != 0);
             }
 #else // !__amd64__
+            BandBoard R1_bits;
+            R1.saveAligned((void *)&R1_bits);
+
             for (size_t band = 0; band < 3; band++) {
                 register uint32_t bits32 = R1_bits.bands[band];
                 while (bits32 != 0) {

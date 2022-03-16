@@ -1704,15 +1704,15 @@ private:
         for (size_t num = 0; num < Numbers; num++) {
             pCells16 = (void *)&state.candidates[num];
             cells16.loadAligned(pCells16);
-            cells16.and_not(fill_mask);
+            cells16.and_not_equal(fill_mask);
             cells16.saveAligned(pCells16);
         }
 
         BitVec08x16 complex_fill_mask;
         mask16.loadAligned((void *)&Static.flip_mask[fill_pos]);
         complex_fill_mask.loadAligned((void *)&Static.complex_fill_mask[fill_pos]);
-        candidates.and_not(mask16);
-        candidates._or(complex_fill_mask);
+        candidates.and_not_equal(mask16);
+        candidates.or_equal(complex_fill_mask);
         candidates.saveAligned((void *)&state.candidates[fill_num]);
 
         return Status::Success;
@@ -1741,7 +1741,7 @@ private:
         for (size_t num = 0; num < Numbers; num++) {
             pCells16 = (void *)&state.candidates[num];
             cells16.loadAligned(pCells16);
-            cells16.and_not(fill_mask);
+            cells16.and_not_equal(fill_mask);
             cells16.saveAligned(pCells16);
         }
 
@@ -1751,8 +1751,8 @@ private:
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
         complex_fill_mask.loadAligned((void *)&Static.complex_fill_mask[fill_pos]);
-        cells16.and_not(mask16);
-        cells16._or(complex_fill_mask);
+        cells16.and_not_equal(mask16);
+        cells16.or_equal(complex_fill_mask);
         cells16.saveAligned(pCells16);
     }
 
@@ -1808,8 +1808,8 @@ private:
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
         complex_fill_mask.loadAligned((void *)&Static.complex_fill_mask[fill_pos]);
-        cells16.and_not(mask16);
-        cells16._or(complex_fill_mask);
+        cells16.and_not_equal(mask16);
+        cells16.or_equal(complex_fill_mask);
         cells16.saveAligned(pCells16);
 #else
         state.candidates[digit].bands[self]  &= bandUnsolvedMaskTbl32[pos];
@@ -1874,10 +1874,10 @@ private:
         flip_mask2.loadAligned((void *)&Static.flip_mask[fill_pos2]);
         complex_fill_mask1.loadAligned((void *)&Static.complex_fill_mask[fill_pos1]);
         complex_fill_mask2.loadAligned((void *)&Static.complex_fill_mask[fill_pos2]);
-        cells16.and_not(flip_mask1);
-        cells16.and_not(flip_mask2);
-        cells16._or(complex_fill_mask1);
-        cells16._or(complex_fill_mask2);
+        cells16.and_not_equal(flip_mask1);
+        cells16.and_not_equal(flip_mask2);
+        cells16.or_equal(complex_fill_mask1);
+        cells16.or_equal(complex_fill_mask2);
         cells16.saveAligned(pCells16);
 #else
         state.candidates[digit].bands[self]  &= bandUnsolvedMaskTbl32[pos1];
@@ -1938,8 +1938,8 @@ private:
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
         complex_fill_mask.loadAligned((void *)&Static.complex_fill_mask[fill_pos]);
-        cells16.and_not(mask16);
-        cells16._or(complex_fill_mask);
+        cells16.and_not_equal(mask16);
+        cells16.or_equal(complex_fill_mask);
         cells16.saveAligned(pCells16);
 
         uint32_t unsolvedCells = ~tables.posToMask[fill_pos];
@@ -1991,8 +1991,8 @@ private:
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
         complex_fill_mask.loadAligned((void *)&Static.complex_fill_mask[fill_pos]);
-        cells16.and_not(mask16);
-        cells16._or(complex_fill_mask);
+        cells16.and_not_equal(mask16);
+        cells16.or_equal(complex_fill_mask);
         cells16.saveAligned(pCells16);
 
         uint32_t unsolvedCells = ~tables.posToMask[fill_pos];
@@ -2798,8 +2798,8 @@ private:
         BitVec08x16 solved_bits;
         solved_bits.loadAligned((void *)&state.solvedCells);
 
-        R1.and_not(R2);
-        R1.and_not(solved_bits);
+        R1.and_not_equal(R2);
+        R1.and_not_equal(solved_bits);
 
         register BandBoard R1_bits;
         R1.saveAligned((void *)&R1_bits);
@@ -2923,8 +2923,8 @@ private:
         BitVec08x16 solved_bits;
         solved_bits.loadAligned((void *)&state.solvedCells);
 
-        R1.and_not(R2);
-        R1.and_not(solved_bits);
+        R1.and_not_equal(R2);
+        R1.and_not_equal(solved_bits);
 
         int cell_count = 0;
         if (R1.isNotAllZeros()) {
@@ -3025,9 +3025,9 @@ private:
         BitVec08x16 solved_bits;
         solved_bits.loadAligned((void *)&state.solvedCells);
 
-        R1.and_not(R2);
-        R2.and_not(R3);
-        R1.and_not(solved_bits);
+        R1.and_not_equal(R2);
+        R2.and_not_equal(R3);
+        R1.and_not_equal(solved_bits);
 
         R2.saveAligned((void *)&state.pairs);
 

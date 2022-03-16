@@ -829,7 +829,7 @@ private:
         pMask16 = (void *)&flip_mask[2];
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
-        cells16.and_not(mask16);
+        cells16.and_not_equal(mask16);
         cells16.saveAligned(pCells16);
 
         if (nLiteralType != LiteralType::NumRowCols) {
@@ -839,14 +839,14 @@ private:
             pMask16 = (void *)&flip_mask[0];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             box = peerBoxes.boxes[1];
             //init_state.box_cell_nums[box] &= flip_mask[box];
             pCells16 = (void *)&init_state.box_cell_nums[box];
             cells16.loadAligned(pCells16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
         }
 
@@ -857,14 +857,14 @@ private:
             pMask16 = (void *)&flip_mask[1];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             box = peerBoxes.boxes[3];
             //init_state.box_cell_nums[box] &= flip_mask[box];
             pCells16 = (void *)&init_state.box_cell_nums[box];
             cells16.loadAligned(pCells16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
         }
 
@@ -878,7 +878,7 @@ private:
             pMask16 = (void *)&Static.num_row_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
         }
 
@@ -888,7 +888,7 @@ private:
             pMask16 = (void *)&Static.num_col_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
         }
 
@@ -898,7 +898,7 @@ private:
             pMask16 = (void *)&Static.num_box_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
         }
     }
@@ -929,7 +929,7 @@ private:
         pMask16 = (void *)&flip_mask[2];
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
-        cells16.and_not(mask16);
+        cells16.and_not_equal(mask16);
         cells16.saveAligned(pCells16);
 
         if (min_index == -1) {
@@ -948,7 +948,7 @@ private:
             pMask16 = (void *)&flip_mask[0];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -964,7 +964,7 @@ private:
             //init_state.box_cell_nums[box] &= flip_mask[box];
             pCells16 = (void *)&init_state.box_cell_nums[box];
             cells16.loadAligned(pCells16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -984,7 +984,7 @@ private:
             pMask16 = (void *)&flip_mask[1];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -1000,7 +1000,7 @@ private:
             //init_state.box_cell_nums[box] &= flip_mask[box];
             pCells16 = (void *)&init_state.box_cell_nums[box];
             cells16.loadAligned(pCells16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -1029,7 +1029,7 @@ private:
             pMask16 = (void *)&Static.num_row_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -1050,7 +1050,7 @@ private:
             pMask16 = (void *)&Static.num_col_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -1071,7 +1071,7 @@ private:
             pMask16 = (void *)&Static.num_box_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -1155,7 +1155,7 @@ private:
         pMask16 = (void *)&flip_mask[2];
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
-        cells16.and_not(mask16);
+        cells16.and_not_equal(mask16);
         cells16.saveAligned(pCells16);
 
         popcnt16 = cells16.popcount16<BoxSize, Numbers>();
@@ -1175,7 +1175,7 @@ private:
             pMask16 = (void *)&flip_mask[0];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<BoxSize, Numbers>();
@@ -1192,7 +1192,7 @@ private:
             //init_state.box_cell_nums[box] &= flip_mask[box];
             pCells16 = (void *)&init_state.box_cell_nums[box];
             cells16.loadAligned(pCells16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<BoxSize, Numbers>();
@@ -1213,7 +1213,7 @@ private:
             pMask16 = (void *)&flip_mask[1];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<BoxSize, Numbers>();
@@ -1230,7 +1230,7 @@ private:
             //init_state.box_cell_nums[box] &= flip_mask[box];
             pCells16 = (void *)&init_state.box_cell_nums[box];
             cells16.loadAligned(pCells16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<BoxSize, Numbers>();
@@ -1254,7 +1254,7 @@ private:
             pMask16 = (void *)&Static.num_row_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<Numbers, Rows>();
@@ -1274,7 +1274,7 @@ private:
             pMask16 = (void *)&Static.num_col_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<Numbers, Cols>();
@@ -1294,7 +1294,7 @@ private:
             pMask16 = (void *)&Static.num_box_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not(mask16);
+            cells16.and_not_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<Numbers, Boxes>();
@@ -1377,12 +1377,12 @@ private:
             box_bits_2.loadAligned(pCells16_2);
 
             BitVec16x16_AVX disable_mask1 = box_bits_1.whichIsZeros();
-            disable_mask1._and(numbits_mask);
-            box_bits_1._or(disable_mask1);
+            disable_mask1.and_equal(numbits_mask);
+            box_bits_1.or_equal(disable_mask1);
 
             BitVec16x16_AVX disable_mask2 = box_bits_2.whichIsZeros();
-            disable_mask2._and(numbits_mask);
-            box_bits_2._or(disable_mask2);
+            disable_mask2.and_equal(numbits_mask);
+            box_bits_2.or_equal(disable_mask2);
 
             BitVec16x16 box_bits_sse_1, box_bits_sse_2;
             box_bits_1.castTo(box_bits_sse_1);
@@ -1437,8 +1437,8 @@ private:
             box_bits.loadAligned(pCells16);
 
             disable_mask = box_bits.whichIsZeros();
-            disable_mask._and(numbits_mask);
-            box_bits._or(disable_mask);
+            disable_mask.and_equal(numbits_mask);
+            box_bits.or_equal(disable_mask);
 
             BitVec16x16 box_bits_sse;
             box_bits.castTo(box_bits_sse);
@@ -1475,9 +1475,9 @@ private:
             num_row_bits.loadAligned(pCells16);
 
             disable_mask = num_row_bits.whichIsZeros();
-            disable_mask._and(num_rows_mask);
+            disable_mask.and_equal(num_rows_mask);
 
-            num_row_bits._or(disable_mask);
+            num_row_bits.or_equal(disable_mask);
 
             BitVec16x16 row_bits_sse;
             num_row_bits.castTo(row_bits_sse);
@@ -1517,9 +1517,9 @@ private:
             num_col_bits.loadAligned(pCells16);
 
             disable_mask = num_col_bits.whichIsZeros();
-            disable_mask._and(num_cols_mask);
+            disable_mask.and_equal(num_cols_mask);
 
-            num_col_bits._or(disable_mask);
+            num_col_bits.or_equal(disable_mask);
 
             BitVec16x16 col_bits_sse;
             num_col_bits.castTo(col_bits_sse);
@@ -1559,9 +1559,9 @@ private:
             num_box_bits.loadAligned(pCells16);
 
             disable_mask = num_box_bits.whichIsZeros();
-            disable_mask._and(num_box_mask);
+            disable_mask.and_equal(num_box_mask);
 
-            num_box_bits._or(disable_mask);
+            num_box_bits.or_equal(disable_mask);
 
             BitVec16x16 box_bits_sse;
             num_box_bits.castTo(box_bits_sse);
@@ -1618,8 +1618,8 @@ private:
             box_bits.loadAligned(pCells16);
 
             BitVec16x16_AVX disable_mask = box_bits.whichIsZeros();
-            disable_mask._and(numbits_mask);
-            box_bits._or(disable_mask);
+            disable_mask.and_equal(numbits_mask);
+            box_bits.or_equal(disable_mask);
 
             BitVec16x16 box_bits_sse;
             box_bits.castTo(box_bits_sse);
@@ -1659,9 +1659,9 @@ private:
             num_row_bits.loadAligned(pCells16);
 
             disable_mask = num_row_bits.whichIsZeros();
-            disable_mask._and(num_rows_mask);
+            disable_mask.and_equal(num_rows_mask);
 
-            num_row_bits._or(disable_mask);
+            num_row_bits.or_equal(disable_mask);
 
             BitVec16x16 row_bits_sse;
             num_row_bits.castTo(row_bits_sse);
@@ -1701,9 +1701,9 @@ private:
             num_col_bits.loadAligned(pCells16);
 
             disable_mask = num_col_bits.whichIsZeros();
-            disable_mask._and(num_cols_mask);
+            disable_mask.and_equal(num_cols_mask);
 
-            num_col_bits._or(disable_mask);
+            num_col_bits.or_equal(disable_mask);
 
             BitVec16x16 col_bits_sse;
             num_col_bits.castTo(col_bits_sse);
@@ -1743,9 +1743,9 @@ private:
             num_box_bits.loadAligned(pCells16);
 
             disable_mask = num_box_bits.whichIsZeros();
-            disable_mask._and(num_box_mask);
+            disable_mask.and_equal(num_box_mask);
 
-            num_box_bits._or(disable_mask);
+            num_box_bits.or_equal(disable_mask);
 
             BitVec16x16 box_bits_sse;
             num_box_bits.castTo(box_bits_sse);
@@ -1803,8 +1803,8 @@ private:
             box_bits.loadAligned(pCells16);
 
             BitVec16x16_AVX disable_mask = box_bits.whichIsZeros();
-            disable_mask._and(numbits_mask);
-            box_bits._or(disable_mask);
+            disable_mask.and_equal(numbits_mask);
+            box_bits.or_equal(disable_mask);
 
             BitVec16x16 box_bits_sse;
             box_bits.castTo(box_bits_sse);
@@ -1844,9 +1844,9 @@ private:
             num_row_bits.loadAligned(pCells16);
 
             disable_mask = num_row_bits.whichIsZeros();
-            disable_mask._and(num_rows_mask);
+            disable_mask.and_equal(num_rows_mask);
 
-            num_row_bits._or(disable_mask);
+            num_row_bits.or_equal(disable_mask);
 
             BitVec16x16 row_bits_sse;
             num_row_bits.castTo(row_bits_sse);
@@ -1887,9 +1887,9 @@ private:
             num_col_bits.loadAligned(pCells16);
 
             disable_mask = num_col_bits.whichIsZeros();
-            disable_mask._and(num_cols_mask);
+            disable_mask.and_equal(num_cols_mask);
 
-            num_col_bits._or(disable_mask);
+            num_col_bits.or_equal(disable_mask);
 
             BitVec16x16 col_bits_sse;
             num_col_bits.castTo(col_bits_sse);
@@ -1930,9 +1930,9 @@ private:
             num_box_bits.loadAligned(pCells16);
 
             disable_mask = num_box_bits.whichIsZeros();
-            disable_mask._and(num_box_mask);
+            disable_mask.and_equal(num_box_mask);
 
-            num_box_bits._or(disable_mask);
+            num_box_bits.or_equal(disable_mask);
 
             BitVec16x16 box_bits_sse;
             num_box_bits.castTo(box_bits_sse);
@@ -1988,9 +1988,9 @@ private:
             box_bits.loadAligned(pCells16);
 
             disable_mask = box_bits.whichIsZeros();
-            disable_mask._and(numbits_mask);
+            disable_mask.and_equal(numbits_mask);
 
-            box_bits._or(disable_mask);
+            box_bits.or_equal(disable_mask);
 
             BitVec16x16_AVX popcnt16 = box_bits.popcount16<BoxSize, Numbers>();
 #if V4A_SAVE_COUNT_SIZE
@@ -2023,9 +2023,9 @@ private:
             num_row_bits.loadAligned(pCells16);
 
             disable_mask = num_row_bits.whichIsZeros();
-            disable_mask._and(num_rows_mask);
+            disable_mask.and_equal(num_rows_mask);
 
-            num_row_bits._or(disable_mask);
+            num_row_bits.or_equal(disable_mask);
 
             BitVec16x16_AVX popcnt16 = num_row_bits.popcount16<Rows, Cols>();
 #if V4A_SAVE_COUNT_SIZE
@@ -2058,9 +2058,9 @@ private:
             num_col_bits.loadAligned(pCells16);
 
             disable_mask = num_col_bits.whichIsZeros();
-            disable_mask._and(num_cols_mask);
+            disable_mask.and_equal(num_cols_mask);
 
-            num_col_bits._or(disable_mask);
+            num_col_bits.or_equal(disable_mask);
 
             BitVec16x16_AVX popcnt16 = num_col_bits.popcount16<Cols, Rows>();
 #if V4A_SAVE_COUNT_SIZE
@@ -2093,9 +2093,9 @@ private:
             num_box_bits.loadAligned(pCells16);
 
             disable_mask = num_box_bits.whichIsZeros();
-            disable_mask._and(num_box_mask);
+            disable_mask.and_equal(num_box_mask);
 
-            num_box_bits._or(disable_mask);
+            num_box_bits.or_equal(disable_mask);
 
             BitVec16x16_AVX popcnt16 = num_box_bits.popcount16<Boxes, BoxSize>();
 #if V4A_SAVE_COUNT_SIZE
