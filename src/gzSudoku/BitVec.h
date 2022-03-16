@@ -704,7 +704,7 @@ struct BitVec08x16 {
         return *this;
     }
 
-    inline BitVec08x16 & and_not_equal(const BitVec08x16 & other) {
+    inline BitVec08x16 & andnot_equal(const BitVec08x16 & other) {
         this->m128 = _mm_andnot_si128(other.m128, this->m128);
         return *this;
     }
@@ -742,7 +742,7 @@ struct BitVec08x16 {
         return *this;
     }
 
-    inline BitVec08x16 & and_not_equal(__m128i value) {
+    inline BitVec08x16 & andnot_equal(__m128i value) {
         this->m128 = _mm_andnot_si128(value, this->m128);
         return *this;
     }
@@ -1975,9 +1975,9 @@ struct BitVec16x16_SSE {
         return *this;
     }
 
-    inline BitVec16x16_SSE & and_not_equal(const BitVec16x16_SSE & other) {
-        this->low.and_not_equal(other.low);
-        this->high.and_not_equal(other.high);
+    inline BitVec16x16_SSE & andnot_equal(const BitVec16x16_SSE & other) {
+        this->low.andnot_equal(other.low);
+        this->high.andnot_equal(other.high);
         return *this;
     }
 
@@ -3123,7 +3123,7 @@ struct BitVec16x16_AVX {
         return *this;
     }
 
-    inline BitVec16x16_AVX & and_not_equal(const BitVec16x16_AVX & vec) {
+    inline BitVec16x16_AVX & andnot_equal(const BitVec16x16_AVX & vec) {
         this->m256 = _mm256_andnot_si256(vec.m256, this->m256);
         return *this;
     }
@@ -3486,6 +3486,7 @@ struct BitVec16x16_AVX {
 #endif
     }
 
+    // BitVec16x16_AVX
     inline uint16_t extract(int index) const {
 #if !defined(_mm256_extract_epi16)
         #define CASE_LOW(x) case x: \
@@ -3545,6 +3546,7 @@ struct BitVec16x16_AVX {
 #endif // !_mm256_extract_epi16
     }
 
+    // BitVec16x16_AVX
     inline void insert(int index, uint16_t value) {
 #if !defined(_mm256_insert_epi16)
         #define CASE_LOW(x) case x: \

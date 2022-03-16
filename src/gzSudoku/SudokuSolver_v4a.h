@@ -829,7 +829,7 @@ private:
         pMask16 = (void *)&flip_mask[2];
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
-        cells16.and_not_equal(mask16);
+        cells16.andnot_equal(mask16);
         cells16.saveAligned(pCells16);
 
         if (nLiteralType != LiteralType::NumRowCols) {
@@ -839,14 +839,14 @@ private:
             pMask16 = (void *)&flip_mask[0];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             box = peerBoxes.boxes[1];
             //init_state.box_cell_nums[box] &= flip_mask[box];
             pCells16 = (void *)&init_state.box_cell_nums[box];
             cells16.loadAligned(pCells16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
         }
 
@@ -857,14 +857,14 @@ private:
             pMask16 = (void *)&flip_mask[1];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             box = peerBoxes.boxes[3];
             //init_state.box_cell_nums[box] &= flip_mask[box];
             pCells16 = (void *)&init_state.box_cell_nums[box];
             cells16.loadAligned(pCells16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
         }
 
@@ -878,7 +878,7 @@ private:
             pMask16 = (void *)&Static.num_row_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
         }
 
@@ -888,7 +888,7 @@ private:
             pMask16 = (void *)&Static.num_col_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
         }
 
@@ -898,7 +898,7 @@ private:
             pMask16 = (void *)&Static.num_box_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
         }
     }
@@ -929,7 +929,7 @@ private:
         pMask16 = (void *)&flip_mask[2];
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
-        cells16.and_not_equal(mask16);
+        cells16.andnot_equal(mask16);
         cells16.saveAligned(pCells16);
 
         if (min_index == -1) {
@@ -948,7 +948,7 @@ private:
             pMask16 = (void *)&flip_mask[0];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -964,7 +964,7 @@ private:
             //init_state.box_cell_nums[box] &= flip_mask[box];
             pCells16 = (void *)&init_state.box_cell_nums[box];
             cells16.loadAligned(pCells16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -984,7 +984,7 @@ private:
             pMask16 = (void *)&flip_mask[1];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -1000,7 +1000,7 @@ private:
             //init_state.box_cell_nums[box] &= flip_mask[box];
             pCells16 = (void *)&init_state.box_cell_nums[box];
             cells16.loadAligned(pCells16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -1029,7 +1029,7 @@ private:
             pMask16 = (void *)&Static.num_row_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -1050,7 +1050,7 @@ private:
             pMask16 = (void *)&Static.num_col_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -1071,7 +1071,7 @@ private:
             pMask16 = (void *)&Static.num_box_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             if (min_index == -1) {
@@ -1155,7 +1155,7 @@ private:
         pMask16 = (void *)&flip_mask[2];
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
-        cells16.and_not_equal(mask16);
+        cells16.andnot_equal(mask16);
         cells16.saveAligned(pCells16);
 
         popcnt16 = cells16.popcount16<BoxSize, Numbers>();
@@ -1175,7 +1175,7 @@ private:
             pMask16 = (void *)&flip_mask[0];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<BoxSize, Numbers>();
@@ -1192,7 +1192,7 @@ private:
             //init_state.box_cell_nums[box] &= flip_mask[box];
             pCells16 = (void *)&init_state.box_cell_nums[box];
             cells16.loadAligned(pCells16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<BoxSize, Numbers>();
@@ -1213,7 +1213,7 @@ private:
             pMask16 = (void *)&flip_mask[1];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<BoxSize, Numbers>();
@@ -1230,7 +1230,7 @@ private:
             //init_state.box_cell_nums[box] &= flip_mask[box];
             pCells16 = (void *)&init_state.box_cell_nums[box];
             cells16.loadAligned(pCells16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<BoxSize, Numbers>();
@@ -1254,7 +1254,7 @@ private:
             pMask16 = (void *)&Static.num_row_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<Numbers, Rows>();
@@ -1274,7 +1274,7 @@ private:
             pMask16 = (void *)&Static.num_col_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<Numbers, Cols>();
@@ -1294,7 +1294,7 @@ private:
             pMask16 = (void *)&Static.num_box_mask[fill_pos];
             cells16.loadAligned(pCells16);
             mask16.loadAligned(pMask16);
-            cells16.and_not_equal(mask16);
+            cells16.andnot_equal(mask16);
             cells16.saveAligned(pCells16);
 
             popcnt16 = cells16.popcount16<Numbers, Boxes>();

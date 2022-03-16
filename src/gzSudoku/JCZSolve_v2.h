@@ -872,13 +872,13 @@ private:
         for (size_t num = 0; num < Numbers; num++) {
             pCells16 = (void *)&state->candidates[num];
             cells16.loadAligned(pCells16);
-            cells16.and_not_equal(fill_mask);
+            cells16.andnot_equal(fill_mask);
             cells16.saveAligned(pCells16);
         }
 
         pMask16 = (void *)&Static.flip_mask[fill_pos];
         mask16.loadAligned(pMask16);
-        candidates.and_not_equal(mask16);
+        candidates.andnot_equal(mask16);
         candidates.or_equal(fill_mask);
         candidates.saveAligned((void *)&state->candidates[fill_num]);
 
@@ -908,7 +908,7 @@ private:
         for (size_t num = 0; num < Numbers; num++) {
             pCells16 = (void *)&state->candidates[num];
             cells16.loadAligned(pCells16);
-            cells16.and_not_equal(fill_mask);
+            cells16.andnot_equal(fill_mask);
             cells16.saveAligned(pCells16);
         }
 
@@ -916,7 +916,7 @@ private:
         pMask16 = (void *)&Static.flip_mask[fill_pos];
         cells16.loadAligned(pCells16);
         mask16.loadAligned(pMask16);
-        cells16.and_not_equal(mask16);
+        cells16.andnot_equal(mask16);
         cells16.or_equal(fill_mask);
         cells16.saveAligned(pCells16);
     }
@@ -1471,8 +1471,8 @@ private:
         BitVec08x16 solved_bits;
         solved_bits.loadAligned((void *)&state->solvedCells);
 
-        R1.and_not_equal(R2);
-        R1.and_not_equal(solved_bits);
+        R1.andnot_equal(R2);
+        R1.andnot_equal(solved_bits);
 
         BandBoard R1_bits;
         R1.saveAligned((void *)&R1_bits);
@@ -1577,9 +1577,9 @@ private:
         BitVec08x16 solved_bits;
         solved_bits.loadAligned((void *)&state->solvedCells);
 
-        R1.and_not_equal(R2);
-        R2.and_not_equal(R3);
-        R1.and_not_equal(solved_bits);
+        R1.andnot_equal(R2);
+        R2.andnot_equal(R3);
+        R1.andnot_equal(solved_bits);
 
         R2.saveAligned((void *)&state->pairs);
 
@@ -1618,9 +1618,9 @@ private:
         BitVec08x16 solved_bits;
         solved_bits.loadAligned((void *)&state->solvedCells);
 
-        R1.and_not_equal(R2);
-        R2.and_not_equal(R3);
-        R1.and_not_equal(solved_bits);
+        R1.andnot_equal(R2);
+        R2.andnot_equal(R3);
+        R1.andnot_equal(solved_bits);
 
         R2.saveAligned((void *)&state->pairs);
 
