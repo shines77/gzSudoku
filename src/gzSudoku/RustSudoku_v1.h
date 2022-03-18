@@ -29,14 +29,14 @@
 #include "BitArray.h"
 #include "BitVec.h"
 
+using namespace gzSudoku;
+
 //
 // Whether search no guess steps only?
 //
 #define RUST_V1_ONLY_NO_GUESS       0
 
-namespace gzSudoku {
-namespace Rust {
-namespace v1 {
+namespace {
 
 static const size_t kSearchMode = SearchMode::OneSolution;
 
@@ -402,10 +402,10 @@ static const uint32_t boxToBoxesMaskTbl[9] = {
     0007007007, 0070070070, 0700700700
 };
 
-class Solver : public BasicSolver {
+class RustV1Solver : public BasicSolver {
 public:
     typedef BasicSolver                         basic_solver;
-    typedef Solver                              this_type;
+    typedef RustV1Solver                          this_type;
 
     typedef typename Sudoku::BitMask            BitMask;
     typedef typename Sudoku::BitMaskTable       BitMaskTable;
@@ -729,9 +729,9 @@ private:
     static StaticData Static;
 
 public:
-    Solver() : basic_solver(), numSolutions_(0), limitSolutions_(1) {
+    RustV1Solver() : basic_solver(), numSolutions_(0), limitSolutions_(1) {
     }
-    ~Solver() {}
+    ~RustV1Solver() {}
 
 private:
     static void make_flip_mask(size_t fill_pos, size_t row, size_t col) {
@@ -2775,8 +2775,23 @@ public:
     }
 };
 
-} // namespace v1
-} // namespace Rust
-} // namespace gzSudoku
+#if defined(GZ_SUDOKU)
+RustV1Solver rust_v1_solver;
+#endif
+
+} // namespace
+
+#if defined(GZ_SUDOKU)
+
+#ifdef __cplusplus
+extern "C"
+#endif
+int GzSudoku(const char * input, char * output, int limit)
+{
+    int solutions = rust_v1_solver.solve(input, output, limit);
+    return solutions;
+}
+
+#endif // GZ_SUDOKU
 
 #endif // GZ_SUDOKU_RUST_V1_H

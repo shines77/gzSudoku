@@ -1,6 +1,8 @@
 
 #include "RustSudoku_v1.h"
 
-using namespace gzSudoku;
+namespace {
 
-Rust::v1::Solver::StaticData Rust::v1::Solver::Static;
+RustV1Solver::StaticData RustV1Solver::Static;
+
+}

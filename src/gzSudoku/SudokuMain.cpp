@@ -81,26 +81,7 @@
 
 using namespace gzSudoku;
 
-#if defined(GZ_SUDOKU)
-
-Rust::v1::Solver rust_v1_solver;
-
-extern
-int GzSudoku(const char * input, char * output, int limit)
-{
-#if 0
-    JCZ::v2::Solver solver;
-    const Board & board = *(const Board *)input;
-    Board & solition = *(Board *)output;
-    int solutions = solver.solve(board, solition, limit);
-    return solutions;
-#else
-    int solutions = rust_v1_solver.solve(input, output, limit);
-    return solutions;
-#endif
-}
-
-#else // !GZ_SUDOKU
+#if !defined(GZ_SUDOKU)
 
 static const size_t kEnableDlxV1Solver = 1;
 static const size_t kEnableDlxV2Solver = 1;
@@ -483,7 +464,7 @@ void run_all_benchmark(const char * filename)
     run_sudoku_test<JCZ::v5::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v5");
     run_sudoku_test<JCZ::v6::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v6");
     run_sudoku_test<JCZEx::v1::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZEx::v1");
-    run_sudoku_test<Rust::v1::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "Rust::v1");
+    run_sudoku_test<RustV1Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "Rust::v1");
 #else
 //  run_sudoku_test<v4b::Solver    , LimitSolutions>(bm_puzzles, bm_puzzleTotal, "dfs::v4b");
 //  run_sudoku_test<JCZ::v1::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v1");
@@ -493,7 +474,7 @@ void run_all_benchmark(const char * filename)
     //run_sudoku_test<JCZ::v2::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v2");
     //run_sudoku_test<JCZ::v6::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZ::v6");
     //run_sudoku_test<JCZEx::v1::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "JCZEx::v1");
-    run_sudoku_test<Rust::v1::Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "Rust::v1");
+    run_sudoku_test<RustV1Solver, LimitSolutions>(bm_puzzles, bm_puzzleTotal, "Rust::v1");
 #endif
 }
 
