@@ -378,6 +378,7 @@ __m256i mm256_insert_epi16(__m256i target, int value)
         case 6:
         case 7:
         {
+            // There maybe is a bug because the value of the high 128 bits maybe lost.
             __m128i result128 = _mm_insert_epi16(_mm256_castsi256_si128(target), value, (index < 8) ? index : 0);
             result = _mm256_castsi128_si256(result128);
             break;
@@ -437,9 +438,8 @@ static inline
 int64_t mm256_extract_epi64(__m256i src)
 {
     assert(index >= 0 && index < 4);
-    static const int _index = index % 2;
-#if 1
-    // Special version
+#if defined(__AVX__) && defined(__SSE4_1__)
+    // Maybe faster than the below version
     if (index == 0) {
         __m128i m128 = _mm256_castsi256_si128(src);
         return _mm_cvtsi128_si64(m128);
@@ -616,40 +616,6 @@ struct BitVec08x16 {
     static void copyUnaligned(const void * src_mem_addr, void * dest_mem_addr) {
         __m128i tmp = _mm_loadu_si128((const __m128i *)src_mem_addr);
         _mm_storeu_si128((__m128i *)dest_mem_addr, tmp);
-    }
-
-    template <int index>
-    inline uint64_t getAsU64() const {
-#if defined(__SSE4_1__)
-        if (index == 0)
-            return (uint64_t)_mm_extract_epi64(this->m128, 0);
-        else if (index == 1)
-            return (uint64_t)_mm_extract_epi64(this->m128, 1);
-        else
-            assert(false);
-#else
-        if (index == 0) {
-            return (uint64_t)_mm_cvtsi128_si64(this->m128);
-        }
-        else if (index == 1) {
-            __m128i low64 = _mm_srli_si128(this->m128, 8);
-            return (uint64_t)_mm_cvtsi128_si64(low64);
-        }
-        else {
-            assert(false);
-        }
-#endif
-    }
-
-    inline void saveAs2x64(IntVec2x64 & intVec) const {
-#if defined(__SSE4_1__)
-        intVec.u64_0 = _mm_extract_epi64(this->m128, 0);
-        intVec.u64_1 = _mm_extract_epi64(this->m128, 1);
-#else
-        intVec.u64_0 = (uint64_t)_mm_cvtsi128_si64(this->m128);
-        __m128i low64 = _mm_srli_si128(this->m128, 8);
-        intVec.u64_1 = (uint64_t)_mm_cvtsi128_si64(low64);
-#endif
     }
 
     inline bool operator == (const BitVec08x16 & other) const {
@@ -1237,8 +1203,27 @@ struct BitVec08x16 {
     }
 
     // BitVec08x16
-    inline uint64_t extractU64(int index) const {
-#if defined(__SSE4_1__)
+    inline void saveAs2x64(IntVec2x64 & intVec) const {
+        intVec.u64_0 = this->extractU64<0>();
+        intVec.u64_1 = this->extractU64<1>();
+    }
+
+    // BitVec08x16
+    template <int index>
+    inline uint64_t extractU64() const {
+#if defined(__SSE2__)
+        if (index == 0) {
+            return (uint64_t)_mm_cvtsi128_si64(this->m128);
+        }
+        else if (index == 1) {
+            // Copy high 64 bits to low 64 bits
+            __m128i high64 = _mm_unpackhi_epi64(this->m128, this->m128);
+            return (uint64_t)_mm_cvtsi128_si64(high64);
+        }
+        else {
+            assert(false);
+        }
+#elif defined(__SSE4_1__)
         if (index == 0)
             return (uint64_t)_mm_extract_epi64(this->m128, 0);
         else if (index == 1)
@@ -1261,7 +1246,7 @@ struct BitVec08x16 {
     }
 
     // BitVec08x16
-    inline void insertU64(int index, uint64_t value) {
+    inline void insertU64(const int index, uint64_t value) {
 #if defined(__SSE4_1__)
         if (index == 0)
             _mm_insert_epi64(this->m128, value, 0);
@@ -1273,19 +1258,19 @@ struct BitVec08x16 {
         // SSE2, SSSE3
         __m128i val;
         if (index == 0) {
-            // The low 64 bit
+            // The low 64 bits
             val = _mm_cvtsi64_si128(value);
-            // Copy high 64 bit to low 64 bit
+            // Copy high 64 bits to low 64 bits
             this->m128 = _mm_shuffle_epi32(this->m128, _MM_SHUFFLE(2, 3, 2, 3));
-            // Copy low 64 bit to high 64 bit
+            // Copy low 64 bits to high 64 bits
             val = _mm_shuffle_epi32(val, _MM_SHUFFLE(0, 1, 0, 1));
             // = ((a << 128) or b) >> (imm * 8)
             this->m128 = _mm_alignr_epi8(this->m128, val, 8);
         }
         else if (index == 1) {
-            // The low 64 bit
+            // The low 64 bits
             val = _mm_cvtsi64_si128(value);
-            // Copy low 64 bit to high 64 bit
+            // Copy low 64 bits to high 64 bits
             this->m128 = _mm_shuffle_epi32(this->m128, _MM_SHUFFLE(0, 1, 0, 1));
             // = ((a << 128) or b) >> (imm * 8)
             this->m128 = _mm_alignr_epi8(val, this->m128, 8);
@@ -1294,24 +1279,46 @@ struct BitVec08x16 {
             assert(false);
         }
 #else
+#if 1
+        //
+        // SSE2: Maybe is a better optimize version
+        //
+        __m128i val;
+        if (index == 0) {
+            // The low 64 bits
+            val = _mm_cvtsi64_si128(value);
+            // a[127:64] | b[63:0], and cast __m128d to __m128i
+            this->m128 = _mm_castpd_si128(_mm_move_sd(_mm_castsi128_pd(this->m128), _mm_castsi128_pd(val)));
+        }
+        else if (index == 1) {
+            // The low 64 bits
+            val = _mm_cvtsi64_si128(value);
+            // Copy low 64 bits to high 64 bits
+            val = _mm_unpacklo_epi64(val, val);
+            // a[127:64] | b[63:0], and cast __m128d to __m128i
+            this->m128 = _mm_castpd_si128(_mm_move_sd(_mm_castsi128_pd(val), _mm_castsi128_pd(this->m128)));
+        }
+        else {
+            assert(false);
+        }
+#else
         // SSE2
         __m128i val;
         if (index == 0) {
-            // The low 64 bit
+            // The low 64 bits
             val = _mm_cvtsi64_si128(value);
-            // Remove the low 64 bit
+            // Remove the low 64 bits
             this->m128 = _mm_srli_si128(this->m128, 8);
             this->m128 = _mm_slli_si128(this->m128, 8);
-            // The high 64 bit Or value
+            // The high 64 bits Or value
             this->m128 = _mm_or_si128(this->m128, val);
         }
         else if (index == 1) {
-            // The low 64 bit
+            // The low 64 bits
             val = _mm_cvtsi64_si128(value);
-            // Remove the high 64 bit
-            this->m128 = _mm_slli_si128(this->m128, 8);
-            this->m128 = _mm_srli_si128(this->m128, 8);
-            // Left shift 64 bit
+            // Remove the high 64 bits
+            this->m128 = _mm_move_epi64(this->m128);
+            // Left shift 64 bits
             val = _mm_slli_si128(val, 8);
             // The value Or the low 64 bit
             this->m128 = _mm_or_si128(val, this->m128);
@@ -1319,6 +1326,7 @@ struct BitVec08x16 {
         else {
             assert(false);
         }
+#endif
 #endif
     }
 
@@ -1384,11 +1392,10 @@ struct BitVec08x16 {
 #ifdef __SSSE3__
         return shuffle(consts.rotate_rows1);
 #else
-        __m128i mask1 = _mm_setr_epi16(0xffff, 0xffff, 0xffff, 0x0, 0xffff, 0xffff, 0xffff, 0x0);
-        __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0x0, 0xffff, 0x0, 0x0, 0x0, 0xffff);
-        return _mm_or_si128(
-                _mm_and_si128(_mm_bsrli_si128(this->m128, 2), mask1),
-                _mm_and_si128(_mm_bslli_si128(this->m128, 6), mask2));
+        __m128i mask1 = _mm_setr_epi16(0xFFFF, 0xFFFF, 0xFFFF, 0x0, 0xFFFF, 0xFFFF, 0xFFFF, 0x0);
+        __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0x0, 0xFFFF, 0x0, 0x0, 0x0, 0xFFFF);
+        return _mm_or_si128(_mm_and_si128(_mm_bsrli_si128(this->m128, 2), mask1),
+                            _mm_and_si128(_mm_bslli_si128(this->m128, 6), mask2));
 #endif
     }
 
@@ -1396,11 +1403,10 @@ struct BitVec08x16 {
 #ifdef __SSSE3__
         return _mm_shuffle_epi32(this->m128, 0b10110001);
 #else
-        __m128i mask1 = _mm_setr_epi16(0xffff, 0xffff, 0x0, 0x0, 0xffff, 0xffff, 0x0, 0x0);
-        __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0xffff, 0xffff, 0x0, 0x0, 0xffff, 0xffff);
-        return _mm_or_si128(
-                _mm_and_si128(_mm_bsrli_si128(this->m128, 4), mask1),
-                _mm_and_si128(_mm_bslli_si128(this->m128, 4), mask2));
+        __m128i mask1 = _mm_setr_epi16(0xFFFF, 0xFFFF, 0x0, 0x0, 0xFFFF, 0xFFFF, 0x0, 0x0);
+        __m128i mask2 = _mm_setr_epi16(0x0, 0x0, 0xFFFF, 0xFFFF, 0x0, 0x0, 0xFFFF, 0xFFFF);
+        return _mm_or_si128(_mm_and_si128(_mm_bsrli_si128(this->m128, 4), mask1),
+                            _mm_and_si128(_mm_bslli_si128(this->m128, 4), mask2));
 #endif
     }
 
@@ -1859,41 +1865,6 @@ struct BitVec16x16_SSE {
 #else
         __m256i tmp = _mm256_loadu_si256((const __m256i *)src_mem_addr);
         _mm256_storeu_si256((__m256i *)dest_mem_addr, tmp);
-#endif
-    }
-
-    template <int index>
-    inline uint64_t getAsU64() const {
-        if (index == 0)
-            return this->low.getAsU64<0>();
-        else if (index == 1)
-            return this->low.getAsU64<1>();
-        else if (index == 2)
-            return this->high.getAsU64<0>();
-        else if (index == 3)
-            return this->high.getAsU64<1>();
-        else
-            assert(false);
-    }
-
-    inline void saveAs4x64(IntVec4x64 & intVec) const {
-#if 0
-        intVec.u64_0 = (uint64_t)_mm_cvtsi128_si64(this->low.m128);
-        intVec.u64_1 = (uint64_t)_mm_extract_epi64(this->low.m128, 1);
-        intVec.u64_2 = (uint64_t)_mm_cvtsi128_si64(this->high.m128);
-        //intVec.u64_3 = _mm_extract_epi64(this->high.m128, 1);
-#elif defined(__SSE4_1__)
-        intVec.u64_0 = _mm_extract_epi64(this->low.m128, 0);
-        intVec.u64_1 = _mm_extract_epi64(this->low.m128, 1);
-        intVec.u64_2 = _mm_extract_epi64(this->high.m128, 0);
-        //intVec.u64_3 = _mm_extract_epi64(this->high.m128, 1);
-#else
-        intVec.u64_0 = (uint64_t)_mm_cvtsi128_si64(this->low.m128);
-        __m128i low64 = _mm_srli_si128(this->low.m128, 8);
-        intVec.u64_1 = (uint64_t)_mm_cvtsi128_si64(low64);
-        intVec.u64_2 = (uint64_t)_mm_cvtsi128_si64(this->high.m128);
-        //__m128i high64 = _mm_srli_si128(this->high, 8);
-        //intVec.u64_3 = (uint64_t)_mm_cvtsi128_si64(high64);
 #endif
     }
 
@@ -2404,22 +2375,31 @@ struct BitVec16x16_SSE {
     }
 
     // BitVec16x16_SSE
-    inline uint64_t extractU64(int index) const {
+    inline void saveAs4x64(IntVec4x64 & intVec) const {
+        intVec.u64_0 = this->low.extractU64<0>();
+        intVec.u64_1 = this->low.extractU64<1>();
+        intVec.u64_2 = this->high.extractU64<0>();
+        //intVec.u64_3 = this->high.extractU64<1>();
+    }
+
+    // BitVec16x16_SSE
+    template <int index>
+    inline uint64_t extractU64() const {
         if (index == 0)
-            return this->low.extractU64(0);
+            return this->low.extractU64<0>();
         else if (index == 1)
-            return this->low.extractU64(1);
+            return this->low.extractU64<1>();
         else if (index == 2)
-            return this->high.extractU64(0);
+            return this->high.extractU64<0>();
         else if (index == 3)
-            return this->high.extractU64(1);
+            return this->high.extractU64<1>();
         else
             assert(false);
         return 0;
     }
 
     // BitVec16x16_SSE
-    inline void insertU64(int index, uint64_t value) {
+    inline void insertU64(const int index, uint64_t value) {
         if (index == 0)
             this->low.insertU64(0, value);
         else if (index == 1)
@@ -3021,29 +3001,6 @@ struct BitVec16x16_AVX {
         _mm256_storeu_si256((__m256i *)dest_mem_addr, tmp);
     }
 
-    template <int index>
-    inline uint64_t getAsU64() const {
-#if 1
-        return AVX::mm256_extract_epi64<index>(this->m256);
-#else
-        return (uint64_t)_mm256_extract_epi64(this->m256, index);
-#endif
-    }
-
-    inline void saveAs4x64(IntVec4x64 & intVec) const {
-#if defined(_MSC_VER)
-        intVec.u64_0 = AVX::mm256_extract_epi64<0>(this->m256);
-        intVec.u64_1 = AVX::mm256_extract_epi64<1>(this->m256);
-        intVec.u64_2 = AVX::mm256_extract_epi64<2>(this->m256);
-        //intVec.u64_3 = AVX::mm256_extract_epi64<3>(this->m256);
-#else
-        intVec.u64_0 = _mm256_extract_epi64(this->m256, 0);
-        intVec.u64_1 = _mm256_extract_epi64(this->m256, 1);
-        intVec.u64_2 = _mm256_extract_epi64(this->m256, 2);
-        //intVec.u64_3 = _mm256_extract_epi64(this->m256, 3);
-#endif
-    }
-
     inline bool operator == (const BitVec16x16_AVX & other) const {
         return this->isEqual(other);
     }
@@ -3606,22 +3563,25 @@ struct BitVec16x16_AVX {
     }
 
     // BitVec16x16_AVX
-    inline uint64_t extractU64(int index) const {
-        if (index == 0)
-            return (uint64_t)_mm256_extract_epi64(this->m256, 0);
-        else if (index == 1)
-            return (uint64_t)_mm256_extract_epi64(this->m256, 1);
-        else if (index == 2)
-            return (uint64_t)_mm256_extract_epi64(this->m256, 2);
-        else if (index == 3)
-            return (uint64_t)_mm256_extract_epi64(this->m256, 3);
-        else
-            assert(false);
-        return 0;
+    inline void saveAs4x64(IntVec4x64 & intVec) const {
+        intVec.u64_0 = this->extractU64<0>();
+        intVec.u64_1 = this->extractU64<1>();
+        intVec.u64_2 = this->extractU64<2>();
+        //intVec.u64_3 = this->extractU64<3>();
     }
 
     // BitVec16x16_AVX
-    inline void insertU64(int index, uint64_t value) {
+    template <int index>
+    inline uint64_t extractU64() const {
+#if 1
+        return (uint64_t)AVX::mm256_extract_epi64<index>(this->m256);
+#else
+        return (uint64_t)_mm256_extract_epi64(this->m256, index);
+#endif
+    }
+
+    // BitVec16x16_AVX
+    inline void insertU64(const int index, uint64_t value) {
         if (index == 0)
             _mm256_insert_epi64(this->m256, value, 0);
         else if (index == 1)

@@ -1732,11 +1732,13 @@ private:
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cell(state, board);
+
+                                if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_) {
+                                    --state;
+                                    return Status::Success;
+                                }
                             }
                             --state;
-
-                            if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
-                                return Status::Success;
                         }
                         else {
                             // Second of pair
@@ -1775,11 +1777,13 @@ private:
 
                             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                                 this->guess_next_cell(state, board);
+
+                                if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_) {
+                                    --state;
+                                    return Status::Success;
+                                }
                             }
                             --state;
-
-                            if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
-                                return Status::Success;
                         }
                         else {
                             // Second of pair
@@ -1823,11 +1827,13 @@ private:
 
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cell(state, board);
+
+                        if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_) {
+                            --state;
+                            return Status::Success;
+                        }
                     }
                     --state;
-
-                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                        return Status::Success;
                 }
             }
 
@@ -1854,11 +1860,13 @@ private:
 
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cell(state, board);
+
+                        if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_) {
+                            --state;
+                            return Status::Success;
+                        }
                     }
                     --state;
-
-                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                        return Status::Success;
                 }
             }
 
@@ -1887,11 +1895,13 @@ private:
 
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cell(state, board);
+
+                        if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_) {
+                            --state;
+                            return Status::Success;
+                        }
                     }
                     --state;
-
-                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                        return Status::Success;
                 }
             }
 
@@ -1917,11 +1927,13 @@ private:
 
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cell(state, board);
+
+                        if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_) {
+                            --state;
+                            return Status::Success;
+                        }
                     }
                     --state;
-
-                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                        return Status::Success;
                 }
                 else {
                     // The last digit
@@ -1955,11 +1967,13 @@ private:
 
                     if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                         this->guess_next_cell(state, board);
+
+                        if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_) {
+                            --state;
+                            return Status::Success;
+                        }
                     }
                     --state;
-
-                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                        return Status::Success;
                 }
                 else {
                     // The last digit
@@ -2099,11 +2113,13 @@ private:
 
                 if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                     this->guess_next_cell(state, board);
+
+                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_) {
+                        --state;
+                        return Status::Success;
+                    }
                 }
                 --state;
-
-                if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                    return Status::Success;
             }
             else {
                 // The second of pair
@@ -2137,11 +2153,13 @@ private:
 
             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                 this->guess_next_cell(state, board);
+
+                if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_) {
+                    --state;
+                    return Status::Success;
+                }
             }
             --state;
-
-            if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                return Status::Success;
         }
 
         {
@@ -2184,11 +2202,13 @@ private:
 
             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                 this->guess_next_cell(state, board);
+
+                if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_) {
+                    --state;
+                    return Status::Success;
+                }
             }
             --state;
-
-            if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                return Status::Success;
         }
 
         return Status::Success;
@@ -2521,11 +2541,13 @@ Row_BiValue_Find:
 
             if (this->find_all_single_literals<false>(state) != Status::Invalid) {
                 this->guess_next_cell(state, board);
+
+                if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_) {
+                    --state;
+                    return Status::Success;
+                }
             }
             --state;
-
-            if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                return Status::Success;
         }
 
         {

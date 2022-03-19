@@ -1568,7 +1568,7 @@ private:
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
-            register uint64_t bits64 = R1.extractU64(0);
+            register uint64_t bits64 = R1.extractU64<0>();
             if (bits64 != 0) {
                 do {
                     uint32_t bit_pos = BitUtils::bsf64(bits64);
@@ -1588,12 +1588,12 @@ private:
                     }
                 } while (bits64 != 0);
 
-                bits64 = R1.extractU64(1);
+                bits64 = R1.extractU64<1>();
                 if (bits64 != 0)
                     goto Band64_01_Loop;
             }
             else {
-                bits64 = R1.extractU64(1);
+                bits64 = R1.extractU64<1>();
 Band64_01_Loop:
                 do {
                     uint32_t bit_pos = BitUtils::bsf64(bits64);
@@ -1737,7 +1737,7 @@ Band64_01_Loop:
 
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
-            register uint64_t bits64 = R1.extractU64(0);
+            register uint64_t bits64 = R1.extractU64<0>();
             if (bits64 != 0) {
                 do {
                     uint32_t bit_pos = BitUtils::bsf64(bits64);
@@ -1760,12 +1760,12 @@ Band64_01_Loop:
                         return Status::Unsolvable;
                 } while (bits64 != 0);
 
-                bits64 = R1.extractU64(1);
+                bits64 = R1.extractU64<1>();
                 if (bits64 != 0)
                     goto Band64_01_Loop;
             }
             else {
-                bits64 = R1.extractU64(1);
+                bits64 = R1.extractU64<1>();
 Band64_01_Loop:
                 do {
                     size_t bit_pos = BitUtils::bsf64(bits64);
@@ -1847,6 +1847,9 @@ Band64_01_Loop:
 
                             if (this->search<false>(next_state) != Status::Unsolvable) {
                                 this->guess_next_cell(next_state, solution);
+
+                                if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
+                                    return Status::Success;
                             }
                         }
                         else {
@@ -1885,6 +1888,9 @@ Band64_01_Loop:
 
                             if (this->search<false>(next_state) != Status::Unsolvable) {
                                 this->guess_next_cell(next_state, solution);
+
+                                if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
+                                    return Status::Success;
                             }
                         }
                         else {
@@ -1927,6 +1933,9 @@ Band64_01_Loop:
 
                     if (this->search<false>(next_state) != Status::Unsolvable) {
                         this->guess_next_cell(next_state, solution);
+
+                        if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
+                            return Status::Success;
                     }
                 }
             }
@@ -1952,6 +1961,9 @@ Band64_01_Loop:
 
                     if (this->search<false>(next_state) != Status::Unsolvable) {
                         this->guess_next_cell(next_state, solution);
+
+                        if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
+                            return Status::Success;
                     }
                 }
             }
@@ -1980,6 +1992,9 @@ Band64_01_Loop:
 
                     if (this->search<false>(next_state) != Status::Unsolvable) {
                         this->guess_next_cell(next_state, solution);
+
+                        if (kReachSolutionsLimitToExit && this->numSolutions_ >= this->limitSolutions_)
+                            return Status::Success;
                     }
                 }
             }
@@ -2003,18 +2018,18 @@ Band64_01_Loop:
 
                     this->update_band_solved_mask32(next_state, band, pos, num);
 
-                    if (this->search<false>(next_state) != Status::Invalid) {
+                    if (this->search<false>(next_state) != Status::Unsolvable) {
                         this->guess_next_cell(next_state, solution);
-                    }
 
-                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                        return Status::Success;
+                        if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
+                            return Status::Success;
+                    }
                 }
                 else {
                     // The last digit
                     this->update_band_solved_mask32(state, band, pos, num);
 
-                    if (this->search<false>(state) != Status::Invalid) {
+                    if (this->search<false>(state) != Status::Unsolvable) {
                         this->guess_next_cell(state, solution);
                     }
                     return Status::Success;
@@ -2039,18 +2054,18 @@ Band64_01_Loop:
 
                     this->update_band_solved_mask32(next_state, band, pos, num);
 
-                    if (this->search<false>(next_state) != Status::Invalid) {
+                    if (this->search<false>(next_state) != Status::Unsolvable) {
                         this->guess_next_cell(next_state, solution);
-                    }
 
-                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                        return Status::Success;
+                        if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
+                            return Status::Success;
+                    }
                 }
                 else {
                     // The last digit
                     this->update_band_solved_mask32(state, band, pos, num);
 
-                    if (this->search<false>(state) != Status::Invalid) {
+                    if (this->search<false>(state) != Status::Unsolvable) {
                         return this->guess_next_cell(state, solution);
                     }
                     return Status::Success;
@@ -2181,18 +2196,18 @@ Band64_01_Loop:
 
                 this->update_band_solved_mask32(next_state, band, pos, digit);
 
-                if (this->search<false>(next_state) != Status::Invalid) {
+                if (this->search<false>(next_state) != Status::Unsolvable) {
                     this->guess_next_cell(next_state, solution);
-                }
 
-                if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                    return Status::Success;
+                    if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
+                        return Status::Success;
+                }
             }
             else {
                 // The second of pair
                 this->update_band_solved_mask32(state, band, pos, digit);
 
-                if (this->search<false>(state) != Status::Invalid) {
+                if (this->search<false>(state) != Status::Unsolvable) {
                     this->guess_next_cell(state, solution);
                 }
                 return Status::Success;
@@ -2217,12 +2232,12 @@ Band64_01_Loop:
 
             this->update_band_solved_mask32(next_state, band, pos, digit);
 
-            if (this->search<false>(next_state) != Status::Invalid) {
+            if (this->search<false>(next_state) != Status::Unsolvable) {
                 this->guess_next_cell(next_state, solution);
-            }
 
-            if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                return Status::Success;
+                if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
+                    return Status::Success;
+            }
         }
 
         {
@@ -2234,7 +2249,7 @@ Band64_01_Loop:
 
             this->update_band_solved_mask32(state, band, pos, digit);
 
-            if (this->search<false>(state) != Status::Invalid) {
+            if (this->search<false>(state) != Status::Unsolvable) {
                 this->guess_next_cell(state, solution);
             }
             return Status::Success;
@@ -2262,12 +2277,12 @@ Band64_01_Loop:
 
             this->update_band_solved_mask32(next_state, band, pos, digit);
 
-            if (this->search<false>(next_state) != Status::Invalid) {
+            if (this->search<false>(next_state) != Status::Unsolvable) {
                 this->guess_next_cell(next_state, solution);
-            }
 
-            if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                return Status::Success;
+                if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
+                    return Status::Success;
+            }
         }
 
         return Status::Success;
@@ -2597,12 +2612,12 @@ Row_BiValue_Find:
 
             this->update_band_solved_mask32(next_state, band, pos, digit);
 
-            if (this->search<false>(next_state) != Status::Invalid) {
+            if (this->search<false>(next_state) != Status::Unsolvable) {
                 this->guess_next_cell(next_state, solution);
-            }
 
-            if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
-                return Status::Success;
+                if (kReachSolutionsLimitToExit2 && this->numSolutions_ >= this->limitSolutions_)
+                    return Status::Success;
+            }
         }
 
         {
@@ -2614,7 +2629,7 @@ Row_BiValue_Find:
 
             this->update_band_solved_mask32(state, band, pos, digit);
 
-            if (this->search<false>(state) != Status::Invalid) {
+            if (this->search<false>(state) != Status::Unsolvable) {
                 this->guess_next_cell(state, solution);
             }
             return Status::Success;
