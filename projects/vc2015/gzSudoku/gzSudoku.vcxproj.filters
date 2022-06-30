@@ -25,9 +25,6 @@
     <ClInclude Include="..\..\..\src\gzSudoku\CPUWarmUp.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\src\gzSudoku\msvc_x86intrin.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\src\gzSudoku\PackedBitSet.h">
       <Filter>src</Filter>
     </ClInclude>
@@ -50,9 +47,6 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\gzSudoku\SudokuSolver_v4a.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\src\gzSudoku\PowerOf2.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\gzSudoku\SudokuSolver_v5.h">
@@ -101,6 +95,15 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\src\gzSudoku\RustSudoku_v1.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\gzSudoku\Power2.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\gzSudoku\config.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\gzSudoku\x86_intrin.h">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

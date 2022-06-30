@@ -707,7 +707,7 @@ private:
         //print_rowHiddenSingleMaskTbl();
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void extract_solution(State * state, Board & board) {
         assert(state != nullptr);
 #if 1
@@ -817,7 +817,7 @@ private:
 #endif
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int init_board(State * state, const Board & board) {
         state->init();
 
@@ -921,24 +921,24 @@ private:
         cells16.saveAligned(pCells16);
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void update_band_solved_mask32(State * state, size_t band, size_t pos, size_t num) {
         state->candidates[num].bands[band] &= bandUnsolvedMaskTbl32[pos];
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void update_band_solved_mask64(State * state, size_t band, size_t pos, size_t num) {
         state->candidates[num].bands64[band] &= bandUnsolvedMaskTbl64[pos];
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void update_band_solved_mask32(State * state, size_t band, size_t pos, size_t num, uint32_t mask) {
         if ((state->candidates[num].bands[band] & mask) != 0) {
             state->candidates[num].bands[band] &= bandUnsolvedMaskTbl32[pos];
         }
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void update_band_solved_mask64(State * state, size_t band, size_t pos, size_t num, uint64_t mask) {
         if ((state->candidates[num].bands64[band] & mask) != 0) {
             state->candidates[num].bands64[band] &= bandUnsolvedMaskTbl64[pos];
@@ -946,7 +946,7 @@ private:
     }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, bool fast_mode>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     uint32_t update_up_down_cells(State * state, uint32_t & band) {
         uint32_t rowTriadsMask = rowTriadsMaskTbl[band & kFullRowBits] |
                                 (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
@@ -981,7 +981,7 @@ private:
     }
 
     template <uint32_t digit, uint32_t self>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void update_solved_rows(State * state, uint32_t band, uint32_t bandSolvedRows) {
         uint32_t solvedCells = band & solvedRowsBitMaskTbl[bandSolvedRows];
         //assert(solvedCells != 0);
@@ -1911,7 +1911,7 @@ private:
         return Status::Failed;
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int guess_three_candidates_cell(State *& state, Board & board, uint32_t band, uint32_t pos, uint32_t mask) {
         int tries = 3;
         for (size_t num = 0; num < Numbers; num++) {
@@ -1950,7 +1950,7 @@ private:
         return Status::Failed;
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int guess_more_than_4_cell(State *& state, Board & board, uint32_t band, uint32_t pos, int candidates) {
         int tries = candidates;
         uint32_t mask = tables.posToMask[pos];
@@ -2045,8 +2045,8 @@ private:
         uint32_t min_unsolved_pos;
         uint32_t min_unsolved_band;
 
-        UNUSED_VARIANT(min_unsolved_pos);
-        UNUSED_VARIANT(min_unsolved_band);
+        UNUSED_VARIABLE(min_unsolved_pos);
+        UNUSED_VARIABLE(min_unsolved_band);
 
         for (uint32_t i = 0; i < 3; i++) {
             //uint32_t band = band_order[i];
@@ -2087,7 +2087,7 @@ private:
         }
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int guess_hidden_box_pair(State *& state, Board & board, uint32_t digit, uint32_t box) {
         assert(digit >= 0 && digit < Numbers);
         assert(box >= 0 && box < Boxes);
@@ -2179,7 +2179,7 @@ private:
 #endif
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int guess_box_cell_more_than_2(State *& state, Board & board, uint32_t digit, uint32_t box) {
         assert(digit >= 0 && digit < (uint32_t)Numbers);
         assert(box >= 0 && box < (uint32_t)Boxes);
@@ -2378,7 +2378,7 @@ private:
         }
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int guess_hidden_box_bivalue(State *& state, Board & board) {
         Counter total_min, total_box;
         BoxCounter box_cnt;
@@ -2457,7 +2457,7 @@ private:
         }
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int guess_hidden_row_bivalue(State *& state, Board & board) {
         uint32_t hidden_bits;
         uint32_t row_cnt, row_cnt2;
@@ -2575,7 +2575,7 @@ Row_BiValue_Find:
     }
 
     template <bool NeedCheckSolved = true>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int guess_next_cell(State *& state, Board & board) {
         assert(state != nullptr);
         if (NeedCheckSolved && this->is_solved(state)) {
@@ -2616,7 +2616,7 @@ Row_BiValue_Find:
     }
 
     template <bool fast_mode>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int find_all_single_literals(State * state) {
         if (!fast_mode && (this->numSolutions_ >= this->limitSolutions_))
             return Status::Invalid;
@@ -2642,7 +2642,7 @@ Row_BiValue_Find:
         return Status::Success;
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     bool is_solved(State * state) {
 #if defined(WIN64) || defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) \
  || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
@@ -2656,7 +2656,7 @@ Row_BiValue_Find:
     }
 
 public:
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int search(State *& state, Board & board) {
         int status;
         if (kUseFastMode) {

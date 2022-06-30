@@ -1069,24 +1069,24 @@ private:
         cells16.saveAligned(pCells16);
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void update_band_solved_mask32(State & state, size_t band, size_t pos, size_t num) {
         state.candidates[num].bands[band] &= bandUnsolvedMaskTbl32[pos];
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void update_band_solved_mask64(State & state, size_t band, size_t pos, size_t num) {
         state.candidates[num].bands64[band] &= bandUnsolvedMaskTbl64[pos];
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void update_band_solved_mask32(State & state, size_t band, size_t pos, size_t num, uint32_t mask) {
         if ((state.candidates[num].bands[band] & mask) != 0) {
             state.candidates[num].bands[band] &= bandUnsolvedMaskTbl32[pos];
         }
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void update_band_solved_mask64(State & state, size_t band, size_t pos, size_t num, uint64_t mask) {
         if ((state.candidates[num].bands64[band] & mask) != 0) {
             state.candidates[num].bands64[band] &= bandUnsolvedMaskTbl64[pos];
@@ -1094,7 +1094,7 @@ private:
     }
 
     template <uint32_t digit>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void getRowTriadsMask_SSE2(const State & state, BandBoard * rowTriadsMaskAll) {
         BitVec08x16 band1, band2, band3;
         static BitVec08x16 triads_mask1(0111111111, 0111111111, 0111111111, 0111111111);
@@ -1124,7 +1124,7 @@ private:
     }
 
     template <uint32_t digit>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void getRowTriadsMask_AVX2(const State & state, BandBoard * rowTriadsMaskAll) {
         // digit must be an even number.
         static_assert(((digit & 1) == 0), "getRowTriadsMask_AVX2<digit>: digit must be an even number.");
@@ -1157,7 +1157,7 @@ private:
     }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, bool fast_mode>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     uint32_t update_up_down_cells(State & state, uint32_t & band) {
         uint32_t rowTriadsMask = rowTriadsMaskTbl[band & kFullRowBits] |
                                 (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
@@ -1191,7 +1191,7 @@ private:
     }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, bool fast_mode>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     uint32_t update_up_down_cells(State & state, uint32_t & band, BandBoard & rowTriadsMaskAll) {
         uint32_t rowTriadsMask_ = rowTriadsMaskTbl[band & kFullRowBits] |
                                  (rowTriadsMaskTbl[(band >> 9U) & kFullRowBits] << 3U) |
@@ -1233,7 +1233,7 @@ private:
     }
 
     template <uint32_t digit, uint32_t self>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void update_solved_rows(State & state, uint32_t band, uint32_t bandSolvedRows) {
         uint32_t solvedCells = band & solvedRowsBitMaskTbl[bandSolvedRows];
         //assert(solvedCells != 0);
@@ -1260,7 +1260,7 @@ private:
     }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, uint32_t shift, bool fast_mode>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void find_and_update_band_sse2_v1(State & state, int32_t & changed, uint32_t & updated,
                                       uint32_t & solvedRows, const BandBoard & rowTriadsMaskAll) {
         register uint32_t band = state.candidates[digit].bands[self];
@@ -1315,7 +1315,7 @@ private:
     }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, uint32_t shift, bool fast_mode>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void find_and_update_band_sse2(State & state, int32_t & changed, uint32_t & updated,
                                    uint32_t & solvedRows, const BandBoard & rowTriadsMaskAll) {
         register uint32_t band = state.candidates[digit].bands[self];
@@ -1397,7 +1397,7 @@ private:
     }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, uint32_t shift, bool fast_mode>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void find_and_update_band(State & state, int32_t & changed, uint32_t & updated,
                               uint32_t & solvedRows, const BandBoard & rowTriadsMaskAll) {
         register uint32_t band = state.candidates[digit].bands[self];
@@ -1458,7 +1458,7 @@ private:
     }
 
     template <uint32_t digit, uint32_t self, uint32_t peer1, uint32_t peer2, uint32_t shift, bool fast_mode>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     void find_and_update_band_v2(State & state, int32_t & changed, uint32_t & updated,
                                  uint32_t & solvedRows, const BandBoard & rowTriadsMaskAll) {
         register uint32_t band = state.candidates[digit].bands[self];
@@ -3215,7 +3215,7 @@ private:
         return Status::Failed;
     }
 
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int guess_next_cell(State & state, Board & board) {
         if ((state.solvedCells.bands64[0] == kBitSet27_Double64) &&
             (state.solvedCells.bands64[1] == kBitSet27_Single64)) {
@@ -3255,7 +3255,7 @@ private:
     }
 
     template <bool fast_mode>
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int find_all_single_literals(State & state) {
         if (!fast_mode && (this->numSolutions_ >= this->limitSolutions_))
             return Status::Invalid;
@@ -3281,7 +3281,7 @@ private:
     }
 
 public:
-    JSTD_FORCE_INLINE
+    JSTD_FORCED_INLINE
     int search(State & state, Board & board) {
         int status;
         if (kUseFastMode) {

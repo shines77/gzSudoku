@@ -22,7 +22,7 @@
 
 #include "BitUtils.h"
 #include "BitSet.h"
-#include "PowerOf2.h"
+#include "Power2.h"
 
 namespace gzSudoku {
 

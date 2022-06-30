@@ -165,6 +165,7 @@
     <ClInclude Include="..\..\..\src\gzSudoku\BitSet.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\BitUtils.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\BitVec.h" />
+    <ClInclude Include="..\..\..\src\gzSudoku\config.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\CPUWarmUp.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\gzSudoku.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\JCZSolveEx_v1.h" />
@@ -175,9 +176,8 @@
     <ClInclude Include="..\..\..\src\gzSudoku\JCZSolve_v3.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\JCZSolve_v5.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\JCZSolve_v6.h" />
-    <ClInclude Include="..\..\..\src\gzSudoku\msvc_x86intrin.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\PackedBitSet.h" />
-    <ClInclude Include="..\..\..\src\gzSudoku\PowerOf2.h" />
+    <ClInclude Include="..\..\..\src\gzSudoku\Power2.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\RustSudoku_v1.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\RustSudoku_v1.hpp" />
     <ClInclude Include="..\..\..\src\gzSudoku\stddef.h" />
@@ -191,6 +191,7 @@
     <ClInclude Include="..\..\..\src\gzSudoku\SudokuTable.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\SudokuTables.h" />
     <ClInclude Include="..\..\..\src\gzSudoku\TestCase.h" />
+    <ClInclude Include="..\..\..\src\gzSudoku\x86_intrin.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\src\gzSudoku\SudokuMain.cpp" />

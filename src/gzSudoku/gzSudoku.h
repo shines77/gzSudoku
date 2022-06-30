@@ -1,6 +1,6 @@
 
-#ifndef GZUDOKU_H
-#define GZUDOKU_H
+#ifndef GZ_SUDOKU_H
+#define GZ_SUDOKU_H
 
 #if defined(_MSC_VER) && (_MSC_VER > 1200)
 #pragma once
@@ -20,4 +20,4 @@ int GzSudoku(const char * input, char * output, int limit);
 
 #endif // GZ_SUDOKU
 
-#endif // GZUDOKU_H
+#endif // GZ_SUDOKU_H
