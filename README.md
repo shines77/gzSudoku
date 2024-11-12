@@ -18,13 +18,13 @@
 
 ## 关于 JCZSolve
 
-JCZSolve 是一个国人 JCZ 写的数独求解程序，发表在一个国外的数独论坛 [http://forum.enjoysudoku.com/](http://forum.enjoysudoku.com/) 上，原代码是发在论坛里的（帖子暂时找不到了），有些乱码，国外网友整理了，放在这里下载：[JCZSolve 源代码](http://forum.enjoysudoku.com/download/file.php?id=436&sid=2906ffe2e2c5cf10c4d004f184eafe10) 。如果下载不了，本仓库的 `./others/jczslover` 目录下面也有：[JCZSolve.c)](./others/jczslover/JCZSolve.c)、[JCZSolve.h)](./others/jczslover/JCZSolve.h)、[jczsolve.zip](./others/jczslover/jczsolve.zip) 。
+JCZSolve 是由一个老外 [JasonLion](http://forum.enjoysudoku.com/member2711.html) 基于中国人 [zhouyundong_2012](http://forum.enjoysudoku.com/member3701.html) 写的代码整理而来的数独求解程序，原代码发表在一个国外的数独论坛 [forum.enjoysudoku.com](http://forum.enjoysudoku.com/) 上，帖子在这里：[3.77us Solver(2.8G CPU, TestCase:17Sodoku)](http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470.html)。原代码有些乱码，国外网友整理了，放在这里下载：[JCZSolve 源代码压缩包](http://forum.enjoysudoku.com/download/file.php?id=436&sid=2906ffe2e2c5cf10c4d004f184eafe10) 。如果下载不了，本仓库的 `./others/jczslover` 目录下面也有：[JCZSolve.c)](./others/jczslover/JCZSolve.c)、[JCZSolve.h)](./others/jczslover/JCZSolve.h)、[jczsolve.zip](./others/jczslover/jczsolve.zip) 。
 
 ## 关于 rust-sudoku
 
-是一个用 Rust 语言写的数独求解程序，基于 JCZSolve 改写的，我曾经研究了很久，不知道它为什么比 JCZSolve 快。后来，我用 C++ 照着它重写了一遍，才找到关键地方。其实他没做什么修改，就是去掉了一个 if 判断，就快了一点。
+是一个用 Rust 语言写的数独求解程序，基于 JCZSolve 改写的，我曾经研究了很久，不知道它为什么比 JCZSolve 快。后来，我用 C++ 照着它重写了一遍，才找到关键的地方。其实他也没做什么修改，就是去掉了一个 if 判断，就稍微快了一点。
 
-我后来在它的基础上又做了一点改进，稍微比它快一点点。JCZSolve 这个方法看起来很多地方并不完美，但真正实践起来发现优化空间并不是很大，但是它确实是在求解较为简单的数独时，速度是比较快的。而 [tdoku](https://github.com/t-dillon/tdoku) 则在求解较为困难的数独是更快，也是综合速度最快的数独求解程序。
+我后来在它的基础上又做了一些改进，稍微比它快一点点。JCZSolve 这个方法很多地方看起来并不完美，但是它确实是在求解较为简单的数独时，速度是比较快的。而 [tdoku](https://github.com/t-dillon/tdoku) 则在求解较为困难的数独是更快的，也是综合速度最快的数独求解程序。
 
 Git: [https://github.com/Emerentius/sudoku](https://github.com/Emerentius/sudoku)
 
