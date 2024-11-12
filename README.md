@@ -18,7 +18,7 @@
 
 ## 关于 JCZSolve
 
-JCZSolve 是由一个老外 [JasonLion](http://forum.enjoysudoku.com/member2711.html) 基于中国人 [zhouyundong_2012](http://forum.enjoysudoku.com/member3701.html) 写的代码整理而来的数独求解程序，原代码发表在一个国外的数独论坛 [forum.enjoysudoku.com](http://forum.enjoysudoku.com/) 上，帖子在这里：[3.77us Solver(2.8G CPU, TestCase:17Sodoku)](http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470.html)。原代码有些乱码，国外网友整理了，放在这里下载：[JCZSolve 源代码压缩包](http://forum.enjoysudoku.com/download/file.php?id=436&sid=2906ffe2e2c5cf10c4d004f184eafe10) 。如果下载不了，本仓库的 `./others/jczslover` 目录下面也有：[JCZSolve.c)](./others/jczslover/JCZSolve.c)、[JCZSolve.h)](./others/jczslover/JCZSolve.h)、[jczsolve.zip](./others/jczslover/jczsolve.zip) 。
+JCZSolve 是由一个老外 [JasonLion](http://forum.enjoysudoku.com/member2711.html) 基于中国人 [zhouyundong_2012](http://forum.enjoysudoku.com/member3701.html) 写的代码整理而来的数独求解程序，原代码发表在一个国外的数独论坛 [forum.enjoysudoku.com](http://forum.enjoysudoku.com/) 上，帖子在这里：[3.77us Solver(2.8G CPU, TestCase:17Sodoku)](http://forum.enjoysudoku.com/3-77us-solver-2-8g-cpu-testcase-17sodoku-t30470.html)。原代码有些乱码，国外网友整理了，放在这里下载：[JCZSolve 源码压缩包](http://forum.enjoysudoku.com/download/file.php?id=436&sid=2906ffe2e2c5cf10c4d004f184eafe10) 。如果下载不了，本仓库的 `./others/jczslover` 目录下面也有：[JCZSolve.c](./others/jczslover/JCZSolve.c)、[JCZSolve.h](./others/jczslover/JCZSolve.h)、[jczsolve.zip](./others/jczslover/jczsolve.zip) 。
 
 ## 关于 rust-sudoku
 
