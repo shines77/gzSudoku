@@ -2,11 +2,11 @@
 
 ## 简介
 
-本程序根据世界上求解较为简单的数独较快的求解程序 [JCZSolve](http://forum.enjoysudoku.com/download/file.php?id=436&sid=2906ffe2e2c5cf10c4d004f184eafe10) 改写，比同类型里最快的数独求解程序 [rust-sudoku](https://github.com/Emerentius/sudoku) 还要快 3-5 %左右。
+本程序基于 [JCZSolve](./others/jczslover/JCZSolve.c) 改写，比同类型里最快的数独求解程序 [rust-sudoku](https://github.com/Emerentius/sudoku) 还要快 3-5 %左右。JCZSolve 在求解较为简单的数独时，速度较为领先。
 
 特色：
 
-`BitVec.h`: 一个跨平台，支持 SSE, SSE2, AVX, AVX2 和 AVX512 等 SIMD 指令的向量库。[点这里查看](./blob/master/src/gudoku/BitVec.h)
+`BitVec.h`: 一个跨平台，支持 SSE, SSE2, AVX, AVX2 和 AVX512 等 SIMD 指令的向量库。[点这里查看](./src/gudoku/BitVec.h)
 
 包含以下类：
 
@@ -18,7 +18,7 @@
 
 ## 关于 JCZSolve
 
-JCZSolve 一个国人 JCZ 写的，发表在一个国外的数独论坛 [http://forum.enjoysudoku.com/](http://forum.enjoysudoku.com/) 上，原代码是发在论坛里的（论坛帖子暂时找不到了），有些乱码，国外网友整理了，放在这里下载：[JCZSolve 源代码](http://forum.enjoysudoku.com/download/file.php?id=436&sid=2906ffe2e2c5cf10c4d004f184eafe10) 。
+JCZSolve 是一个国人 JCZ 写的数独求解程序，发表在一个国外的数独论坛 [http://forum.enjoysudoku.com/](http://forum.enjoysudoku.com/) 上，原代码是发在论坛里的（帖子暂时找不到了），有些乱码，国外网友整理了，放在这里下载：[JCZSolve 源代码](http://forum.enjoysudoku.com/download/file.php?id=436&sid=2906ffe2e2c5cf10c4d004f184eafe10) 。如果下载不了，本仓库的 `./others/jczslover` 目录下面也有：[JCZSolve.c)](./others/jczslover/JCZSolve.c)、[JCZSolve.h)](./others/jczslover/JCZSolve.h)、[jczsolve.zip](./others/jczslover/jczsolve.zip) 。
 
 ## 关于 rust-sudoku
 
@@ -30,7 +30,7 @@ Git: [https://github.com/Emerentius/sudoku](https://github.com/Emerentius/sudoku
 
 ## 测试集
 
-测试的数独集放在 `./data` 目录下：
+数独的测试集放在 `./data` 目录下：
 
 ```bash
 # 这两个测试集都是所有剩17个格子数独的集合，属于是比较简单的数独
